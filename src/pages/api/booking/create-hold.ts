@@ -58,7 +58,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return jsonResponse(responsePayload, 201);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Could not create hold';
-    const status = /capacity_exceeded|no longer has enough capacity/i.test(message) ? 409 : 400;
+    const status = /capacity_exceeded|no longer has enough capacity|no longer has enough consecutive|not available|closed/i.test(message) ? 409 : 400;
     return errorResponse(message, status, status === 409 ? 'CAPACITY_CONFLICT' : 'HOLD_FAILED');
   }
 };
