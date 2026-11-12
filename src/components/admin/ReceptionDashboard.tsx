@@ -114,6 +114,8 @@ export default function ReceptionDashboard() {
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
+    setStartSlots([]);
+    setSlotId('');
     try {
       const [dashRes, bookingsRes, catsRes, availabilityRes] = await Promise.all([
         fetch(`/api/admin/dashboard?date=${encodeURIComponent(date)}`),
