@@ -90,7 +90,7 @@ export default function ReceptionDashboard() {
         fetch(`/api/admin/bookings?fromDate=${encodeURIComponent(date)}`),
         fetch(`/api/public/vehicle-categories?locale=${locale}`),
       ]);
-      const [dash, book, cats] = await Promise.all([dashRes.json(), bookingsRes.json(), catsRes.json()]);
+      const [dash, book, cats] = await Promise.all([dashRes.json(), bookingsRes.json(), catsRes.json()]) as any[];
       if (!dashRes.ok || !bookingsRes.ok || !catsRes.ok) throw new Error('Request failed');
       setDashboard(dash.data);
       setBookings(book.data.rows ?? []);
