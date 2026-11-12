@@ -1,39 +1,65 @@
-# HSR Green Energy - CNG Cylinder Hydro Testing Platform
+# HSR Green Energy
 
-Astro + TypeScript + Cloudflare Workers app with bilingual public site (`/en`, `/hi`), booking wizard, D1-backed capacity ledger, and role-protected admin APIs.
+Bilingual CNG cylinder testing website and booking platform. Astro + React islands + Cloudflare Workers + D1. The public website, booking wizard and staff portals are separate experiences backed by one D1 booking ledger.
 
-## Quick start
+## Local development
 
-```bash
-npm install --legacy-peer-deps
+Requirements: Node.js 22 LTS and Git.
+
+```powershell
+git clone https://github.com/DeepakOla/HSR.git
+cd HSR
+git switch copilot/build-cng-cylinder-hydro-testing-website
+npm ci
+```
+
+Create the D1 database and let Wrangler write its real ID into `wrangler.jsonc`:
+
+```powershell
+npx wrangler login
+npx wrangler d1 create hsr_green_energy_prod --binding DB --update-config
+```
+
+Apply the schema to your local development database and run the site:
+
+```powershell
+npx wrangler d1 migrations apply hsr_green_energy_prod --local
 npm run dev
 ```
 
-## Core commands
+The local Admin pages require a Cloudflare Access identity and a matching `staff_users` row. Do not bypass this by sending made-up role headers.
 
-- `npm run dev`
-- `npm run typecheck`
-- `npm run lint`
-- `npm run test`
-- `npm run build`
-- `npm run test:e2e`
+## Checks
 
-## Cloudflare setup
+```powershell
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+```
 
-1. Create separate D1 databases for dev/preview/prod.
-2. Apply migrations from `/migrations`.
-3. Configure `wrangler.jsonc` bindings and env vars.
-4. Optional: configure private R2 Standard bucket for payment evidence.
-5. Configure Cloudflare Access and map staff emails to roles in D1.
+## Deploy to Cloudflare Workers Free
 
-## Important
+Follow [docs/deployment.md](docs/deployment.md) in order. Do not deploy while `database_id` is still `SETUP_REQUIRED`.
 
-- Unknown business details are seeded as `SETUP_REQUIRED`.
-- No PESO/VAHAN approval claims are published by default.
-- Upload fallback: if R2 is disabled/unavailable, UTR + WhatsApp flow remains available.
-- Currency is stored in integer paise.
-- Capacity is shared across WEB, PHONE, WHATSAPP and WALKIN sources.
+## Business setup required before public launch
 
-## Regulatory source note
+- Confirm legal business name, city, full address, map pin, phone and WhatsApp.
+- Add genuine station photographs.
+- Verify PESO/station approval details before publishing any government-authorisation claims.
+- Confirm actual services and operating days/hours.
+- Confirm merchant UPI VPA/payee name and advance policy.
+- Configure Cloudflare Access and add owner/receptionist identities to D1.
+- R2 is optional. Without it, screenshot upload is disabled; UTR submission and WhatsApp fallback remain available.
 
-Expiry reminder logic is based on a 3-year periodic test cycle per Rule 35 references noted in `docs/regulatory-sources.md`.
+## Important invariants
+
+- English and Hindi are separate route trees.
+- Homepage is a business website, not a booking form.
+- The booking wizard is a separate sequential journey.
+- All booking sources share one D1 ledger.
+- Capacity is checked against both slot and daily limits by the server.
+- UPI QR/link and a screenshot never mean payment is verified.
+- Only unpaid HELD bookings expire automatically. Evidence-submitted bookings remain reserved pending receptionist review.
+- Historical booking prices and slot details are snapshots.
+- Unknown business credentials must remain SETUP_REQUIRED; never invent them.

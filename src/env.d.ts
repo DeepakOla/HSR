@@ -6,7 +6,6 @@ interface Env {
   ACCESS_AUDIENCE?: string;
   ACCESS_TEAM_DOMAIN?: string;
   APP_BASE_URL?: string;
-  DEV_AUTH_SECRET?: string;
   R2_MAX_EVIDENCE_BYTES?: string;
 }
 
