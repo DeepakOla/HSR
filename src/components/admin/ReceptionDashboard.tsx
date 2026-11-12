@@ -1,3 +1,4 @@
+import { readApiJson } from '../../lib/client-api';
 import { useCallback, useEffect, useState } from 'react';
 import '../../styles/admin.css';
 
@@ -118,13 +119,13 @@ export default function ReceptionDashboard() {
     setSlotId('');
     try {
       const [dashRes, bookingsRes, catsRes, availabilityRes] = await Promise.all([
-        fetch(`/api/admin/dashboard?date=${encodeURIComponent(date)}`),
-        fetch(`/api/admin/bookings?fromDate=${encodeURIComponent(date)}`),
-        fetch(`/api/public/vehicle-categories?locale=${locale}`),
-        fetch(`/api/admin/availability?locale=${locale}&fromDate=${encodeURIComponent(date)}&days=1&cylinderCount=${cylinderCount}`),
+        fetch(`/api/admin/dashboard/?date=${encodeURIComponent(date)}`),
+        fetch(`/api/admin/bookings/?fromDate=${encodeURIComponent(date)}`),
+        fetch(`/api/public/vehicle-categories/?locale=${locale}`),
+        fetch(`/api/admin/availability/?locale=${locale}&fromDate=${encodeURIComponent(date)}&days=1&cylinderCount=${cylinderCount}`),
       ]);
       const [dash, book, cats, availability] = await Promise.all([
-        dashRes.json(), bookingsRes.json(), catsRes.json(), availabilityRes.json()
+        readApiJson(dashRes), readApiJson(bookingsRes), readApiJson(catsRes), readApiJson(availabilityRes)
       ]) as any[];
       if (!dashRes.ok || !bookingsRes.ok || !catsRes.ok || !availabilityRes.ok) {
         throw new Error(dash.error?.message ?? book.error?.message ?? cats.error?.message ?? availability.error?.message ?? t.error);
@@ -166,7 +167,7 @@ export default function ReceptionDashboard() {
     if (!category || !slotId || !vehicleDescription || busy) return;
     setBusy(true); setMessage(''); setError('');
     try {
-      const response = await fetch('/api/admin/manual-bookings', {
+      const response = await fetch('/api/admin/manual-bookings/', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -175,7 +176,7 @@ export default function ReceptionDashboard() {
           vehicleRegistration: registration, source, paymentCollected, idempotencyKey
         })
       });
-      const payload: any = await response.json();
+      const payload: any = await readApiJson(response);
       if (!response.ok) throw new Error(payload.error?.message ?? t.loadFail);
       setMessage(t.saved + ' ' + payload.data.bookingCode);
       setName(''); setMobile(''); setRegistration(''); setVehicleModel('');
@@ -190,11 +191,11 @@ export default function ReceptionDashboard() {
   const act = async (bookingCode: string, action: string) => {
     setBusy(true); setMessage(''); setError('');
     try {
-      const response = await fetch('/api/admin/bookings', {
+      const response = await fetch('/api/admin/bookings/', {
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ bookingCode, action })
       });
-      const payload: any = await response.json();
+      const payload: any = await readApiJson(response);
       if (!response.ok) throw new Error(payload.error?.message ?? t.loadFail);
       setMessage(`${bookingCode}: ${statusLabel(payload.data.reservationState, locale)}`);
       await load();
@@ -310,7 +311,7 @@ export default function ReceptionDashboard() {
                       <td>{booking.cylinderCount}</td>
                       <td><span className={`admin-status ${booking.reservationState === 'PENDING_VERIFICATION' ? 'pending' : ''}`}>{statusLabel(booking.reservationState,locale)}</span></td>
                       <td>{statusLabel(booking.paymentState,locale)}<div className="admin-note">Paid: {money(booking.amountPaidPaise)} / {money(booking.totalPricePaise)}</div>{booking.utr&&<div className="admin-note">UTR: {booking.utr}</div>}</td>
-                      <td><div className="admin-row-actions">{actionsFor(booking).map((action) => <button key={action.key} className={action.cls} disabled={busy} onClick={() => void act(booking.bookingCode,action.key)}>{action.text}</button>)}{booking.paymentState === 'EVIDENCE_SUBMITTED' && <button className="admin-button secondary" onClick={() => window.open(`/api/admin/evidence?bookingCode=${encodeURIComponent(booking.bookingCode)}`,'_blank','noopener,noreferrer')}>{t.screenshot}</button>}</div></td>
+                      <td><div className="admin-row-actions">{actionsFor(booking).map((action) => <button key={action.key} className={action.cls} disabled={busy} onClick={() => void act(booking.bookingCode,action.key)}>{action.text}</button>)}{booking.paymentState === 'EVIDENCE_SUBMITTED' && <button className="admin-button secondary" onClick={() => window.open(`/api/admin/evidence/?bookingCode=${encodeURIComponent(booking.bookingCode)}`,'_blank','noopener,noreferrer')}>{t.screenshot}</button>}</div></td>
                     </tr>
                   )) : <tr><td colSpan={8} className="admin-empty">{t.empty}</td></tr>}
                 </tbody>

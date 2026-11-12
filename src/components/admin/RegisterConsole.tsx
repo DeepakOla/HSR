@@ -1,3 +1,4 @@
+import { readApiJson } from '../../lib/client-api';
 import { useCallback, useEffect, useState } from 'react';
 import '../../styles/admin.css';
 
@@ -40,8 +41,8 @@ export default function RegisterConsole() {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch(`/api/admin/bookings?fromDate=${encodeURIComponent(date)}`);
-      const payload = await response.json() as ApiData;
+      const response = await fetch(`/api/admin/bookings/?fromDate=${encodeURIComponent(date)}`);
+      const payload = await readApiJson(response) as ApiData;
       if (!response.ok) throw new Error(payload.error?.message ?? 'Could not load completed bookings');
       const completed = (payload.data?.rows ?? []).filter((booking) => booking.reservationState === 'COMPLETED');
       setBookings(completed);
@@ -70,7 +71,7 @@ export default function RegisterConsole() {
     setError('');
     setMessage('');
     try {
-      const response = await fetch('/api/admin/register', {
+      const response = await fetch('/api/admin/register/', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -85,7 +86,7 @@ export default function RegisterConsole() {
           certificateReference: certificate,
         }),
       });
-      const payload: any = await response.json();
+      const payload: any = await readApiJson(response);
       if (!response.ok) throw new Error(payload.error?.message ?? 'Could not save cylinder register entry');
       setMessage(result === 'PASS'
         ? `Register entry saved. Next periodic test reminder: ${payload.data.nextRetestDueDate}.`
