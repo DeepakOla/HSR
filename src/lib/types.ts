@@ -32,6 +32,9 @@ export interface SlotAvailability {
   dayReserved: number;
   dayRemaining: number;
   isClosed: boolean;
+  isPublic: boolean;
+  canStartBooking: boolean;
+  bookingEndTime: string | null;
 }
 
 export interface VehicleCategory {

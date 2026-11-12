@@ -71,7 +71,9 @@ CREATE TABLE IF NOT EXISTS weekly_schedule (
   break_start TEXT,
   break_end TEXT,
   daily_capacity INTEGER NOT NULL CHECK (daily_capacity >= 0),
-  slot_duration_minutes INTEGER NOT NULL CHECK (slot_duration_minutes BETWEEN 30 AND 240),
+  slot_interval_minutes INTEGER NOT NULL DEFAULT 20 CHECK (slot_interval_minutes IN (15,20)),
+  extended_hours_enabled INTEGER NOT NULL DEFAULT 1 CHECK (extended_hours_enabled IN (0,1)),
+  extended_hours_public INTEGER NOT NULL DEFAULT 0 CHECK (extended_hours_public IN (0,1)),
   config_version INTEGER NOT NULL DEFAULT 1,
   UNIQUE(weekday, config_version)
 );
@@ -83,8 +85,10 @@ CREATE TABLE IF NOT EXISTS slot_templates (
   slot_label_hi TEXT NOT NULL,
   start_time TEXT NOT NULL,
   end_time TEXT NOT NULL,
-  slot_capacity INTEGER NOT NULL CHECK (slot_capacity >= 0),
+  slot_capacity INTEGER NOT NULL CHECK (slot_capacity = 1),
   sort_order INTEGER NOT NULL,
+  interval_minutes INTEGER NOT NULL CHECK (interval_minutes IN (15,20)),
+  is_extended INTEGER NOT NULL DEFAULT 0 CHECK (is_extended IN (0,1)),
   UNIQUE(config_version, sort_order)
 );
 
@@ -112,6 +116,8 @@ CREATE TABLE IF NOT EXISTS daily_slot_snapshots (
   slot_capacity INTEGER NOT NULL CHECK (slot_capacity >= 0),
   daily_capacity INTEGER NOT NULL CHECK (daily_capacity >= 0),
   is_closed INTEGER NOT NULL DEFAULT 0 CHECK (is_closed IN (0,1)),
+  interval_minutes INTEGER NOT NULL DEFAULT 20 CHECK (interval_minutes IN (15,20)),
+  is_public INTEGER NOT NULL DEFAULT 1 CHECK (is_public IN (0,1)),
   UNIQUE(service_date, slot_template_id)
 );
 
@@ -127,6 +133,7 @@ CREATE TABLE IF NOT EXISTS vehicles (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   registration_normalized TEXT NOT NULL UNIQUE,
   registration_display TEXT NOT NULL,
+  vehicle_type TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -151,6 +158,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   customer_id INTEGER NOT NULL REFERENCES customers(id),
   vehicle_id INTEGER NOT NULL REFERENCES vehicles(id),
   category_id INTEGER NOT NULL REFERENCES vehicle_categories(id),
+  vehicle_type_snapshot TEXT NOT NULL,
   category_name_en_snapshot TEXT NOT NULL,
   category_name_hi_snapshot TEXT NOT NULL,
   cylinder_count_snapshot INTEGER NOT NULL,
@@ -172,6 +180,17 @@ CREATE TABLE IF NOT EXISTS bookings (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS booking_slot_allocations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  booking_id INTEGER NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  slot_snapshot_id INTEGER NOT NULL REFERENCES daily_slot_snapshots(id),
+  ordinal INTEGER NOT NULL CHECK (ordinal > 0),
+  UNIQUE(booking_id, ordinal),
+  UNIQUE(slot_snapshot_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_booking_slot_allocations_booking ON booking_slot_allocations(booking_id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_bookings_utr_unique ON bookings(payment_utr_normalized) WHERE payment_utr_normalized IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_bookings_service_state ON bookings(service_date, reservation_state);
@@ -218,11 +237,18 @@ CREATE TABLE IF NOT EXISTS cylinder_register (
 
 CREATE INDEX IF NOT EXISTS idx_register_vehicle ON cylinder_register(vehicle_id, created_at);
 
+WITH RECURSIVE cylinders(n) AS (
+  VALUES (1)
+  UNION ALL
+  SELECT n + 1 FROM cylinders WHERE n < 12
+)
 INSERT OR IGNORE INTO vehicle_categories(code, sort_order, name_en, name_hi, cylinder_count, base_price_paise, gst_rate_bps, advance_paise)
-VALUES
-('CAR_TAXI_1', 1, 'Car/Taxi', 'कार/टैक्सी', 1, 150000, 1800, 50000),
-('CAR_LCV_2', 2, 'Twin-cylinder Car/LCV/Tempo', 'डबल-सिलेंडर कार/एलसीवी/टेम्पो', 2, 220000, 1800, 50000),
-('HEAVY_TRUCK_4', 3, 'Heavy Commercial Truck', 'हेवी कमर्शियल ट्रक', 4, 440000, 1800, NULL);
+SELECT
+  'CYL_' || printf('%02d', n), n,
+  printf('%d CNG cylinder(s)', n),
+  printf('%d सीएनजी सिलेंडर', n),
+  n, 250000 * n, 1800, NULL
+FROM cylinders;
 
 -- 0 = Sunday. Seed weekdays open; owner must confirm real working days before go-live.
 WITH RECURSIVE wd(n) AS (
@@ -230,15 +256,34 @@ WITH RECURSIVE wd(n) AS (
   UNION ALL
   SELECT n + 1 FROM wd WHERE n < 6
 )
-INSERT OR IGNORE INTO weekly_schedule(weekday, is_open, open_time, close_time, break_start, break_end, daily_capacity, slot_duration_minutes, config_version)
-SELECT n, CASE WHEN n BETWEEN 1 AND 6 THEN 1 ELSE 0 END, '06:00', '14:00', NULL, NULL, 25, 120, 1 FROM wd;
+INSERT OR IGNORE INTO weekly_schedule(
+  weekday, is_open, open_time, close_time, break_start, break_end,
+  daily_capacity, slot_interval_minutes, extended_hours_enabled, extended_hours_public, config_version
+)
+SELECT n, CASE WHEN n BETWEEN 1 AND 6 THEN 1 ELSE 0 END,
+  '06:00', '14:00', NULL, NULL, 24, 20, 1, 0, 1
+FROM wd;
 
-INSERT OR IGNORE INTO slot_templates(config_version, slot_label_en, slot_label_hi, start_time, end_time, slot_capacity, sort_order)
-VALUES
-(1, '06:00 - 08:00', '06:00 - 08:00', '06:00', '08:00', 7, 1),
-(1, '08:00 - 10:00', '08:00 - 10:00', '08:00', '10:00', 6, 2),
-(1, '10:00 - 12:00', '10:00 - 12:00', '10:00', '12:00', 6, 3),
-(1, '12:00 - 14:00', '12:00 - 14:00', '12:00', '14:00', 6, 4);
+-- One 20-minute cylinder-work unit per template. The ninth hour is staff-only by default.
+WITH RECURSIVE slot_minutes(minute_of_day, sort_order) AS (
+  SELECT 360, 1
+  UNION ALL
+  SELECT minute_of_day + 20, sort_order + 1
+  FROM slot_minutes WHERE sort_order < 27
+)
+INSERT OR IGNORE INTO slot_templates(
+  config_version, slot_label_en, slot_label_hi, start_time, end_time,
+  slot_capacity, sort_order, interval_minutes, is_extended
+)
+SELECT 1,
+  printf('%02d:%02d - %02d:%02d', minute_of_day / 60, minute_of_day % 60,
+         (minute_of_day + 20) / 60, (minute_of_day + 20) % 60),
+  printf('%02d:%02d - %02d:%02d', minute_of_day / 60, minute_of_day % 60,
+         (minute_of_day + 20) / 60, (minute_of_day + 20) % 60),
+  printf('%02d:%02d', minute_of_day / 60, minute_of_day % 60),
+  printf('%02d:%02d', (minute_of_day + 20) / 60, (minute_of_day + 20) % 60),
+  1, sort_order, 20, CASE WHEN sort_order > 24 THEN 1 ELSE 0 END
+FROM slot_minutes;
 
 -- Seed 45 days of daily slot snapshots.
 WITH RECURSIVE days(d) AS (
@@ -247,33 +292,29 @@ WITH RECURSIVE days(d) AS (
   SELECT date(d, '+1 day') FROM days WHERE d < date('now', '+330 minutes', '+45 day')
 )
 INSERT OR IGNORE INTO daily_slot_snapshots(
-  service_date,
-  weekday,
-  slot_template_id,
-  config_version,
-  slot_label_en,
-  slot_label_hi,
-  start_time,
-  end_time,
-  slot_capacity,
-  daily_capacity,
-  is_closed
+  service_date, weekday, slot_template_id, config_version,
+  slot_label_en, slot_label_hi, start_time, end_time,
+  slot_capacity, daily_capacity, is_closed, interval_minutes, is_public
 )
 SELECT
   days.d,
   CAST(strftime('%w', days.d) AS INTEGER),
-  st.id,
-  st.config_version,
-  st.slot_label_en,
-  st.slot_label_hi,
-  st.start_time,
-  st.end_time,
-  st.slot_capacity,
-  ws.daily_capacity,
-  CASE WHEN ws.is_open = 1 THEN 0 ELSE 1 END
+  st.id, st.config_version, st.slot_label_en, st.slot_label_hi,
+  st.start_time, st.end_time, st.slot_capacity,
+  CASE WHEN ws.is_open = 1 THEN (
+    SELECT COUNT(*) FROM slot_templates st2
+    WHERE st2.config_version = ws.config_version
+      AND (st2.is_extended = 0 OR ws.extended_hours_enabled = 1)
+  ) ELSE 0 END,
+  CASE WHEN ws.is_open = 1 THEN 0 ELSE 1 END,
+  st.interval_minutes,
+  CASE WHEN st.is_extended = 1 AND ws.extended_hours_public = 0 THEN 0 ELSE 1 END
 FROM days
-JOIN slot_templates st ON st.config_version = 1
-JOIN weekly_schedule ws ON ws.config_version = 1 AND ws.weekday = CAST(strftime('%w', days.d) AS INTEGER);
+JOIN weekly_schedule ws
+  ON ws.config_version = 1 AND ws.weekday = CAST(strftime('%w', days.d) AS INTEGER)
+JOIN slot_templates st
+  ON st.config_version = 1
+ AND (st.is_extended = 0 OR ws.extended_hours_enabled = 1);
 
 INSERT OR IGNORE INTO localized_content(locale, page_key, title, body)
 VALUES
