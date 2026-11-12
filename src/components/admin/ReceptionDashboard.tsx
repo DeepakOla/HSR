@@ -119,7 +119,7 @@ export default function ReceptionDashboard() {
         fetch(`/api/admin/dashboard?date=${encodeURIComponent(date)}`),
         fetch(`/api/admin/bookings?fromDate=${encodeURIComponent(date)}`),
         fetch(`/api/public/vehicle-categories?locale=${locale}`),
-        fetch(`/api/public/availability?locale=${locale}&fromDate=${encodeURIComponent(date)}&days=1&cylinderCount=${cylinderCount}&includeStaffOnly=true`),
+        fetch(`/api/admin/availability?locale=${locale}&fromDate=${encodeURIComponent(date)}&days=1&cylinderCount=${cylinderCount}`),
       ]);
       const [dash, book, cats, availability] = await Promise.all([
         dashRes.json(), bookingsRes.json(), catsRes.json(), availabilityRes.json()
