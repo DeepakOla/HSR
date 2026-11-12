@@ -8,7 +8,7 @@ import { errorResponse, jsonResponse } from '../../../lib/utils';
 
 const querySchema = z.object({
   locale: z.enum(['en', 'hi']).default('en'),
-  fromDate: z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/).optional(),
+  fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   days: z.coerce.number().int().min(1).max(60).default(1),
   cylinderCount: z.coerce.number().int().min(1).max(20).default(1),
 });
