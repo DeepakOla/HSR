@@ -10,7 +10,7 @@ export const createHoldSchema = z.object({
   customerName: z.string().trim().min(2).max(120),
   mobile: z.string().trim().min(10).max(20),
   vehicleRegistration: z.string().trim().min(4).max(20),
-  source: z.enum(['WEB', 'PHONE', 'WHATSAPP', 'WALKIN']).default('WEB'),
+  source: z.literal('WEB').default('WEB'),
   idempotencyKey: z.string().trim().min(8).max(120),
 });
 
