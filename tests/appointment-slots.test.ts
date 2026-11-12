@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { findConsecutiveAvailableSlots, generateAppointmentSlots, markBookableStarts } from '../src/lib/appointment-slots';
+import { findConsecutiveAvailableSlots, generateAppointmentSlots, markBookableStarts, minutesToTime } from '../src/lib/appointment-slots';
 
 const base = {
   serviceDate: '2026-11-13', configVersion: 1, isClosed: false, isPublic: true,
 };
 const occupied = (count: number, reservedIndexes: number[] = []) => Array.from({ length: count }, (_, index) => ({
   ...base, slotSnapshotId: index + 1,
-  startTime: `10:${String(index * 20).padStart(2, '0')}`,
-  endTime: `10:${String((index + 1) * 20).padStart(2, '0')}`,
+  startTime: minutesToTime(600 + index * 20),
+  endTime: minutesToTime(620 + index * 20),
   reserved: reservedIndexes.includes(index),
 }));
 

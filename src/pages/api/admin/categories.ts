@@ -13,7 +13,7 @@ const categorySchema = z.object({
   nameHi: z.string().trim().min(2).max(100),
   cylinderCount: z.number().int().min(1).max(20),
   basePricePaise: z.number().int().min(0).max(100_000_000),
-  gstRateBps: z.number().int().min(0).max(2800),
+  gstRateBps: z.literal(1800),
   advancePaise: z.number().int().min(0).max(100_000_000).nullable(),
   isActive: z.boolean(),
 });
