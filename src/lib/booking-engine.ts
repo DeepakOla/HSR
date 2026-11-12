@@ -365,56 +365,44 @@ export async function createHold(db: D1Database, input: CreateHoldInput) {
 export async function submitPaymentEvidence(
   db: D1Database,
   bookingCode: string,
-  input: { utr?: string; source: 'WEB' | 'PHONE' | 'WHATSAPP' | 'WALKIN' }
+  statusToken: string,
+  input: { utr: string; source: 'WEB' | 'PHONE' | 'WHATSAPP' | 'WALKIN' }
 ) {
-  const booking = await querySingle<{
-    id: number;
-    paymentState: string;
-    reservationState: string;
-  }>(
-    db,
-    `SELECT id, payment_state AS paymentState, reservation_state AS reservationState
-     FROM bookings WHERE booking_code = ?`,
-    [bookingCode]
-  );
+  const normalizedUtr = normalizeUtr(input.utr);
+  if (normalizedUtr.length < 8) throw new Error('Please enter a valid UTR/reference number');
 
-  if (booking.reservationState === 'CANCELLED' || booking.reservationState === 'EXPIRED' || booking.reservationState === 'REJECTED') {
-    throw new Error('Booking is no longer active');
-  }
-
-  let normalizedUtr: string | null = null;
-  if (input.utr) {
-    normalizedUtr = normalizeUtr(input.utr);
-    if (normalizedUtr.length < 8) {
-      throw new Error('Please enter a valid UTR/reference number');
-    }
-  }
-
-  const result = await db
-    .prepare(
+  const submittedAt = nowIso();
+  const results = await db.batch([
+    db.prepare(
       `UPDATE bookings
-       SET payment_utr_normalized = COALESCE(?, payment_utr_normalized),
+       SET payment_utr_normalized = ?,
            payment_submitted_at = ?,
            payment_state = 'EVIDENCE_SUBMITTED',
            reservation_state = 'PENDING_VERIFICATION',
            updated_at = ?
-       WHERE id = ?`
-    )
-    .bind(normalizedUtr, nowIso(), nowIso(), booking.id)
-    .run();
+       WHERE booking_code = ?
+         AND status_token_hash = ?
+         AND reservation_state = 'HELD'
+         AND payment_state = 'ADVANCE_PENDING'
+         AND hold_expires_at > ?`
+    ).bind(normalizedUtr, submittedAt, submittedAt, bookingCode, sha256(statusToken), submittedAt),
+    db.prepare(
+      `INSERT INTO booking_audit_events(booking_id, event_type, actor_type, actor_id, event_payload_json)
+       SELECT id, 'PAYMENT_EVIDENCE_SUBMITTED', 'CUSTOMER', ?, ?
+       FROM bookings
+       WHERE booking_code = ?
+         AND status_token_hash = ?
+         AND reservation_state = 'PENDING_VERIFICATION'
+         AND payment_state = 'EVIDENCE_SUBMITTED'
+         AND payment_submitted_at = ?`
+    ).bind(input.source, JSON.stringify({ utrLast4: normalizedUtr.slice(-4) }), bookingCode, sha256(statusToken), submittedAt),
+  ]);
 
-  if (!result.success || (result.meta.changes ?? 0) < 1) {
-    throw new Error('Could not save payment evidence');
+  if ((results[0]?.meta.changes ?? 0) !== 1) {
+    throw new Error('Booking not found, expired, or no longer accepting payment evidence');
   }
 
-  await db
-    .prepare(
-      'INSERT INTO booking_audit_events(booking_id, event_type, actor_type, actor_id, event_payload_json) VALUES(?, ?, ?, ?, ?)'
-    )
-    .bind(booking.id, 'PAYMENT_EVIDENCE_SUBMITTED', 'CUSTOMER', input.source, JSON.stringify({ utr: normalizedUtr }))
-    .run();
-
-  return { bookingId: booking.id, paymentState: 'EVIDENCE_SUBMITTED', reservationState: 'PENDING_VERIFICATION' };
+  return { paymentState: 'EVIDENCE_SUBMITTED', reservationState: 'PENDING_VERIFICATION' };
 }
 
 export async function expireDueHolds(db: D1Database) {

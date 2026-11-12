@@ -22,7 +22,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   try {
     const db = getDb({ locals } as any);
-    const result = await submitPaymentEvidence(db, parsed.data.bookingCode, { utr: parsed.data.utr, source: parsed.data.source });
+    if (!parsed.data.utr) return errorResponse('Full UTR/reference number is required', 400);
+    const result = await submitPaymentEvidence(db, parsed.data.bookingCode, parsed.data.statusToken, { utr: parsed.data.utr, source: 'WEB' });
     return jsonResponse(result, 200);
   } catch (error) {
     return errorResponse(error instanceof Error ? error.message : 'Could not submit payment evidence', 400, 'EVIDENCE_FAILED');

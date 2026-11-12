@@ -15,6 +15,7 @@ export const createHoldSchema = z.object({
 
 export const submitEvidenceSchema = z.object({
   bookingCode: z.string().trim().min(8),
+  statusToken: z.string().trim().min(24).max(200),
   utr: z.string().trim().max(64).optional(),
   source: z.enum(['WEB', 'PHONE', 'WHATSAPP', 'WALKIN']).default('WEB'),
 });

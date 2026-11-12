@@ -104,7 +104,7 @@ export default function BookingWizard({ locale }: Props) {
     const response = await fetch('/api/booking/submit-evidence', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ bookingCode: result.bookingCode, utr, source: 'WEB' }),
+      body: JSON.stringify({ bookingCode: result.bookingCode, statusToken: result.statusToken, utr, source: 'WEB' }),
     });
     const payload: any = await response.json();
     if (!response.ok) {
@@ -209,6 +209,7 @@ export default function BookingWizard({ locale }: Props) {
                     e.preventDefault();
                     const form = new FormData(e.currentTarget as HTMLFormElement);
                     form.set('bookingCode', result.bookingCode);
+                    form.set('statusToken', result.statusToken);
                     const uploadRes = await fetch('/api/booking/upload-evidence', { method: 'POST', body: form });
                     const uploadPayload: any = await uploadRes.json();
                     if (!uploadRes.ok) {
