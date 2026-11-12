@@ -5,6 +5,9 @@ BEFORE INSERT ON bookings
 FOR EACH ROW
 WHEN NEW.reservation_state IN ('HELD','PENDING_VERIFICATION','CONFIRMED','CHECKED_IN','IN_PROGRESS')
 BEGIN
+  SELECT RAISE(ABORT, 'SLOT_CLOSED')
+  WHERE (SELECT is_closed FROM daily_slot_snapshots WHERE id = NEW.slot_snapshot_id) != 0;
+
   SELECT RAISE(ABORT, 'SLOT_CAPACITY_EXCEEDED')
   WHERE (
     SELECT COALESCE(SUM(b.cylinder_count_snapshot), 0)

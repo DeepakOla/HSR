@@ -132,7 +132,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const horizonEnd = addDays(effectiveFrom, 44);
   const versionRow = await db.prepare('SELECT COALESCE(MAX(config_version), 1) AS version FROM slot_templates').first<{version:number}>();
   const nextVersion = (versionRow?.version ?? 1) + 1;
-  const now = nowIso();
 
   const statements = [];
   for (let weekday = 0; weekday <= 6; weekday += 1) {

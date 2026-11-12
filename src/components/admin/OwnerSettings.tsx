@@ -71,7 +71,7 @@ function asTime(value:number){return `${String(Math.floor(value/60)).padStart(2,
 function inr(paise:number|null){return paise==null?'':String(paise/100);}
 function paise(value:string){if(!value.trim())return null;const n=Number(value);return Number.isFinite(n)&&n>=0?Math.round(n*100):null;}
 
-function createSlots(schedule:Schedule,locale:Locale):Slot[]{
+function createSlots(schedule:Schedule):Slot[]{
   const start=asMinutes(schedule.openTime),end=asMinutes(schedule.closeTime),duration=Number(schedule.slotDurationMinutes);
   if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start||duration<30||duration>240)return [];
   const bs=schedule.breakStart?asMinutes(schedule.breakStart):-1;
@@ -150,11 +150,10 @@ export default function OwnerSettings(){
     if(!current)return current;
     const next={...current,...patch};
     if(['openTime','closeTime','slotDurationMinutes','dailyCapacity','breakStart','breakEnd'].some((key)=>key in patch)){
-      next.slots=createSlots(next,locale);
+      next.slots=createSlots(next);
     }
     return next;
   });
-  const editSlot=(index:number,capacity:number)=>setSchedule((current)=>current?({...current,slots:current.slots.map((slot,i)=>i===index?{...slot,capacity}:slot)}):current);
 
   const saveSchedule=async()=>{
     if(!schedule)return;
