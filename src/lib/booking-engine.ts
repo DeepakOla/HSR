@@ -124,9 +124,69 @@ interface CreateHoldInput {
   mobile: string;
   vehicleRegistration: string;
   source: 'WEB' | 'PHONE' | 'WHATSAPP' | 'WALKIN';
+  idempotencyKey: string;
 }
 
+type StoredHoldResult = {
+  bookingCode: string;
+  statusToken: string;
+  holdExpiresAt: string;
+  category: {
+    id: number;
+    code: string;
+    name: string;
+    cylinderCount: number;
+    basePricePaise: number;
+    gstRateBps: number;
+    gstPaise: number;
+    totalPaise: number;
+    advancePaise: number | null;
+  };
+  slot: {
+    id: number;
+    serviceDate: string;
+    slotLabelEn: string;
+    slotLabelHi: string;
+    startTime: string;
+    endTime: string;
+    slotCapacity: number;
+    dayCapacity: number;
+    configVersion: number;
+  };
+  pricing: {
+    basePricePaise: number;
+    gstRateBps: number;
+    gstAmountPaise: number;
+    totalPricePaise: number;
+    advancePaise: number | null;
+    balancePaise: number | null;
+  };
+  paymentConfig: {
+    vpaId: string;
+    payeeName: string;
+    r2Enabled: boolean;
+    whatsappNumber: string;
+  };
+};
+
 export async function createHold(db: D1Database, input: CreateHoldInput) {
+  const readIdempotentResult = async () => {
+    const existing = await db.prepare(
+      "SELECT response_json AS responseJson FROM idempotency_keys WHERE idempotency_key = ? AND endpoint = 'create-hold'"
+    ).bind(input.idempotencyKey).first<{ responseJson: string }>();
+    if (!existing) return null;
+
+    const payload = JSON.parse(existing.responseJson) as StoredHoldResult;
+    const booking = await db.prepare(
+      'SELECT id FROM bookings WHERE booking_code = ?'
+    ).bind(payload.bookingCode).first<{ id: number }>();
+    if (!booking) throw new Error('Existing idempotency record has no matching booking');
+    return { ...payload, bookingId: booking.id };
+  };
+
+  const prior = await readIdempotentResult();
+  if (prior) return prior;
+
   const settings = await getBusinessSettings(db);
   const normalizedPhone = normalizePhoneIndian(input.mobile);
   const normalizedReg = normalizeVehicleRegistration(input.vehicleRegistration);
@@ -160,12 +220,11 @@ export async function createHold(db: D1Database, input: CreateHoldInput) {
     [input.slotSnapshotId]
   );
 
-  if (slot.isClosed === 1) {
-    throw new Error('This slot is closed');
-  }
+  if (slot.isClosed === 1) throw new Error('This slot is closed');
 
-  const category = await querySingle<{
+  const categoryRow = await querySingle<{
     id: number;
+    code: string;
     nameEn: string;
     nameHi: string;
     cylinderCount: number;
@@ -176,6 +235,7 @@ export async function createHold(db: D1Database, input: CreateHoldInput) {
     db,
     `SELECT
       id,
+      code,
       name_en AS nameEn,
       name_hi AS nameHi,
       cylinder_count AS cylinderCount,
@@ -187,167 +247,48 @@ export async function createHold(db: D1Database, input: CreateHoldInput) {
     [input.categoryId]
   );
 
-  const customerUpsert = await db
-    .prepare(
-      'INSERT INTO customers(name, mobile_e164) VALUES(?, ?) ON CONFLICT(mobile_e164) DO UPDATE SET name = excluded.name RETURNING id'
-    )
-    .bind(input.customerName.trim(), normalizedPhone)
-    .first<{ id: number }>();
-
-  if (!customerUpsert) throw new Error('Could not create customer');
-
-  const vehicleUpsert = await db
-    .prepare(
-      'INSERT INTO vehicles(registration_normalized, registration_display) VALUES(?, ?) ON CONFLICT(registration_normalized) DO UPDATE SET registration_display = excluded.registration_display RETURNING id'
-    )
-    .bind(normalizedReg, input.vehicleRegistration.trim().toUpperCase())
-    .first<{ id: number }>();
-
-  if (!vehicleUpsert) throw new Error('Could not create vehicle');
-
-  const gstAmountPaise = Math.round((category.basePricePaise * category.gstRateBps) / 10_000);
-  const totalPricePaise = category.basePricePaise + gstAmountPaise;
-  const advancePaise = category.advancePaise;
+  const gstAmountPaise = Math.round((categoryRow.basePricePaise * categoryRow.gstRateBps) / 10_000);
+  const totalPricePaise = categoryRow.basePricePaise + gstAmountPaise;
+  const advancePaise = categoryRow.advancePaise;
   const balancePaise = advancePaise == null ? null : totalPricePaise - advancePaise;
 
   const bookingCode = generateBookingCode();
   const statusToken = generateOpaqueToken(24);
   const statusTokenHash = sha256(statusToken);
+  const now = nowIso();
   const expiresAt = addMinutes(new Date(), settings.hold_minutes).toISOString();
 
-  const insert = await db
-    .prepare(
-      `INSERT INTO bookings(
-        booking_code,
-        status_token_hash,
-        source,
-        reservation_state,
-        payment_state,
-        hold_expires_at,
-        service_date,
-        slot_snapshot_id,
-        customer_id,
-        vehicle_id,
-        category_id,
-        category_name_en_snapshot,
-        category_name_hi_snapshot,
-        cylinder_count_snapshot,
-        base_price_paise_snapshot,
-        gst_rate_bps_snapshot,
-        gst_amount_paise_snapshot,
-        total_price_paise_snapshot,
-        advance_paise_snapshot,
-        balance_paise_snapshot,
-        slot_label_en_snapshot,
-        slot_label_hi_snapshot,
-        slot_start_snapshot,
-        slot_end_snapshot,
-        slot_capacity_snapshot,
-        daily_capacity_snapshot,
-        config_version_snapshot,
-        created_at,
-        updated_at
-      )
-      SELECT
-        ?, ?, ?,
-        'HELD',
-        'ADVANCE_PENDING',
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?,
-        ?
-      WHERE
-        (SELECT COALESCE(SUM(b.cylinder_count_snapshot),0) FROM bookings b WHERE b.slot_snapshot_id = ? AND b.reservation_state IN ${ACTIVE_STATES_SQL}) + ? <= ?
-        AND
-        (SELECT COALESCE(SUM(b2.cylinder_count_snapshot),0) FROM bookings b2 WHERE b2.service_date = ? AND b2.reservation_state IN ${ACTIVE_STATES_SQL}) + ? <= ?`
-    )
-    .bind(
-      bookingCode,
-      statusTokenHash,
-      input.source,
-      expiresAt,
-      slot.serviceDate,
-      slot.id,
-      customerUpsert.id,
-      vehicleUpsert.id,
-      category.id,
-      category.nameEn,
-      category.nameHi,
-      category.cylinderCount,
-      category.basePricePaise,
-      category.gstRateBps,
-      gstAmountPaise,
-      totalPricePaise,
-      advancePaise,
-      balancePaise,
-      slot.slotLabelEn,
-      slot.slotLabelHi,
-      slot.startTime,
-      slot.endTime,
-      slot.slotCapacity,
-      slot.dayCapacity,
-      slot.configVersion,
-      nowIso(),
-      nowIso(),
-      slot.id,
-      category.cylinderCount,
-      slot.slotCapacity,
-      slot.serviceDate,
-      category.cylinderCount,
-      slot.dayCapacity
-    )
-    .run();
+  const category = {
+    id: categoryRow.id,
+    code: categoryRow.code,
+    name: input.locale === 'hi' ? categoryRow.nameHi : categoryRow.nameEn,
+    cylinderCount: categoryRow.cylinderCount,
+    basePricePaise: categoryRow.basePricePaise,
+    gstRateBps: categoryRow.gstRateBps,
+    gstPaise: gstAmountPaise,
+    totalPaise: totalPricePaise,
+    advancePaise,
+  };
 
-  if (!insert.success || (insert.meta.changes ?? 0) < 1) {
-    throw new Error('Selected slot no longer has enough capacity');
-  }
-
-  const row = await querySingle<{
-    id: number;
-    bookingCode: string;
-  }>(
-    db,
-    `SELECT id, booking_code AS bookingCode FROM bookings WHERE booking_code = ?`,
-    [bookingCode]
-  );
-
-  await db
-    .prepare(
-      'INSERT INTO booking_audit_events(booking_id, event_type, actor_type, actor_id, event_payload_json) VALUES(?, ?, ?, ?, ?)'
-    )
-    .bind(row.id, 'BOOKING_HELD', 'CUSTOMER', input.source, JSON.stringify({ locale: input.locale }))
-    .run();
-
-  return {
-    bookingId: row.id,
+  const responseSnapshot: StoredHoldResult = {
     bookingCode,
     statusToken,
     holdExpiresAt: expiresAt,
     category,
-    slot,
+    slot: {
+      id: slot.id,
+      serviceDate: slot.serviceDate,
+      slotLabelEn: slot.slotLabelEn,
+      slotLabelHi: slot.slotLabelHi,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      slotCapacity: slot.slotCapacity,
+      dayCapacity: slot.dayCapacity,
+      configVersion: slot.configVersion,
+    },
     pricing: {
-      basePricePaise: category.basePricePaise,
-      gstRateBps: category.gstRateBps,
+      basePricePaise: categoryRow.basePricePaise,
+      gstRateBps: categoryRow.gstRateBps,
       gstAmountPaise,
       totalPricePaise,
       advancePaise,
@@ -360,6 +301,60 @@ export async function createHold(db: D1Database, input: CreateHoldInput) {
       whatsappNumber: settings.whatsapp_number,
     },
   };
+
+  try {
+    await db.batch([
+      db.prepare(
+        'INSERT INTO customers(name, mobile_e164) VALUES(?, ?) ON CONFLICT(mobile_e164) DO UPDATE SET name = excluded.name'
+      ).bind(input.customerName.trim(), normalizedPhone),
+      db.prepare(
+        'INSERT INTO vehicles(registration_normalized, registration_display) VALUES(?, ?) ON CONFLICT(registration_normalized) DO UPDATE SET registration_display = excluded.registration_display'
+      ).bind(normalizedReg, input.vehicleRegistration.trim().toUpperCase()),
+      db.prepare(
+        `INSERT INTO bookings(
+          booking_code, status_token_hash, source, reservation_state, payment_state,
+          hold_expires_at, service_date, slot_snapshot_id, customer_id, vehicle_id,
+          category_id, category_name_en_snapshot, category_name_hi_snapshot,
+          cylinder_count_snapshot, base_price_paise_snapshot, gst_rate_bps_snapshot,
+          gst_amount_paise_snapshot, total_price_paise_snapshot, advance_paise_snapshot,
+          balance_paise_snapshot, slot_label_en_snapshot, slot_label_hi_snapshot,
+          slot_start_snapshot, slot_end_snapshot, slot_capacity_snapshot,
+          daily_capacity_snapshot, config_version_snapshot, created_at, updated_at
+        )
+        SELECT ?, ?, ?, 'HELD', 'ADVANCE_PENDING', ?, ?, ?, 
+          (SELECT id FROM customers WHERE mobile_e164 = ?),
+          (SELECT id FROM vehicles WHERE registration_normalized = ?),
+          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?`
+      ).bind(
+        bookingCode, statusTokenHash, input.source, expiresAt, slot.serviceDate, slot.id,
+        normalizedPhone, normalizedReg, categoryRow.id, categoryRow.nameEn, categoryRow.nameHi,
+        categoryRow.cylinderCount, categoryRow.basePricePaise, categoryRow.gstRateBps,
+        gstAmountPaise, totalPricePaise, advancePaise, balancePaise,
+        slot.slotLabelEn, slot.slotLabelHi, slot.startTime, slot.endTime,
+        slot.slotCapacity, slot.dayCapacity, slot.configVersion, now, now
+      ),
+      db.prepare(
+        `INSERT INTO booking_audit_events(booking_id, event_type, actor_type, actor_id, event_payload_json)
+         SELECT id, 'BOOKING_HELD', 'CUSTOMER', ?, ?
+         FROM bookings WHERE booking_code = ?`
+      ).bind(input.source, JSON.stringify({ locale: input.locale }), bookingCode),
+      db.prepare(
+        'INSERT INTO idempotency_keys(idempotency_key, endpoint, response_json, created_at) VALUES(?, ?, ?, ?)'
+      ).bind(input.idempotencyKey, 'create-hold', JSON.stringify(responseSnapshot), now),
+    ]);
+  } catch (error) {
+    const existing = await readIdempotentResult();
+    if (existing) return existing;
+    throw error;
+  }
+
+  const row = await querySingle<{ id: number }>(
+    db,
+    'SELECT id FROM bookings WHERE booking_code = ?',
+    [bookingCode]
+  );
+
+  return { ...responseSnapshot, bookingId: row.id };
 }
 
 export async function submitPaymentEvidence(

@@ -45,6 +45,8 @@ export default function BookingWizard({ locale }: Props) {
   const [message, setMessage] = useState('');
   const [result, setResult] = useState<any>(null);
   const [utr, setUtr] = useState('');
+  const [idempotencyKey, setIdempotencyKey] = useState('');
+  const [submittingHold, setSubmittingHold] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -76,6 +78,11 @@ export default function BookingWizard({ locale }: Props) {
 
   const createHold = async () => {
     if (!selectedSlot || !selectedCategory) return;
+    if (submittingHold) return;
+    const requestKey = idempotencyKey || crypto.randomUUID();
+    if (!idempotencyKey) setIdempotencyKey(requestKey);
+    setSubmittingHold(true);
+    try {
     const response = await fetch('/api/booking/create-hold', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -87,7 +94,7 @@ export default function BookingWizard({ locale }: Props) {
         mobile,
         vehicleRegistration: registration,
         source: 'WEB',
-        idempotencyKey: crypto.randomUUID(),
+        idempotencyKey: requestKey,
       }),
     });
     const payload: any = await response.json();
@@ -97,6 +104,11 @@ export default function BookingWizard({ locale }: Props) {
     }
     setResult(payload.data);
     setMessage('');
+    } catch {
+      setMessage(locale === 'en' ? 'Network error. Retry safely using the same request.' : 'नेटवर्क त्रुटि। उसी अनुरोध के साथ सुरक्षित रूप से पुनः प्रयास करें।');
+    } finally {
+      setSubmittingHold(false);
+    }
   };
 
   const submitUtr = async () => {
@@ -137,6 +149,8 @@ export default function BookingWizard({ locale }: Props) {
                 onClick={() => {
                   setSelectedSlot(slot);
                   setSelectedCategory(null);
+                  setResult(null);
+                  setIdempotencyKey('');
                 }}
                 style={{ minHeight: 56, textAlign: 'left', borderRadius: 8, border: '1px solid #d9e0dc', background: selectedSlot?.slotSnapshotId === slot.slotSnapshotId ? '#eaf7f2' : '#fff' }}
               >
@@ -159,7 +173,7 @@ export default function BookingWizard({ locale }: Props) {
                 key={category.id}
                 type="button"
                 disabled={category.disabled}
-                onClick={() => setSelectedCategory(category)}
+                onClick={() => { setSelectedCategory(category); setResult(null); setIdempotencyKey(''); }}
                 style={{ minHeight: 56, textAlign: 'left', borderRadius: 8, border: '1px solid #d9e0dc', opacity: category.disabled ? 0.55 : 1, background: selectedCategory?.id === category.id ? '#eaf7f2' : '#fff' }}
               >
                 <strong>{category.name}</strong> • {category.cylinderCount} {locale === 'en' ? 'cylinders' : 'सिलेंडर'} • {inr(category.totalPaise)}
@@ -176,12 +190,12 @@ export default function BookingWizard({ locale }: Props) {
       {step === 3 && (
         <div>
           <h2>{locale === 'en' ? 'Step 3: Customer details' : 'चरण 3: ग्राहक विवरण'}</h2>
-          <label>{locale === 'en' ? 'Name' : 'नाम'}<input style={{ minHeight: 56, width: '100%' }} value={name} onChange={(e) => setName(e.target.value)} /></label>
-          <label>{locale === 'en' ? 'Mobile' : 'मोबाइल'}<input style={{ minHeight: 56, width: '100%' }} value={mobile} onChange={(e) => setMobile(e.target.value)} /></label>
-          <label>{locale === 'en' ? 'Vehicle registration' : 'वाहन नंबर'}<input style={{ minHeight: 56, width: '100%' }} value={registration} onChange={(e) => setRegistration(e.target.value.toUpperCase())} /></label>
+          <label>{locale === 'en' ? 'Name' : 'नाम'}<input style={{ minHeight: 56, width: '100%' }} value={name} onChange={(e) => { setName(e.target.value); setIdempotencyKey(''); }} /></label>
+          <label>{locale === 'en' ? 'Mobile' : 'मोबाइल'}<input style={{ minHeight: 56, width: '100%' }} value={mobile} onChange={(e) => { setMobile(e.target.value); setIdempotencyKey(''); }} /></label>
+          <label>{locale === 'en' ? 'Vehicle registration' : 'वाहन नंबर'}<input style={{ minHeight: 56, width: '100%' }} value={registration} onChange={(e) => { setRegistration(e.target.value.toUpperCase()); setIdempotencyKey(''); }} /></label>
           <div style={{ display: 'flex', gap: '.7rem', marginTop: '1rem' }}>
             <button className="cta cta-secondary" onClick={() => setStep(2)}>{locale === 'en' ? 'Back' : 'वापस'}</button>
-            <button className="cta cta-primary" disabled={!canContinueStep3} onClick={createHold}>{locale === 'en' ? 'Create hold' : 'होल्ड बनाएं'}</button>
+            <button className="cta cta-primary" disabled={!canContinueStep3 || submittingHold} onClick={createHold}>{submittingHold ? (locale === 'en' ? 'Creating hold...' : 'होल्ड बनाया जा रहा है...') : (locale === 'en' ? 'Create hold' : 'होल्ड बनाएं')}</button>
           </div>
 
           {result && (
