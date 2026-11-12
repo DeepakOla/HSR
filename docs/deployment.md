@@ -1,10 +1,24 @@
 # Cloudflare Workers deployment
 
-This repository uses one Cloudflare Worker with Astro server rendering, static assets, same-origin APIs, D1 and an optional R2 binding. It is not a Cloudflare Pages deployment.
+This repository uses one Cloudflare Worker named `hsr` with Astro server rendering, static assets, same-origin APIs, production D1, isolated Preview D1, and private production R2 storage. It is not a Cloudflare Pages deployment.
 
-## 1. Required local tools
+## 1. Cloudflare resources already created
 
-Install Node.js 22 LTS and Git. In PowerShell:
+The Cloudflare account already contains these resources. Do not create duplicates:
+
+| Purpose | Resource | ID / binding |
+|---|---|---|
+| Production database | `hsr_green_energy_prod` | `2167157a-4c00-4063-b183-c0a5bd12ed5d` |
+| Preview database | `hsr_green_energy_preview` | `3220c6e5-64ff-4874-9d5d-0e237f5af9ad` |
+| Production evidence bucket | `hsr-prod` | `EVIDENCE_BUCKET` |
+
+These IDs and bindings are already recorded in `wrangler.jsonc`. That file is the version-controlled configuration source of truth.
+
+The production Worker is named `hsr`, matching the existing Cloudflare Worker. Production uses `hsr_green_energy_prod` and the private `hsr-prod` R2 bucket. Worker Previews use the separate `hsr_green_energy_preview` D1 database. The production R2 bucket is deliberately NOT bound to Previews; screenshot uploads remain unavailable in Previews until a separate test bucket is provisioned.
+
+## 2. Required local tools
+
+Install Node.js 22 LTS and Git. Open Windows PowerShell:
 
 ```powershell
 git clone https://github.com/DeepakOla/HSR.git
@@ -14,117 +28,140 @@ npm ci
 npx wrangler login
 ```
 
-## 2. Create the production D1 database
+If the repository is already cloned, use `cd` into the existing repository instead of cloning it again.
 
-Run:
+## 3. Inspect and apply the Preview D1 migrations first
+
+Inspect the Preview database migration state:
 
 ```powershell
-npx wrangler d1 create hsr_green_energy_prod --binding DB --update-config
+npx wrangler d1 migrations list hsr_green_energy_preview --remote
 ```
 
-Wrangler should create the database and update `wrangler.jsonc` with its real database UUID. Open `wrangler.jsonc` and verify:
-- `d1_databases[0].binding` is `DB`.
-- `database_name` is `hsr_green_energy_prod`.
-- `database_id` is a real UUID, not `SETUP_REQUIRED`.
-- `migrations_dir` is `migrations`.
+Apply any pending migrations:
 
-Do not paste the database ID into application source files or a public message. The ID is not a password, but avoid sharing account configuration unnecessarily.
+```powershell
+npm run db:migrate:preview
+```
 
-## 3. Apply D1 migrations
+Verify again:
 
-First inspect the migration list:
+```powershell
+npx wrangler d1 migrations list hsr_green_energy_preview --remote
+```
+
+Do not run a destructive reset. The Preview database is isolated from production and is used for branch testing.
+
+## 4. Inspect and apply production D1 migrations
+
+Before applying, inspect production migration state:
 
 ```powershell
 npx wrangler d1 migrations list hsr_green_energy_prod --remote
 ```
 
-Apply migrations:
+When ready to initialize the production schema, apply pending migrations:
 
 ```powershell
-npx wrangler d1 migrations apply hsr_green_energy_prod --remote
+npm run db:migrate:remote
 ```
 
-Wrangler applies versioned SQL migrations. Never run a destructive reset on production.
+Verify again:
 
-## 4. Set up Cloudflare Access and the first owner
+```powershell
+npx wrangler d1 migrations list hsr_green_energy_prod --remote
+```
 
-Create a Cloudflare Access self-hosted application for the deployed Worker hostname. Create policies for the exact owner and receptionist email addresses. Keep the application protected.
+Never run a destructive reset on production. Do not copy Preview/test bookings into production.
 
-Copy the Access Team domain and the Access application's AUD (Application Audience) tag. Set these values in the Worker variables:
-- `ACCESS_TEAM_DOMAIN`: e.g. `your-team.cloudflareaccess.com` (domain only or https URL).
+## 5. Production R2 evidence storage
+
+The production bucket `hsr-prod` is already bound as `EVIDENCE_BUCKET` in `wrangler.jsonc`.
+
+Before enabling screenshots:
+1. Confirm the bucket is private (no public bucket/domain access).
+2. Confirm it uses the Standard storage class, not Infrequent Access.
+3. Confirm the Worker production binding is present after deployment.
+4. Keep the per-file upload limit at 1 MiB unless a reviewed change is made.
+5. Keep `business_settings.r2_enabled = 0` until the upload and authenticated evidence-view flows have been tested end-to-end.
+
+R2 screenshot upload must not be enabled merely because the bucket exists. Website UTR/reference entry and WhatsApp fallback remain available if upload is disabled.
+
+Previews deliberately have no R2 bucket binding. Do not add `hsr-prod` to the `previews.r2_buckets` block: two Previews using the same bucket name share objects. A separate test bucket must be created before enabling screenshot upload in Previews.
+
+Do not store Base64 image data in D1.
+
+## 6. Cloudflare Workers Builds settings
+
+In Cloudflare Dashboard:
+1. Open **Workers & Pages** > **hsr** > **Settings** > **Builds**.
+2. Set **Production branch** to `main`.
+3. Enable **Preview builds**.
+4. Production:
+   - Build command: `npm ci && npm run build`
+   - Deploy command: `npx wrangler deploy`
+   - Root directory: `/`
+   - Build token: select the existing `hsr build token`
+   - Build variables/secrets: none required for compilation.
+5. Previews Base:
+   - Build command: `npm ci && npm run build`
+   - Preview command: `npx wrangler preview`
+   - Root directory: `/`
+   - Build token: select the existing `hsr build token`
+   - Build variables/secrets: none required for compilation.
+
+Do not put `npm ci`, `npm run build` and `npx wrangler deploy` together in one Deploy command. Workers Builds runs the Build command first and the Deploy command second. Non-production branches use the Preview command instead of the production Deploy command.
+
+The Wrangler `previews` block is configured in `wrangler.jsonc`. It contains the Preview D1 binding and fail-closed placeholder Access values; it intentionally does not bind production R2.
+
+## 7. Cloudflare Access and first owner
+
+Administrative access must remain protected by Cloudflare Access. The application checks the Cloudflare Access JWT signature, issuer, audience, and expiration, then looks up the email's active role in D1. Do not bypass this by sending role headers.
+
+The following runtime values are still placeholders in `wrangler.jsonc` and must be replaced/configured with the actual Cloudflare Access application values before owner/receptionist login can work:
+
+- `ACCESS_TEAM_DOMAIN`: the Access team domain, e.g. `your-team.cloudflareaccess.com`.
 - `ACCESS_AUDIENCE`: the exact AUD tag from the Access application.
 
-The Worker verifies the `cf-access-jwt-assertion` signature, issuer, audience and time claims, then looks up the role from D1. Request headers such as `x-staff-role` are not trusted.
+These are runtime settings, not Workers Builds variables. Configure production and Preview Access separately. Previews are public by default unless protected; apply an Access policy that protects the Preview hostname(s) before sharing Preview URLs.
 
-After migrations, insert the owner email (replace the placeholder with the exact email protected by Access):
+After production migrations and Access are configured, add the first owner using the exact email allowed by Access:
 
 ```powershell
 npx wrangler d1 execute hsr_green_energy_prod --remote --command "INSERT INTO staff_users(email, role, is_active) VALUES('OWNER_EMAIL_FROM_ACCESS', 'OWNER', 1);"
 ```
 
-Add receptionists similarly with role `RECEPTIONIST`. Do not add a user until their email is protected by the Access policy.
+Add receptionists with role `RECEPTIONIST`. Use the exact email address returned by the verified Access JWT.
 
-## 5. Optional R2 payment screenshot storage
+Do not put Access credentials or secrets in Git.
 
-The site works without R2: customers can submit a full UTR/reference or use WhatsApp. Website screenshot upload stays unavailable until a private R2 bucket is configured.
+## 8. Local checks and manual deployment
 
-If you choose to enable R2:
-1. Review Cloudflare R2 billing and free allowances first. R2 requires activating the R2 subscription/checkout; usage above free allowances can be billed.
-2. Create a Standard bucket:
-
-```powershell
-npx wrangler r2 bucket create hsr-green-energy-evidence
-```
-
-3. Add this binding to the top-level `r2_buckets` array in `wrangler.jsonc`:
-
-```json
-{
-  "binding": "EVIDENCE_BUCKET",
-  "bucket_name": "hsr-green-energy-evidence"
-}
-```
-
-4. Deploy again and verify the bucket is private (do not enable public access).
-5. Set `business_settings.r2_enabled = 1` only after upload/view routes and retention controls have been tested.
-
-Do not store image Base64 data in D1. Do not add an R2 binding if you have not created the bucket.
-
-## 6. Local checks and manual deployment
+Run the checks before deployment:
 
 ```powershell
 npm run lint
 npm run typecheck
 npm run test
 npm run build
+```
+
+For a manual production deployment only after PR review and merge to `main`:
+
+```powershell
 npx wrangler deploy
 ```
 
-The first deploy will create a `workers.dev` URL unless a custom domain is configured. Keep the Worker in the Free plan and monitor usage. Free quotas are not unlimited.
+Do not manually deploy the development branch to production. Cloudflare Workers Builds should deploy `main` as production and use `npx wrangler preview` for other branches.
 
-## 7. Connect GitHub to Cloudflare Workers Builds
-
-In Cloudflare Dashboard:
-1. Open Workers & Pages and create/connect a Worker using GitHub.
-2. Select repository `DeepakOla/HSR`.
-3. Select production branch `main` after the reviewed PR is merged.
-4. Build command: `npm run build`.
-5. Deploy command: `npx wrangler deploy`.
-6. Build variables/secrets: configure only required environment values in Cloudflare, not in GitHub files.
-7. Enable preview builds for pull requests if desired; do not promote a preview branch to production.
-
-Do not select a legacy Pages static-site preset or use `wrangler pages deploy`. This repository is configured as a Workers application.
-
-## 8. Scheduled jobs: hold expiry and availability horizon
+## 9. Scheduled jobs
 
 `wrangler.jsonc` configures two UTC Cron Triggers. Every five minutes, the Worker expires only unpaid `HELD` + `ADVANCE_PENDING` reservations. Every day at 18:35 UTC (00:05 India time), it extends daily slot snapshots to 45 days ahead using the active schedule version.
 
-Payment-evidence-submitted `PENDING_VERIFICATION` reservations are not automatically released. The daily extension uses `INSERT OR IGNORE` and the schedule version's activation date, so it does not overwrite existing bookings or project new hours backwards. Do not manually create a public maintenance-token endpoint.
+Payment-evidence-submitted `PENDING_VERIFICATION` reservations are not automatically released. Do not manually create a public maintenance-token endpoint.
 
-## 9. If deployment still fails
+## 10. If deployment fails
 
-Do not guess at the cause. Open Cloudflare > Workers & Pages > your Worker > Builds/Deployments, open the failed build, and copy the complete error starting at the first red/error line. The most common initial setup blocker in this repository is a missing D1 UUID in `wrangler.jsonc`; the create command above should replace it. Another possible issue is a missing Cloudflare Access audience/domain configuration for admin use, which is a runtime access issue rather than a Worker build failure.
+Do not guess at the cause. Open Cloudflare > Workers & Pages > `hsr` > Builds/Deployments, open the failed build, and inspect the first red/error line and the complete error context.
 
-## Free-tier controls
-
-Use Workers Free and D1 Free limits; keep queries indexed and uploads capped. Optional R2 Standard has monthly free allowances but can incur overage charges. Cloudflare prices and quotas can change; verify current Dashboard billing before enabling optional storage.
+A failed Preview deployment must not be fixed by pointing the Preview at the production D1 or R2 resource. Keep resource isolation intact.
