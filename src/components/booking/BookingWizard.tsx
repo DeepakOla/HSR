@@ -128,6 +128,7 @@ export default function BookingWizard({ locale }: Props) {
 
   const setVehicle = (value: string) => {
     setVehicleClass(value);
+    setMoreThan12Selected(false);
     if (value === 'Truck') {
       setCylinderCount(4);
       setSelectedSlotId(null);
@@ -286,7 +287,7 @@ export default function BookingWizard({ locale }: Props) {
           <h2>{labels.cylinder}</h2>
           <label style={{ display: 'grid', gap: '.4rem', maxWidth: 420 }}>
             {hindi ? 'CNG सिलेंडर की संख्या' : 'CNG cylinder count'}
-            <select value={String(cylinderCount)} disabled={!!result} onChange={(event) => chooseCylinderCount(event.target.value)} style={{ minHeight: 52, padding: '.5rem' }}>
+            <select value={moreThan12Selected ? 'more' : String(cylinderCount)} disabled={!!result} onChange={(event) => chooseCylinderCount(event.target.value)} style={{ minHeight: 52, padding: '.5rem' }}>
               {Array.from({ length: 12 }, (_, index) => index + 1).map((count) => <option key={count} value={count}>{count} {hindi ? 'सिलेंडर' : count === 1 ? 'cylinder' : 'cylinders'}</option>)}
               <option value="more">{hindi ? '12 से अधिक' : 'More than 12'}</option>
             </select>
@@ -296,6 +297,7 @@ export default function BookingWizard({ locale }: Props) {
               {labels.contact} <a href={'/' + locale + '/contact/'}>{hindi ? 'संपर्क करें' : 'Contact the centre'}</a>.
             </p>
           ) : null}
+          {!moreThan12Selected && !category && <p role="alert">{hindi ? 'इस सिलेंडर संख्या की ऑनलाइन कीमत उपलब्ध नहीं है। कृपया केंद्र से संपर्क करें।' : 'Online pricing is not enabled for this cylinder count. Please contact the centre.'}</p>}
           {!moreThan12Selected && category && (
             <div className="card" style={{ marginTop: '1rem', padding: '1rem' }}>
               <p>{labels.price}: {inr(category.basePricePaise)}</p>
