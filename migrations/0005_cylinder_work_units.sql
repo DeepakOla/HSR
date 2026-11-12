@@ -232,7 +232,7 @@ FOR EACH ROW
 WHEN NEW.reservation_state IN ('HELD','PENDING_VERIFICATION','CONFIRMED','CHECKED_IN','IN_PROGRESS')
 BEGIN
   SELECT RAISE(ABORT, 'CYLINDER_COUNT_OUT_OF_RANGE')
-  WHERE NEW.cylinder_count_snapshot < 1 OR NEW.cylinder_count_snapshot > 12;
+  WHERE NEW.cylinder_count_snapshot < 1 OR NEW.cylinder_count_snapshot > 20;
 
   SELECT RAISE(ABORT, 'SLOT_CLOSED_OR_PRIVATE')
   WHERE NOT EXISTS (
@@ -272,6 +272,7 @@ BEGIN
   ) * 60;
 END;
 
+DROP TRIGGER IF EXISTS release_booking_slot_allocations;
 CREATE TRIGGER release_booking_slot_allocations
 AFTER UPDATE OF reservation_state ON bookings
 FOR EACH ROW
