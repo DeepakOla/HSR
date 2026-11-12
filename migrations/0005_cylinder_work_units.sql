@@ -75,6 +75,7 @@ SELECT
   NULL,
   1
 FROM cylinder_counts
+WHERE 1
 ON CONFLICT(code) DO UPDATE SET
   sort_order = excluded.sort_order,
   name_en = excluded.name_en,
