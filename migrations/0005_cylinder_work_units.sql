@@ -153,7 +153,7 @@ WHERE minute_of_day < (SELECT close_minute + 60 FROM current_hours)
 -- Mirror the existing weekday openings into the new schedule version.
 INSERT INTO weekly_schedule(
   weekday, is_open, open_time, close_time, break_start, break_end,
-  daily_capacity, slot_interval_minutes, extended_hours_enabled,
+  daily_capacity, slot_duration_minutes, slot_interval_minutes, extended_hours_enabled,
   extended_hours_public, config_version
 )
 SELECT
@@ -167,6 +167,7 @@ SELECT
     SELECT COUNT(*) FROM slot_templates
     WHERE config_version = (SELECT COALESCE(MAX(config_version), 1) FROM slot_templates)
   ) ELSE 0 END,
+  old.slot_duration_minutes,
   20,
   1,
   0,
