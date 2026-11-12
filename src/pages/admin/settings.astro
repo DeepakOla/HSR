@@ -1,9 +1,9 @@
 ---
 import { requireRole } from '../../lib/auth';
-
-const auth = requireRole(Astro.request, Astro.getRuntimeEnv(locals), ['OWNER']);
-if (!auth.ok) return auth.response;
 import { getRuntimeEnv } from '../../lib/runtime-env';
+
+const auth = await requireRole(Astro.request, getRuntimeEnv(Astro.locals), ['OWNER']);
+if (!auth.ok) return auth.response;
 ---
 
 <!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>Admin settings</title></head><body><main style="max-width:900px;margin:2rem auto;font-family:system-ui,sans-serif"><h1>Settings endpoint</h1><p>Use authenticated JSON APIs to update business profile, SEO, schedule and payment configuration.</p></main></body></html>

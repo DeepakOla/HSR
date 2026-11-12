@@ -1,19 +1,21 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "hsr-green-energy",
-  "compatibility_date": "2026-11-01",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "compatibility_date": "2026-11-12",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "workers_dev": true,
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist"
+  },
+  "observability": { "enabled": true },
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "hsr_green_energy_dev",
-      "database_id": "SETUP_REQUIRED"
-    }
-  ],
-  "r2_buckets": [
-    {
-      "binding": "EVIDENCE_BUCKET",
-      "bucket_name": "hsr-evidence-dev"
+      "database_name": "hsr_green_energy_prod",
+      "database_id": "SETUP_REQUIRED",
+      "migrations_dir": "migrations"
     }
   ],
   "vars": {

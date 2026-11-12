@@ -1,26 +1,16 @@
-import type { APIRoute } from 'astro';
+import type { APIContext } from 'astro';
 import { getRuntimeEnv } from './runtime-env';
 import type { BusinessSettings } from './types';
 
-export function getDb(context: Parameters<APIRoute>[0] | AstroGlobalLike): D1Database {
+export function getDb(context: Pick<APIContext, 'locals'>): D1Database {
   const db = getRuntimeEnv(context.locals).DB;
   if (!db) throw new Error('D1 binding DB is missing');
   return db;
 }
 
-export interface AstroGlobalLike {
-  locals: {
-    runtime: {
-      env: Env;
-    };
-  };
-}
-
 export async function getBusinessSettings(db: D1Database): Promise<BusinessSettings> {
   const row = await db.prepare('SELECT * FROM business_settings WHERE id = 1').first<BusinessSettings>();
-  if (!row) {
-    throw new Error('business_settings not initialized');
-  }
+  if (!row) throw new Error('business_settings not initialized');
   return row;
 }
 
