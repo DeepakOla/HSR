@@ -4,12 +4,18 @@ import { findConsecutiveAvailableSlots, generateAppointmentSlots, markBookableSt
 const base = {
   serviceDate: '2026-11-13', configVersion: 1, isClosed: false, isPublic: true,
 };
-const occupied = (count: number, reservedIndexes: number[] = []) => Array.from({ length: count }, (_, index) => ({
-  ...base, slotSnapshotId: index + 1,
-  startTime: `10:${String(index * 20).padStart(2, '0')}`,
-  endTime: `10:${String((index + 1) * 20).padStart(2, '0')}`,
-  reserved: reservedIndexes.includes(index),
-}));
+const formatTime = (minuteOfDay: number) =>
+  `${String(Math.floor(minuteOfDay / 60)).padStart(2, '0')}:${String(minuteOfDay % 60).padStart(2, '0')}`;
+
+const occupied = (count: number, reservedIndexes: number[] = [], intervalMinutes = 20, isPublic = true) =>
+  Array.from({ length: count }, (_, index) => ({
+    ...base,
+    slotSnapshotId: index + 1,
+    startTime: formatTime(10 * 60 + index * intervalMinutes),
+    endTime: formatTime(10 * 60 + (index + 1) * intervalMinutes),
+    isPublic,
+    reserved: reservedIndexes.includes(index),
+  }));
 
 describe('appointment slot generation', () => {
   it('creates 24 standard 20-minute units for an eight-hour day', () => {
@@ -52,6 +58,25 @@ describe('multi-cylinder contiguous reservations', () => {
     const marked = markBookableStarts(slots, 4);
     expect(marked[0].canStartBooking).toBe(false);
     expect(marked[3].canStartBooking).toBe(true);
+  });
+
+
+  it('reserves four consecutive hours for twelve cylinders at a 20-minute interval', () => {
+    const marked = markBookableStarts(occupied(12), 12);
+    expect(marked[0].canStartBooking).toBe(true);
+    expect(marked[0].bookingEndTime).toBe('14:00');
+  });
+
+  it('uses the selected 15-minute interval for booking duration', () => {
+    const marked = markBookableStarts(occupied(6, [], 15), 6);
+    expect(marked[0].canStartBooking).toBe(true);
+    expect(marked[0].bookingEndTime).toBe('11:30');
+  });
+
+  it('keeps staff-only extension units hidden from public bookings', () => {
+    const staffOnly = occupied(3, [], 20, false);
+    expect(markBookableStarts(staffOnly, 2)[0].canStartBooking).toBe(false);
+    expect(markBookableStarts(staffOnly, 2, true)[0].canStartBooking).toBe(true);
   });
 
   it('allocates the exact consecutive run chosen by the customer', () => {
