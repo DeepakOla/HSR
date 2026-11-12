@@ -5,11 +5,11 @@ import react from '@astrojs/react';
 export default defineConfig({
   adapter: cloudflare({
     imageService: 'compile',
-    session: false,
     platformProxy: {
       enabled: true,
     },
   }),
+  session: false,
   output: 'server',
   integrations: [react()],
   trailingSlash: 'always',
