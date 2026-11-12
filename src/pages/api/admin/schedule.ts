@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { z } from 'zod';
 import { requireRole } from '../../../lib/auth';
 import { getDb } from '../../../lib/db';
-import { errorResponse, jsonResponse, nowIso } from '../../../lib/utils';
+import { errorResponse, jsonResponse } from '../../../lib/utils';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
 
 const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -180,16 +180,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
      LEFT JOIN date_overrides ov ON ov.service_date = days.service_date`
   ).bind(effectiveFrom, horizonEnd, nextVersion, nextVersion));
 
+  statements.push(db.prepare(
+    `INSERT INTO booking_audit_events(booking_id, event_type, actor_type, actor_id, event_payload_json)
+     VALUES(NULL, 'SCHEDULE_UPDATED', 'STAFF', ?, ?)`
+  ).bind(auth.staff.email, JSON.stringify({ configVersion: nextVersion, effectiveFrom, horizonEnd, dailyCapacity: cfg.dailyCapacity })));
+
   try {
     await db.batch(statements);
   } catch {
     return errorResponse('Schedule update failed. Existing bookings were preserved; review the slot and capacity settings.', 409, 'SCHEDULE_UPDATE_FAILED');
   }
-
-  await db.prepare(
-    `INSERT INTO booking_audit_events(booking_id, event_type, actor_type, actor_id, event_payload_json)
-     VALUES(NULL, 'SCHEDULE_UPDATED', 'STAFF', ?, ?)`
-  ).bind(auth.staff.email, JSON.stringify({ configVersion: nextVersion, effectiveFrom, horizonEnd, dailyCapacity: cfg.dailyCapacity })).run();
 
   return jsonResponse({ saved: true, configVersion: nextVersion, effectiveFrom, horizonEnd });
 };

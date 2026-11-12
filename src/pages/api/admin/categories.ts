@@ -19,7 +19,15 @@ const categorySchema = z.object({
 
 const saveSchema = z.object({
   categories: z.array(categorySchema).min(1).max(30),
-}).strict();
+}).strict().superRefine((value, context) => {
+  for (const [index, item] of value.categories.entries()) {
+    const gst = Math.round((item.basePricePaise * item.gstRateBps) / 10_000);
+    const total = item.basePricePaise + gst;
+    if (item.advancePaise !== null && item.advancePaise > total) {
+      context.addIssue({ code: 'custom', path: ['categories', index, 'advancePaise'], message: 'Advance cannot exceed the total price' });
+    }
+  }
+});
 
 export const GET: APIRoute = async ({ request, locals }) => {
   const auth = await requireRole(request, getRuntimeEnv(locals), ['OWNER']);

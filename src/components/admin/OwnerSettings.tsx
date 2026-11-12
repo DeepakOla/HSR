@@ -208,7 +208,7 @@ export default function OwnerSettings(){
       <div className="owner-category-list">{categories.map((item,index)=><div className="owner-category" key={item.code}>
         <div className="owner-category-head"><strong>{item.nameEn||item.code}</strong><label className="admin-check"><input type="checkbox" checked={item.isActive} onChange={e=>editCategory(index,{isActive:e.target.checked})}/>{t.active}</label></div>
         <div className="owner-grid">
-          <label className="admin-field">{t.categoryCode}<input className="admin-input" value={item.code} onChange={e=>editCategory(index,{code:e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g,'_')})}/></label>
+          <label className="admin-field">{t.categoryCode}<input className="admin-input" value={item.code} readOnly/></label>
           <label className="admin-field">{t.displayEn}<input className="admin-input" value={item.nameEn} onChange={e=>editCategory(index,{nameEn:e.target.value})}/></label>
           <label className="admin-field">{t.displayHi}<input className="admin-input" value={item.nameHi} onChange={e=>editCategory(index,{nameHi:e.target.value})}/></label>
           <label className="admin-field">{t.cylinders}<input className="admin-input" type="number" min="1" max="20" value={item.cylinderCount} onChange={e=>editCategory(index,{cylinderCount:Number(e.target.value)})}/></label>
