@@ -81,7 +81,7 @@ export default function BookingWizard({ locale }: Props) {
       setSelectedSlotId(null);
       try {
         const [availabilityRes, categoriesRes] = await Promise.all([
-          fetch('/api/public/availability/?locale=' + locale + '&fromDate=' + encodeURIComponent(todayInIndia()) + '&days=60&cylinderCount=' + cylinderCount),
+          fetch('/api/public/availability/?locale=' + locale + '&fromDate=' + encodeURIComponent(todayInIndia()) + '&days=46&cylinderCount=' + cylinderCount),
           fetch('/api/public/vehicle-categories/?locale=' + locale),
         ]);
         const availability: any = await readApiJson(availabilityRes);
@@ -118,7 +118,7 @@ export default function BookingWizard({ locale }: Props) {
   const selectedSlot = selectedDateSlots.find((slot) => slot.slotSnapshotId === selectedSlotId) ?? null;
 
   const today = todayInIndia();
-  const lastDate = addDays(today, 59);
+  const lastDate = addDays(today, 45);
   const monthYear = month.getUTCFullYear();
   const monthIndex = month.getUTCMonth();
   const firstWeekday = new Date(Date.UTC(monthYear, monthIndex, 1)).getUTCDay();
