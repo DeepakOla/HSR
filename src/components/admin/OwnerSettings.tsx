@@ -184,7 +184,7 @@ export default function OwnerSettings(){
           <label className="admin-field">{t.advance}<input className="admin-input" type="number" min="0" step="0.01" value={inr(item.advancePaise)} onChange={e=>editCategory(index,{advancePaise:paise(e.target.value)})}/></label>
         </div>
       </div>)}</div>
-      <p className="admin-note">Initial base price: ₹2,500 × cylinder count. Each of the 12 cylinder-count prices can be edited independently. GST is fixed at 18%. Configure an advance amount for online UPI booking; a blank advance keeps that count unavailable for online booking.</p>
+      <p className="admin-note">Initial base price: ₹2,500 × cylinder count. Each of the 12 cylinder-count prices can be edited independently. GST is fixed at 18%. Confirm the applicable SAC and tax treatment before using this setting for live billing. Configure an advance for online UPI booking; a blank advance keeps that count unavailable online.</p>
     </section>
 
     {schedule&&<section className="admin-card owner-section">
