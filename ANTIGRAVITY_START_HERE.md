@@ -183,7 +183,13 @@ The current `services`, `about`, `contact` and `how-it-works` page text is seede
 
 All online advance amounts are initially NULL. Until they are configured, public booking creation should remain unavailable for those cylinder counts. This is intentional fail-safe behaviour, not a bug.
 
-## 8. Verification required before PR #1 can be made ready
+## 8. Booking cylinder-count specification to reconcile
+
+The current code, schema, migration and Owner Settings model support public cylinder counts **1–12**, with a truck default of 4. A later user discussion on 12 November described a revised customer dropdown with **1–6 plus a “more than 6” contact option**, while preserving the truck default of 4. That newer requirement has not yet been implemented or reconciled with the existing database/pricing model.
+
+Do not silently assume either limit. Before changing the form, ask the user in the Antigravity working session to confirm whether the public flow should be 1–6 plus contact for 7+, or 1–12 plus contact for 13+. If changed, update the entire feature consistently: migration/data model as necessary, Owner Settings prices and availability flags, public API validation, shared booking engine, admin/reception flow, Hindi and English labels, tests and documentation. Do not only hide options in the browser.
+
+## 9. Verification required before PR #1 can be made ready
 
 At minimum:
 1. Local browser test of English and Hindi pages.
