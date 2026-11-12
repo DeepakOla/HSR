@@ -152,10 +152,8 @@ export default function ReceptionDashboard() {
   const handleVehicleChange = (value: string) => {
     setVehicleType(value);
     setVehicleModel('');
-    if (value === 'Truck') {
-      setCylinderCount(4);
-      setSlotId('');
-    }
+    setCylinderCount(value === 'Truck' ? 4 : 1);
+    setSlotId('');
   };
 
   const handleCylinderChange = (value: string) => {
