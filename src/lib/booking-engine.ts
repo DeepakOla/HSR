@@ -4,6 +4,7 @@ import { getBusinessSettings, queryAll, querySingle } from './db';
 import { addMinutes, generateBookingCode, generateOpaqueToken, normalizePhoneIndian, normalizeUtr, normalizeVehicleRegistration, nowIso, sha256 } from './utils';
 import type { SlotAvailability, VehicleCategory } from './types';
 import { findConsecutiveAvailableSlots, markBookableStarts, type OccupiedAppointmentSlot } from './appointment-slots';
+import { calculateServicePrice, FIXED_GST_RATE_BPS } from './pricing';
 
 const ACTIVE_STATES_SQL = "('HELD','PENDING_VERIFICATION','CONFIRMED','CHECKED_IN','IN_PROGRESS')";
 
@@ -100,16 +101,16 @@ export async function fetchVehicleCategories(db: D1Database, locale: Locale): Pr
   );
 
   return rows.map((row) => {
-    const gstPaise = Math.round((row.basePricePaise * row.gstRateBps) / 10_000);
+    const price = calculateServicePrice(row.basePricePaise);
     return {
       id: row.id,
       code: row.code,
       name: locale === 'hi' ? row.nameHi : row.nameEn,
       cylinderCount: row.cylinderCount,
       basePricePaise: row.basePricePaise,
-      gstRateBps: row.gstRateBps,
-      gstPaise,
-      totalPaise: row.basePricePaise + gstPaise,
+      gstRateBps: FIXED_GST_RATE_BPS,
+      gstPaise: price.gstAmountPaise,
+      totalPaise: price.totalPricePaise,
       advancePaise: row.advancePaise,
     };
   });
@@ -258,8 +259,9 @@ export async function createHold(db: D1Database, input: CreateHoldInput) {
     [input.categoryId]
   );
 
-  const gstAmountPaise = Math.round((categoryRow.basePricePaise * categoryRow.gstRateBps) / 10_000);
-  const totalPricePaise = categoryRow.basePricePaise + gstAmountPaise;
+  const price = calculateServicePrice(categoryRow.basePricePaise);
+  const gstAmountPaise = price.gstAmountPaise;
+  const totalPricePaise = price.totalPricePaise;
   const advancePaise = categoryRow.advancePaise;
   const amountPaidPaise = input.paymentCollected ? totalPricePaise : 0;
   const balancePaise = input.reservationState === 'CONFIRMED'
@@ -299,7 +301,7 @@ export async function createHold(db: D1Database, input: CreateHoldInput) {
     name: input.locale === 'hi' ? categoryRow.nameHi : categoryRow.nameEn,
     cylinderCount: categoryRow.cylinderCount,
     basePricePaise: categoryRow.basePricePaise,
-    gstRateBps: categoryRow.gstRateBps,
+    gstRateBps: FIXED_GST_RATE_BPS,
     gstPaise: gstAmountPaise,
     totalPaise: totalPricePaise,
     advancePaise,
@@ -325,7 +327,7 @@ export async function createHold(db: D1Database, input: CreateHoldInput) {
     },
     pricing: {
       basePricePaise: categoryRow.basePricePaise,
-      gstRateBps: categoryRow.gstRateBps,
+      gstRateBps: FIXED_GST_RATE_BPS,
       gstAmountPaise,
       totalPricePaise,
       advancePaise,
@@ -366,7 +368,7 @@ export async function createHold(db: D1Database, input: CreateHoldInput) {
       ).bind(
         bookingCode, statusTokenHash, input.source, reservationState, paymentState, expiresAt, slot.serviceDate, slot.id,
         normalizedPhone, normalizedReg, categoryRow.id, input.vehicleType.trim(), categoryRow.nameEn, categoryRow.nameHi,
-        categoryRow.cylinderCount, categoryRow.basePricePaise, categoryRow.gstRateBps,
+        categoryRow.cylinderCount, categoryRow.basePricePaise, FIXED_GST_RATE_BPS,
         gstAmountPaise, totalPricePaise, amountPaidPaise, advancePaise, balancePaise,
         bookingSlotLabel, bookingSlotLabel, slot.startTime, bookingEndTime,
         1, slot.dayCapacity, slot.configVersion, now, now
