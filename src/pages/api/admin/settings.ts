@@ -5,31 +5,29 @@ import { getBusinessSettings, getDb } from '../../../lib/db';
 import { errorResponse, jsonResponse, nowIso } from '../../../lib/utils';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
 
-const updateSchema = z.object({
-  business_name_en: z.string().min(2).optional(),
-  business_name_hi: z.string().min(2).optional(),
-  city: z.string().min(2).optional(),
-  address_line: z.string().min(2).optional(),
-  map_url: z.string().min(4).optional(),
-  contact_phone: z.string().min(7).optional(),
-  whatsapp_number: z.string().min(7).optional(),
-  contact_email: z.union([z.literal('SETUP_REQUIRED'), z.string().trim()]).optional(),
-  vpa_id: z.string().min(3).optional(),
-  vpa_payee_name: z.string().min(2).optional(),
+const editableSchema = z.object({
+  business_name_en: z.string().trim().min(2).max(120).optional(),
+  business_name_hi: z.string().trim().min(2).max(120).optional(),
+  city: z.string().trim().min(2).max(120).optional(),
+  address_line: z.string().trim().min(3).max(300).optional(),
+  map_url: z.string().trim().max(500).refine((value) => value === 'SETUP_REQUIRED' || /^https:\/\//i.test(value), 'Map URL must use HTTPS').optional(),
+  contact_phone: z.string().trim().min(7).max(20).optional(),
+  whatsapp_number: z.string().trim().min(7).max(20).optional(),
+  contact_email: z.union([z.literal('SETUP_REQUIRED'), z.string().trim().email().max(160)]).optional(),
+  vpa_id: z.string().trim().min(3).max(120).optional(),
+  vpa_payee_name: z.string().trim().min(2).max(120).optional(),
   hold_minutes: z.number().int().min(5).max(120).optional(),
   r2_enabled: z.number().int().min(0).max(1).optional(),
-  seo_title_en: z.string().min(3).optional(),
-  seo_title_hi: z.string().min(3).optional(),
-  seo_desc_en: z.string().min(10).optional(),
-  seo_desc_hi: z.string().min(10).optional(),
-});
+  seo_title_en: z.string().trim().min(3).max(160).optional(),
+  seo_title_hi: z.string().trim().min(3).max(160).optional(),
+  seo_desc_en: z.string().trim().min(10).max(320).optional(),
+  seo_desc_hi: z.string().trim().min(10).max(320).optional(),
+}).strict();
 
 export const GET: APIRoute = async ({ request, locals }) => {
   const auth = await requireRole(request, getRuntimeEnv(locals), ['OWNER']);
   if (!auth.ok) return auth.response;
-
-  const db = getDb({ locals } as any);
-  const settings = await getBusinessSettings(db);
+  const settings = await getBusinessSettings(getDb({ locals } as any));
   return jsonResponse({ settings });
 };
 
@@ -38,22 +36,24 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (!auth.ok) return auth.response;
 
   const body = await request.json().catch(() => null);
-  const parsed = updateSchema.safeParse(body);
-  if (!parsed.success) return errorResponse('Invalid settings payload', 400);
+  const parsed = editableSchema.safeParse(body);
+  if (!parsed.success) return errorResponse('Invalid business settings. Check all fields and try again.', 400);
   const payload = parsed.data;
-  if (Object.keys(payload).length === 0) return errorResponse('No settings provided', 400);
+  const keys = Object.keys(payload) as (keyof typeof payload)[];
+  if (keys.length === 0) return errorResponse('No settings were supplied', 400);
 
-  const updates = Object.keys(payload)
-    .map((key) => `${key} = ?`)
-    .join(', ');
-
-  const values = Object.values(payload);
-
+  const assignments = keys.map((key) => `${key} = ?`).join(', ');
+  const values = keys.map((key) => payload[key]);
   const db = getDb({ locals } as any);
-  await db
-    .prepare(`UPDATE business_settings SET ${updates}, updated_at = ? WHERE id = 1`)
-    .bind(...values, nowIso())
-    .run();
+  const timestamp = nowIso();
 
-  return jsonResponse({ updated: true });
+  await db.batch([
+    db.prepare(`UPDATE business_settings SET ${assignments}, updated_at = ? WHERE id = 1`).bind(...values, timestamp),
+    db.prepare(
+      `INSERT INTO booking_audit_events(booking_id, event_type, actor_type, actor_id, event_payload_json)
+       VALUES(NULL, 'BUSINESS_SETTINGS_UPDATED', 'STAFF', ?, ?)`
+    ).bind(auth.staff.email, JSON.stringify({ fields: keys })),
+  ]);
+
+  return jsonResponse({ updated: true, fields: keys });
 };
