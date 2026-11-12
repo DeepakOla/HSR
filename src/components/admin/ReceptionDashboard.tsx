@@ -30,7 +30,7 @@ const copy = {
     category: 'Vehicle category', slot: 'Time slot', source: 'Booking source', phone: 'Phone', whatsapp: 'WhatsApp', walkin: 'Walk-in',
     payment: 'Full payment collected at counter', save: 'Create booking', bookings: 'Appointments', code: 'Booking', customer: 'Customer', vehicleCol: 'Vehicle', time: 'Time', cylinders: 'Cylinders', status: 'Status', paymentStatus: 'Payment', actions: 'Actions',
     loading: 'Loading desk…', empty: 'No appointments for this date.', error: 'Could not load the receptionist desk.', saved: 'Manual booking created and capacity reserved.', verify: 'Verify payment', reject: 'Reject', cancel: 'Cancel', checkin: 'Check in', start: 'Start work', complete: 'Mark completed', screenshot: 'View screenshot', loadFail: 'Action failed. Refresh and check the current booking status.',
-    language: 'हिंदी', noSlots: 'No open slots for this date.', choose: 'Choose…', reload: 'Loading…'
+    markPaid: 'Mark paid at counter', language: 'हिंदी', noSlots: 'No open slots for this date.', choose: 'Choose…', reload: 'Loading…'
   },
   hi: {
     eyebrow: 'संचालन / रिसेप्शन', title: 'दैनिक बुकिंग डेस्क', sub: 'वेबसाइट, फोन, व्हाट्सऐप और वॉक-इन बुकिंग के लिए एक साझा लाइव रिकॉर्ड।',
@@ -39,7 +39,7 @@ const copy = {
     category: 'वाहन श्रेणी', slot: 'समय स्लॉट', source: 'बुकिंग का माध्यम', phone: 'फोन', whatsapp: 'व्हाट्सऐप', walkin: 'वॉक-इन',
     payment: 'काउंटर पर पूरा भुगतान प्राप्त हुआ', save: 'बुकिंग बनाएं', bookings: 'अपॉइंटमेंट', code: 'बुकिंग', customer: 'ग्राहक', vehicleCol: 'वाहन', time: 'समय', cylinders: 'सिलेंडर', status: 'स्थिति', paymentStatus: 'भुगतान', actions: 'कार्रवाई',
     loading: 'डेस्क लोड हो रही है…', empty: 'इस तारीख के लिए कोई अपॉइंटमेंट नहीं है।', error: 'रिसेप्शन डेस्क लोड नहीं हो सकी।', saved: 'मैनुअल बुकिंग बन गई और क्षमता आरक्षित हो गई।', verify: 'भुगतान सत्यापित करें', reject: 'अस्वीकार करें', cancel: 'रद्द करें', checkin: 'चेक-इन', start: 'काम शुरू करें', complete: 'पूरा हुआ', screenshot: 'स्क्रीनशॉट देखें', loadFail: 'कार्रवाई असफल रही। रीफ्रेश करके वर्तमान स्थिति जांचें।',
-    language: 'English', noSlots: 'इस तारीख के लिए कोई खुला स्लॉट नहीं है।', choose: 'चुनें…', reload: 'लोड हो रहा है…'
+    markPaid: 'काउंटर पर भुगतान दर्ज करें', language: 'English', noSlots: 'इस तारीख के लिए कोई खुला स्लॉट नहीं है।', choose: 'चुनें…', reload: 'लोड हो रहा है…'
   }
 };
 
@@ -162,7 +162,10 @@ export default function ReceptionDashboard() {
       { key: 'REJECT', text: t.reject, cls: 'admin-button danger' },
     ];
     if (booking.reservationState === 'HELD' || booking.reservationState === 'CONFIRMED') return [
-      ...(booking.reservationState === 'CONFIRMED' ? [{ key: 'CHECK_IN', text: t.checkin, cls: 'admin-button' }] : []),
+      ...(booking.reservationState === 'CONFIRMED' ? [
+        { key: 'CHECK_IN', text: t.checkin, cls: 'admin-button' },
+        ...(booking.paymentState !== 'PAID_AT_COUNTER' ? [{ key: 'MARK_PAID_AT_COUNTER', text: t.markPaid, cls: 'admin-button secondary' }] : []),
+      ] : []),
       { key: 'CANCEL', text: t.cancel, cls: 'admin-button danger' },
     ];
     if (booking.reservationState === 'CHECKED_IN') return [{ key: 'START', text: t.start, cls: 'admin-button' }];

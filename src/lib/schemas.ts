@@ -22,7 +22,7 @@ export const submitEvidenceSchema = z.object({
 
 export const adminBookingStateSchema = z.object({
   bookingCode: z.string().trim().min(8),
-  action: z.enum(['VERIFY_PAYMENT', 'REJECT', 'CANCEL', 'CHECK_IN', 'START', 'COMPLETE']),
+  action: z.enum(['VERIFY_PAYMENT', 'MARK_PAID_AT_COUNTER', 'REJECT', 'CANCEL', 'CHECK_IN', 'START', 'COMPLETE']),
   note: z.string().trim().max(500).optional(),
 });
 

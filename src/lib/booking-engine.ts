@@ -273,7 +273,9 @@ export async function createHold(db: D1Database, input: CreateHoldInput) {
   const totalPricePaise = categoryRow.basePricePaise + gstAmountPaise;
   const advancePaise = categoryRow.advancePaise;
   const amountPaidPaise = input.paymentCollected ? totalPricePaise : 0;
-  const balancePaise = input.paymentCollected ? 0 : advancePaise == null ? null : totalPricePaise - advancePaise;
+  const balancePaise = input.reservationState === 'CONFIRMED'
+    ? input.paymentCollected ? 0 : totalPricePaise
+    : advancePaise == null ? null : totalPricePaise - advancePaise;
 
   const bookingCode = generateBookingCode();
   const statusToken = generateOpaqueToken(24);

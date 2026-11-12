@@ -64,6 +64,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
       payment: 'ADVANCE_VERIFIED',
       from: "reservation_state = 'PENDING_VERIFICATION' AND payment_state = 'EVIDENCE_SUBMITTED'",
     },
+    MARK_PAID_AT_COUNTER: {
+      reservation: 'CONFIRMED',
+      payment: 'PAID_AT_COUNTER',
+      from: "reservation_state = 'CONFIRMED' AND payment_state IN ('ADVANCE_PENDING','ADVANCE_VERIFIED')",
+    },
     REJECT: {
       reservation: 'REJECTED',
       from: "reservation_state = 'PENDING_VERIFICATION' AND payment_state = 'EVIDENCE_SUBMITTED'",
@@ -93,14 +98,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const timestamp = nowIso();
   const paymentAssignment = target.payment ? ", payment_state = ?" : '';
   const updateBindings = target.payment
-    ? [target.reservation, target.payment, parsed.data.action, timestamp, parsed.data.bookingCode]
-    : [target.reservation, parsed.data.action, timestamp, parsed.data.bookingCode];
+    ? [target.reservation, target.payment, parsed.data.action, parsed.data.action, timestamp, parsed.data.bookingCode]
+    : [target.reservation, parsed.data.action, parsed.data.action, timestamp, parsed.data.bookingCode];
 
   const results = await db.batch([
     db.prepare(
       `UPDATE bookings
        SET reservation_state = ?${paymentAssignment},
-           amount_paid_paise = CASE WHEN ? = 'VERIFY_PAYMENT' THEN COALESCE(advance_paise_snapshot, 0) ELSE amount_paid_paise END,
+           amount_paid_paise = CASE WHEN ? = 'MARK_PAID_AT_COUNTER' THEN total_price_paise_snapshot WHEN ? = 'VERIFY_PAYMENT' THEN COALESCE(advance_paise_snapshot, 0) ELSE amount_paid_paise END,
            updated_at = ?
        WHERE booking_code = ? AND ${target.from}`
     ).bind(...updateBindings),
