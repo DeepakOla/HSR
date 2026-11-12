@@ -210,8 +210,8 @@ export default function BookingWizard({ locale }: Props) {
   };
 
   const labels = hindi
-    ? { steps: ['तारीख', 'वाहन', 'सिलेंडर', 'समय', 'विवरण'], date: 'अपॉइंटमेंट की तारीख चुनें', vehicle: 'आपका वाहन कौन सा है?', model: 'वाहन का मॉडल / विवरण', cylinder: 'वाहन में कितने CNG गैस सिलेंडर लगे हैं?', time: 'उपलब्ध समय चुनें', customer: 'ग्राहक विवरण', name: 'पूरा नाम', mobile: 'मोबाइल नंबर', registration: 'वाहन रजिस्ट्रेशन नंबर', back: 'वापस', next: 'आगे बढ़ें', continue: 'आगे', loading: 'उपलब्धता लोड हो रही है…', noDate: 'इस तारीख पर चुने गए सिलेंडर संख्या के लिए लगातार समय उपलब्ध नहीं है।', noTime: 'इस तारीख पर कोई उपयुक्त समय उपलब्ध नहीं है।', choose: 'चुनें', price: 'मूल सेवा शुल्क', gst: 'GST (18%)', total: 'कुल राशि', advance: 'अग्रिम', weekday: ['रवि','सोम','मंगल','बुध','गुरु','शुक्र','शनि'], contact: '12 से अधिक सिलेंडर? फोन पर बुकिंग करें।' }
-    : { steps: ['Date', 'Vehicle', 'Cylinders', 'Time', 'Details'], date: 'Choose appointment date', vehicle: 'Which vehicle do you have?', model: 'Vehicle make / model (optional)', cylinder: 'How many CNG gas cylinders are fitted to this vehicle?', time: 'Choose an available start time', customer: 'Customer details', name: 'Full name', mobile: 'Mobile number', registration: 'Vehicle registration number', back: 'Back', next: 'Continue', continue: 'Continue', loading: 'Loading availability…', noDate: 'There is no continuous appointment time for this cylinder count on this date.', noTime: 'No suitable appointments are available on this date.', choose: 'Select', price: 'Base service charge', gst: 'GST (18%)', total: 'Total amount', advance: 'Advance', weekday: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], contact: 'More than 12 cylinders? Book by phone.' };
+    ? { steps: ['तारीख', 'वाहन', 'सिलेंडर', 'समय', 'विवरण'], date: 'अपॉइंटमेंट की तारीख चुनें', vehicle: 'आपका वाहन कौन सा है?', model: 'वाहन का मॉडल / विवरण', cylinder: 'वाहन में कितने CNG गैस सिलेंडर लगे हैं?', time: 'उपलब्ध समय चुनें', customer: 'ग्राहक विवरण', name: 'पूरा नाम', mobile: 'मोबाइल नंबर', registration: 'वाहन रजिस्ट्रेशन नंबर', back: 'वापस', next: 'आगे बढ़ें', continue: 'आगे', loading: 'उपलब्धता लोड हो रही है…', noDate: 'इस तारीख पर चुने गए सिलेंडर संख्या के लिए लगातार समय उपलब्ध नहीं है।', noTime: 'इस तारीख पर कोई उपयुक्त समय उपलब्ध नहीं है।', choose: 'चुनें', price: 'मूल सेवा शुल्क', gst: 'GST (18%)', total: 'कुल राशि', advance: 'अग्रिम', balance: 'अग्रिम के बाद शेष राशि', weekday: ['रवि','सोम','मंगल','बुध','गुरु','शुक्र','शनि'], contact: '12 से अधिक सिलेंडर? फोन पर बुकिंग करें।' }
+    : { steps: ['Date', 'Vehicle', 'Cylinders', 'Time', 'Details'], date: 'Choose appointment date', vehicle: 'Which vehicle do you have?', model: 'Vehicle make / model (optional)', cylinder: 'How many CNG gas cylinders are fitted to this vehicle?', time: 'Choose an available start time', customer: 'Customer details', name: 'Full name', mobile: 'Mobile number', registration: 'Vehicle registration number', back: 'Back', next: 'Continue', continue: 'Continue', loading: 'Loading availability…', noDate: 'There is no continuous appointment time for this cylinder count on this date.', noTime: 'No suitable appointments are available on this date.', choose: 'Select', price: 'Base service charge', gst: 'GST (18%)', total: 'Total amount', advance: 'Advance', balance: 'Balance after advance', weekday: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], contact: 'More than 12 cylinders? Book by phone.' };
 
   return (
     <section aria-label={hindi ? 'बुकिंग फ़ॉर्म' : 'Booking form'}>
@@ -303,7 +303,7 @@ export default function BookingWizard({ locale }: Props) {
               <p>{labels.price}: {inr(category.basePricePaise)}</p>
               <p>{labels.gst}: {inr(category.gstPaise)}</p>
               <p><strong>{labels.total}: {inr(category.totalPaise)}</strong></p>
-              <p>{labels.advance}: {inr(category.advancePaise)}</p>
+              <p>{labels.advance}: {inr(category.advancePaise)}</p>\n              {category.advancePaise != null && <p>{labels.balance}: {inr(category.totalPaise - category.advancePaise)}</p>}
               {category.advancePaise == null && <p role="status">{hindi ? 'इस श्रेणी के लिए ऑनलाइन अग्रिम राशि अभी मालिक द्वारा सेट नहीं की गई है।' : 'The owner has not configured an online advance for this cylinder count yet.'}</p>}
             </div>
           )}
@@ -376,7 +376,7 @@ export default function BookingWizard({ locale }: Props) {
           <p>{labels.price}: {inr(result.pricing.basePricePaise)}</p>
           <p>{labels.gst}: {inr(result.pricing.gstAmountPaise)}</p>
           <p><strong>{labels.total}: {inr(result.pricing.totalPricePaise)}</strong></p>
-          <p>{labels.advance}: {inr(result.pricing.advancePaise)}</p>
+          <p>{labels.advance}: {inr(result.pricing.advancePaise)}</p>\n          <p>{labels.balance}: {inr(result.pricing.balancePaise)}</p>
           {result.upiUri && <p><a href={result.upiUri}>{hindi ? 'UPI ऐप से भुगतान करें' : 'Pay using UPI app'}</a></p>}
           {result.upiQrDataUrl && <img src={result.upiQrDataUrl} alt="UPI payment QR" width={220} height={220} />}
           <label style={{ display: 'grid', gap: '.35rem' }}>{hindi ? 'UTR / भुगतान संदर्भ संख्या' : 'UTR / payment reference'}<input style={{ minHeight: 52 }} value={utr} onChange={(event) => setUtr(event.target.value)} /></label>
