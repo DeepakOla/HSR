@@ -462,24 +462,64 @@ function addCalendarDays(date: string, days: number) {
  * The first snapshot date is the activation date of the current config version;
  * this prevents a new schedule from being projected backwards over already-booked dates.
  */
+export interface SnapshotScheduleVersion {
+  configVersion: number;
+  effectiveFrom: string;
+}
+
+export interface SnapshotScheduleRange extends SnapshotScheduleVersion {
+  startDate: string;
+  endDate: string;
+}
+
+/**
+ * Splits the rolling booking horizon into non-overlapping schedule-version ranges.
+ * A future schedule outside the horizon must not stop the currently active
+ * schedule from filling dates before its effective date.
+ */
+export function buildSnapshotScheduleRanges(
+  today: string,
+  horizonEnd: string,
+  versions: SnapshotScheduleVersion[]
+): SnapshotScheduleRange[] {
+  const sorted = [...versions].sort((a, b) =>
+    a.effectiveFrom.localeCompare(b.effectiveFrom) || a.configVersion - b.configVersion
+  );
+  const ranges: SnapshotScheduleRange[] = [];
+
+  for (let index = 0; index < sorted.length; index += 1) {
+    const version = sorted[index];
+    const nextVersion = sorted[index + 1];
+    const startDate = version.effectiveFrom > today ? version.effectiveFrom : today;
+    const endBeforeNext = nextVersion
+      ? addCalendarDays(nextVersion.effectiveFrom, -1)
+      : horizonEnd;
+    const endDate = endBeforeNext < horizonEnd ? endBeforeNext : horizonEnd;
+
+    if (startDate <= endDate && version.effectiveFrom <= horizonEnd) {
+      ranges.push({ ...version, startDate, endDate });
+    }
+  }
+
+  return ranges;
+}
+
+/**
+ * Maintains a 45-day availability horizon for every schedule version.
+ * The persisted effective dates ensure future changes do not project backwards.
+ */
 export async function extendFutureSnapshots(db: D1Database) {
   const today = businessDateInIndia();
   const horizonEnd = addCalendarDays(today, 45);
+  const versionResult = await db.prepare(
+    'SELECT config_version AS configVersion, effective_from AS effectiveFrom FROM schedule_versions ORDER BY effective_from ASC, config_version ASC'
+  ).all<SnapshotScheduleVersion>();
 
-  const versionRow = await db.prepare(
-    'SELECT COALESCE(MAX(config_version), 1) AS version FROM slot_templates'
-  ).first<{ version: number }>();
-  const version = versionRow?.version ?? 1;
+  const versions = versionResult.results ?? [];
+  const ranges = buildSnapshotScheduleRanges(today, horizonEnd, versions);
+  if (!ranges.length) return 0;
 
-  const activationRow = await db.prepare(
-    'SELECT MIN(service_date) AS activationDate FROM daily_slot_snapshots WHERE config_version = ?'
-  ).bind(version).first<{ activationDate: string | null }>();
-
-  const activationDate = activationRow?.activationDate ?? today;
-  const startDate = activationDate > today ? activationDate : today;
-  if (startDate > horizonEnd) return 0;
-
-  const result = await db.prepare(
+  const statements = ranges.map((range) => db.prepare(
     `WITH RECURSIVE days(service_date) AS (
        SELECT date(?)
        UNION ALL
@@ -511,9 +551,10 @@ export async function extendFutureSnapshots(db: D1Database) {
        ON st.config_version = ?
      LEFT JOIN date_overrides ov
        ON ov.service_date = days.service_date`
-  ).bind(startDate, horizonEnd, version, version).run();
+  ).bind(range.startDate, range.endDate, range.configVersion, range.configVersion));
 
-  return result.meta.changes ?? 0;
+  const results = await db.batch(statements);
+  return results.reduce((sum, result) => sum + (result.meta.changes ?? 0), 0);
 }
 
 export async function expireDueHolds(db: D1Database) {

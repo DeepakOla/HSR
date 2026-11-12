@@ -14,7 +14,7 @@ const editableSchema = z.object({
   map_url: z.string().trim().max(500).refine((value) => value === 'SETUP_REQUIRED' || /^https:\/\//i.test(value), 'Map URL must use HTTPS').optional(),
   contact_phone: z.string().trim().min(7).max(20).optional(),
   whatsapp_number: z.string().trim().min(7).max(20).optional(),
-  contact_email: z.union([z.literal('SETUP_REQUIRED'), z.string().trim().email().max(160)]).optional(),
+  contact_email: z.union([z.literal('SETUP_REQUIRED'), z.email().max(160)]).optional(),
   vpa_id: z.string().trim().min(3).max(120).optional(),
   vpa_payee_name: z.string().trim().min(2).max(120).optional(),
   hold_minutes: z.number().int().min(5).max(120).optional(),
