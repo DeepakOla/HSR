@@ -11,15 +11,15 @@ const categorySchema = z.object({
   sortOrder: z.number().int().min(0).max(500),
   nameEn: z.string().trim().min(2).max(100),
   nameHi: z.string().trim().min(2).max(100),
-  cylinderCount: z.number().int().min(1).max(20),
+  cylinderCount: z.number().int().min(1).max(12),
   basePricePaise: z.number().int().min(0).max(100_000_000),
-  gstRateBps: z.number().int().min(0).max(2800),
+  gstRateBps: z.literal(1800),
   advancePaise: z.number().int().min(0).max(100_000_000).nullable(),
   isActive: z.boolean(),
 });
 
 const saveSchema = z.object({
-  categories: z.array(categorySchema).min(1).max(30),
+  categories: z.array(categorySchema).length(12),
 }).strict().superRefine((value, context) => {
   for (const [index, item] of value.categories.entries()) {
     const gst = Math.round((item.basePricePaise * item.gstRateBps) / 10_000);
@@ -39,7 +39,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
     `SELECT id, code, sort_order AS sortOrder, name_en AS nameEn, name_hi AS nameHi,
       cylinder_count AS cylinderCount, base_price_paise AS basePricePaise,
       gst_rate_bps AS gstRateBps, advance_paise AS advancePaise, is_active AS isActive
-     FROM vehicle_categories ORDER BY sort_order ASC, id ASC`
+     FROM vehicle_categories WHERE code LIKE 'CYL_%' ORDER BY sort_order ASC, id ASC`
   ).all();
   return jsonResponse({ categories: rows.results ?? [] });
 };
@@ -57,8 +57,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const active = parsed.data.categories.filter((item) => item.isActive);
   if (!active.length) return errorResponse('At least one vehicle category must remain active', 400);
-  if (new Set(parsed.data.categories.map((item) => item.code)).size !== parsed.data.categories.length) {
-    return errorResponse('Vehicle category codes must be unique', 400);
+  const codes = new Set(parsed.data.categories.map((item) => item.code));
+  const counts = new Set(parsed.data.categories.map((item) => item.cylinderCount));
+  if (codes.size !== 12 || counts.size !== 12 || Array.from({ length: 12 }, (_, i) => i + 1).some((n) => !counts.has(n))) {
+    return errorResponse('Exactly one pricing row is required for each cylinder count from 1 to 12', 400);
   }
 
   const db = getDb({ locals } as any);
