@@ -76,6 +76,8 @@ export default function BookingWizard({ locale }: Props) {
     const load = async () => {
       setLoading(true);
       setLoadError('');
+      setSlots([]);
+      setSelectedSlotId(null);
       try {
         const [availabilityRes, categoriesRes] = await Promise.all([
           fetch('/api/public/availability?locale=' + locale + '&fromDate=' + encodeURIComponent(todayInIndia()) + '&days=60&cylinderCount=' + cylinderCount),
@@ -310,7 +312,7 @@ export default function BookingWizard({ locale }: Props) {
           )}
           <div style={{ display: 'flex', gap: '.6rem', marginTop: '1rem' }}>
             <button className="cta cta-secondary" onClick={() => setStep(2)}>{labels.back}</button>
-            <button className="cta cta-primary" disabled={moreThan12Selected || !category || !!result} onClick={() => { setSelectedSlotId(null); setStep(4); }}>{labels.next}</button>
+            <button className="cta cta-primary" disabled={loading || moreThan12Selected || !category || !!result} onClick={() => { setSelectedSlotId(null); setStep(4); }}>{labels.next}</button>
           </div>
         </div>
       )}
@@ -320,11 +322,12 @@ export default function BookingWizard({ locale }: Props) {
           <h2>{labels.time}</h2>
           <p>{date} · {cylinderCount} {hindi ? 'सिलेंडर' : 'cylinders'} · {vehicleDescription}</p>
           <div style={{ display: 'grid', gap: '.55rem' }}>
-            {selectedDateSlots.map((slot) => (
+            {loading && <p>{labels.loading}</p>}
+            {!loading && selectedDateSlots.map((slot) => (
               <button
                 key={slot.slotSnapshotId}
                 type="button"
-                disabled={!!result}
+                disabled={!!result || loading}
                 onClick={() => setSelectedSlotId(slot.slotSnapshotId)}
                 aria-pressed={selectedSlotId === slot.slotSnapshotId}
                 style={{
@@ -341,7 +344,7 @@ export default function BookingWizard({ locale }: Props) {
           {!selectedDateSlots.length && <p>{labels.noTime}</p>}
           <div style={{ display: 'flex', gap: '.6rem', marginTop: '1rem' }}>
             <button className="cta cta-secondary" onClick={() => setStep(3)}>{labels.back}</button>
-            <button className="cta cta-primary" disabled={!selectedSlot || !!result} onClick={() => setStep(5)}>{labels.next}</button>
+            <button className="cta cta-primary" disabled={loading || !selectedSlot || !!result} onClick={() => setStep(5)}>{labels.next}</button>
           </div>
         </div>
       )}
