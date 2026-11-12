@@ -69,7 +69,7 @@ export default function BookingWizard({ locale }: Props) {
   const [result, setResult] = useState<any>(null);
   const [evidenceSubmitted, setEvidenceSubmitted] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
 
   useEffect(() => {
     let cancelled = false;
