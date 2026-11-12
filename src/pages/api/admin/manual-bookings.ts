@@ -54,7 +54,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }, 201);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Could not create manual booking';
-    const isConflict = /capacity_exceeded|already passed|closed/i.test(message);
+    const isConflict = /capacity_exceeded|no longer has enough consecutive|already passed|not available|closed/i.test(message);
     return errorResponse(message, isConflict ? 409 : 400, isConflict ? 'BOOKING_CONFLICT' : 'BOOKING_FAILED');
   }
 };
