@@ -25,6 +25,7 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
         b.payment_utr_normalized AS utr,
         b.source AS source,
         b.cylinder_count_snapshot AS cylinderCount,
+        b.vehicle_type_snapshot AS vehicleType,
         b.base_price_paise_snapshot AS basePricePaise,
         b.gst_amount_paise_snapshot AS gstAmountPaise,
         b.total_price_paise_snapshot AS totalPricePaise,
