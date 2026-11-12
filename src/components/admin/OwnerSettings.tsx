@@ -207,6 +207,6 @@ export default function OwnerSettings(){
         <p className="admin-note">A booking for N cylinders occupies N consecutive available units. Six cylinders occupy 120 minutes at a 20-minute interval, or 90 minutes at a 15-minute interval. Hidden extra-hour units can be booked by reception staff.</p>
       </div>
       <p className="admin-note">{t.note}</p>
-    </section>
+    </section>}
   </div>;
 }
