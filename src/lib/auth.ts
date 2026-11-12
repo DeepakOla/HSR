@@ -58,7 +58,7 @@ async function loadAccessKeys(issuer: string): Promise<AccessJwk[]> {
 }
 
 async function verifyAccessJwt(request: Request, env: Env): Promise<string | null> {
-  const configuredDomain = env.ACCESS_TEAM_DOMAIN?.trim().replace(/^https?:\\/\\//, '').replace(/\\/$/, '');
+  const configuredDomain = (env.ACCESS_TEAM_DOMAIN ?? '').trim().replace('https://', '').replace('http://', '').replace(/\/+$/, '');
   const audience = env.ACCESS_AUDIENCE?.trim();
   const token = request.headers.get('cf-access-jwt-assertion');
 
