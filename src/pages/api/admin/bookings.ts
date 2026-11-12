@@ -29,7 +29,7 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
         b.total_price_paise_snapshot AS totalPricePaise,
         b.amount_paid_paise AS amountPaidPaise,
         b.advance_paise_snapshot AS advancePaise,
-        b.balance_paise_snapshot AS balancePaise,
+        MAX(b.total_price_paise_snapshot - b.amount_paid_paise, 0) AS balancePaise,
         c.name AS customerName,
         c.mobile_e164 AS mobile,
         v.registration_display AS vehicleRegistration

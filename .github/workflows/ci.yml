@@ -18,6 +18,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Apply D1 migrations to an isolated local test database
+        run: |
+          node --input-type=module -e "import fs from 'node:fs'; const config = JSON.parse(fs.readFileSync('wrangler.jsonc', 'utf8')); config.d1_databases[0].database_id = '00000000-0000-0000-0000-000000000000'; fs.writeFileSync('wrangler.test.jsonc', JSON.stringify(config, null, 2));"
+          npx --yes wrangler@4.160.1 d1 migrations apply hsr_green_energy_prod --local --config wrangler.test.jsonc
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test

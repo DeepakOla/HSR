@@ -115,11 +115,11 @@ In Cloudflare Dashboard:
 
 Do not select a legacy Pages static-site preset or use `wrangler pages deploy`. This repository is configured as a Workers application.
 
-## 8. Cron-based temporary-hold expiry
+## 8. Scheduled jobs: hold expiry and availability horizon
 
-`wrangler.jsonc` configures a five-minute Cron Trigger. The custom Worker `src/worker.ts` exports a `scheduled()` handler that calls `expireDueHolds()` directly.
+`wrangler.jsonc` configures two UTC Cron Triggers. Every five minutes, the Worker expires only unpaid `HELD` + `ADVANCE_PENDING` reservations. Every day at 18:35 UTC (00:05 India time), it extends daily slot snapshots to 45 days ahead using the active schedule version.
 
-Only `HELD` + `ADVANCE_PENDING` reservations expire. Payment-evidence-submitted `PENDING_VERIFICATION` reservations are not automatically released. Do not manually create a public maintenance-token endpoint.
+Payment-evidence-submitted `PENDING_VERIFICATION` reservations are not automatically released. The daily extension uses `INSERT OR IGNORE` and the schedule version's activation date, so it does not overwrite existing bookings or project new hours backwards. Do not manually create a public maintenance-token endpoint.
 
 ## 9. If deployment still fails
 

@@ -430,6 +430,83 @@ export async function submitPaymentEvidence(
   return { paymentState: 'EVIDENCE_SUBMITTED', reservationState: 'PENDING_VERIFICATION' };
 }
 
+
+function businessDateInIndia() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function addCalendarDays(date: string, days: number) {
+  const value = new Date(`${date}T00:00:00Z`);
+  value.setUTCDate(value.getUTCDate() + days);
+  return value.toISOString().slice(0, 10);
+}
+
+/**
+ * Extends the active schedule version's daily slot snapshots to 45 days ahead.
+ * The first snapshot date is the activation date of the current config version;
+ * this prevents a new schedule from being projected backwards over already-booked dates.
+ */
+export async function extendFutureSnapshots(db: D1Database) {
+  const today = businessDateInIndia();
+  const horizonEnd = addCalendarDays(today, 45);
+
+  const versionRow = await db.prepare(
+    'SELECT COALESCE(MAX(config_version), 1) AS version FROM slot_templates'
+  ).first<{ version: number }>();
+  const version = versionRow?.version ?? 1;
+
+  const activationRow = await db.prepare(
+    'SELECT MIN(service_date) AS activationDate FROM daily_slot_snapshots WHERE config_version = ?'
+  ).bind(version).first<{ activationDate: string | null }>();
+
+  const activationDate = activationRow?.activationDate ?? today;
+  const startDate = activationDate > today ? activationDate : today;
+  if (startDate > horizonEnd) return 0;
+
+  const result = await db.prepare(
+    `WITH RECURSIVE days(service_date) AS (
+       SELECT date(?)
+       UNION ALL
+       SELECT date(service_date, '+1 day') FROM days WHERE service_date < date(?)
+     )
+     INSERT OR IGNORE INTO daily_slot_snapshots(
+       service_date, weekday, slot_template_id, config_version,
+       slot_label_en, slot_label_hi, start_time, end_time,
+       slot_capacity, daily_capacity, is_closed
+     )
+     SELECT
+       days.service_date,
+       CAST(strftime('%w', days.service_date) AS INTEGER),
+       st.id,
+       st.config_version,
+       st.slot_label_en,
+       st.slot_label_hi,
+       st.start_time,
+       st.end_time,
+       st.slot_capacity,
+       COALESCE(ov.daily_capacity_override, ws.daily_capacity),
+       COALESCE(ov.is_closed, 0)
+     FROM days
+     JOIN weekly_schedule ws
+       ON ws.weekday = CAST(strftime('%w', days.service_date) AS INTEGER)
+      AND ws.config_version = ?
+      AND ws.is_open = 1
+     JOIN slot_templates st
+       ON st.config_version = ?
+     LEFT JOIN date_overrides ov
+       ON ov.service_date = days.service_date`
+  ).bind(startDate, horizonEnd, version, version).run();
+
+  return result.meta.changes ?? 0;
+}
+
 export async function expireDueHolds(db: D1Database) {
   const result = await db
     .prepare(

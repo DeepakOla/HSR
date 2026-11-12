@@ -9,3 +9,6 @@ test-results/
 !.env.example
 .DS_Store
 .wrangler/
+
+.dev.vars*
+wrangler.test.jsonc

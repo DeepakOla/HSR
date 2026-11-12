@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const root = '/home/runner/work/HSR/HSR/src/pages';
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../src/pages');
 
 describe('bilingual route structure', () => {
   it('contains required english and hindi pages', () => {

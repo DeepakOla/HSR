@@ -20,8 +20,9 @@ export const GET: APIRoute = async ({ request, locals }) => {
         b.gst_rate_bps_snapshot AS gst_rate_bps,
         b.gst_amount_paise_snapshot AS gst_amount_paise,
         b.total_price_paise_snapshot AS total_price_paise,
+        b.amount_paid_paise AS amount_paid_paise,
         b.advance_paise_snapshot AS advance_paise,
-        b.balance_paise_snapshot AS balance_paise,
+        MAX(b.total_price_paise_snapshot - b.amount_paid_paise, 0) AS balance_paise,
         b.reservation_state,
         b.payment_state,
         c.name AS customer_name,
@@ -35,7 +36,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
     .all();
 
   const header = [
-    'booking_code','source','service_date','slot_label','cylinders','base_price_paise','gst_rate_bps','gst_amount_paise','total_price_paise','advance_paise','balance_paise','reservation_state','payment_state','customer_name','customer_mobile','vehicle_registration'
+    'booking_code','source','service_date','slot_label','cylinders','base_price_paise','gst_rate_bps','gst_amount_paise','total_price_paise','amount_paid_paise','advance_paise','balance_paise','reservation_state','payment_state','customer_name','customer_mobile','vehicle_registration'
   ];
 
   const lines = [header.join(',')];

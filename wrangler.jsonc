@@ -3,13 +3,18 @@
   "name": "hsr-green-energy",
   "main": "./src/worker.ts",
   "compatibility_date": "2026-11-12",
-  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
   "workers_dev": true,
   "assets": {
     "binding": "ASSETS",
     "directory": "./dist"
   },
-  "observability": { "enabled": true },
+  "observability": {
+    "enabled": true
+  },
   "d1_databases": [
     {
       "binding": "DB",
@@ -19,7 +24,10 @@
     }
   ],
   "triggers": {
-    "crons": ["*/5 * * * *"]
+    "crons": [
+      "*/5 * * * *",
+      "35 18 * * *"
+    ]
   },
   "vars": {
     "APP_BASE_URL": "https://SETUP_REQUIRED.example",
