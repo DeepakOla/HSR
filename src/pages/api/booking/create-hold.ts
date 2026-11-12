@@ -30,7 +30,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const db = getDb({ locals } as any);
 
   try {
-    const result = await createHold(db, parsed.data);
+    const result = await createHold(db, { ...parsed.data, source: 'WEB' });
     let upiUri: string | null = null;
     let upiQrDataUrl: string | null = null;
 
