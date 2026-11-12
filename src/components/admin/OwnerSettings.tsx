@@ -118,7 +118,6 @@ export default function OwnerSettings(){
   };
 
   const editCategory=(index:number,patch:Partial<Category>)=>setCategories((items)=>items.map((item,i)=>i===index?{...item,...patch}:item));
-  const addCategory=()=>setCategories((items)=>[...items,{code:`CUSTOM_${items.length+1}`,sortOrder:items.length+1,nameEn:'New vehicle',nameHi:'नया वाहन',cylinderCount:1,basePricePaise:0,gstRateBps:1800,advancePaise:null,isActive:true}]);
 
   const changeSchedule=(patch:Partial<Schedule>)=>setSchedule((current)=>current?({...current,...patch}):current);
 
@@ -172,20 +171,20 @@ export default function OwnerSettings(){
     </section>}
 
     <section className="admin-card owner-section">
-      <div className="owner-section-head"><div><p className="admin-eyebrow">02 / COMMERCIALS</p><h2 className="admin-section-title">{t.vehicles}</h2></div><div className="admin-actions"><button className="admin-button secondary" onClick={addCategory}>{t.addCategory}</button><button className="admin-button" disabled={busy} onClick={saveCategories}>{t.saveCategories}</button></div></div>
+      <div className="owner-section-head"><div><p className="admin-eyebrow">02 / COMMERCIALS</p><h2 className="admin-section-title">{t.vehicles}</h2></div><button className="admin-button" disabled={busy} onClick={saveCategories}>{t.saveCategories}</button></div>
       <div className="owner-category-list">{categories.map((item,index)=><div className="owner-category" key={item.code}>
         <div className="owner-category-head"><strong>{item.nameEn||item.code}</strong><label className="admin-check"><input type="checkbox" checked={item.isActive} onChange={e=>editCategory(index,{isActive:e.target.checked})}/>{t.active}</label></div>
         <div className="owner-grid">
           <label className="admin-field">{t.categoryCode}<input className="admin-input" value={item.code} readOnly/></label>
           <label className="admin-field">{t.displayEn}<input className="admin-input" value={item.nameEn} onChange={e=>editCategory(index,{nameEn:e.target.value})}/></label>
           <label className="admin-field">{t.displayHi}<input className="admin-input" value={item.nameHi} onChange={e=>editCategory(index,{nameHi:e.target.value})}/></label>
-          <label className="admin-field">{t.cylinders}<input className="admin-input" type="number" min="1" max="20" value={item.cylinderCount} onChange={e=>editCategory(index,{cylinderCount:Number(e.target.value)})}/></label>
+          <label className="admin-field">{t.cylinders}<input className="admin-input" type="number" min="1" max="12" value={item.cylinderCount} readOnly/></label>
           <label className="admin-field">{t.base}<input className="admin-input" type="number" min="0" step="0.01" value={inr(item.basePricePaise)} onChange={e=>editCategory(index,{basePricePaise:paise(e.target.value)??0})}/></label>
           <label className="admin-field">{t.gst}<input className="admin-input" value="18%" readOnly /></label>
           <label className="admin-field">{t.advance}<input className="admin-input" type="number" min="0" step="0.01" value={inr(item.advancePaise)} onChange={e=>editCategory(index,{advancePaise:paise(e.target.value)})}/></label>
         </div>
       </div>)}</div>
-      <p className="admin-note">{t.addHint} Default base prices are ₹2,500 per cylinder (₹2,500 × cylinder count). Edit each cylinder-count total independently to apply discounts. GST is fixed at 18%. Blank advance means online booking for that count remains disabled until an advance is configured.</p>
+      <p className="admin-note">Initial base price: ₹2,500 × cylinder count. Each of the 12 cylinder-count prices can be edited independently. GST is fixed at 18%. Configure an advance amount for online UPI booking; a blank advance keeps that count unavailable for online booking.</p>
     </section>
 
     {schedule&&<section className="admin-card owner-section">
