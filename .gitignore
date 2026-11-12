@@ -11,4 +11,3 @@ test-results/
 .wrangler/
 
 .dev.vars*
-wrangler.test.jsonc
