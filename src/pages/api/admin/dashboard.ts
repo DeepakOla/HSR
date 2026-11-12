@@ -4,14 +4,9 @@ import { getDb } from '../../../lib/db';
 import { errorResponse, jsonResponse } from '../../../lib/utils';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
 
-const CAPACITY_CONSUMED_STATES = "('HELD','PENDING_VERIFICATION','CONFIRMED','CHECKED_IN','IN_PROGRESS','COMPLETED')";
-
 function todayInIndia() {
   const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Kolkata',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
+    timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit',
   }).formatToParts(new Date());
   const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${values.year}-${values.month}-${values.day}`;
@@ -33,42 +28,44 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
         dss.slot_label_hi AS labelHi,
         dss.start_time AS startTime,
         dss.end_time AS endTime,
-        dss.slot_capacity AS capacity,
-        dss.daily_capacity AS dailyCapacity,
+        dss.interval_minutes AS intervalMinutes,
+        dss.is_public AS isPublic,
         dss.is_closed AS isClosed,
-        COALESCE(SUM(b.cylinder_count_snapshot), 0) AS reserved
+        CASE WHEN EXISTS (
+          SELECT 1 FROM booking_slot_allocations allocation
+          WHERE allocation.slot_snapshot_id = dss.id
+        ) THEN 1 ELSE 0 END AS reserved
       FROM daily_slot_snapshots dss
-      LEFT JOIN bookings b
-        ON b.slot_snapshot_id = dss.id
-       AND b.reservation_state IN ${CAPACITY_CONSUMED_STATES}
-      WHERE dss.service_date = ?
-        AND dss.is_closed = 0
-      GROUP BY dss.id
+      WHERE dss.service_date = ? AND dss.is_closed = 0
       ORDER BY dss.start_time ASC`
     ).bind(date).all(),
     db.prepare(
       `SELECT
-        COALESCE(MAX(daily_capacity), 0) AS dailyCapacity,
-        COALESCE((SELECT SUM(cylinder_count_snapshot) FROM bookings WHERE service_date = ? AND reservation_state IN ${CAPACITY_CONSUMED_STATES}), 0) AS reserved
-      FROM daily_slot_snapshots
-      WHERE service_date = ? AND is_closed = 0`
-    ).bind(date, date).first<{dailyCapacity:number;reserved:number}>(),
+        COUNT(*) AS dailyCapacity,
+        (SELECT COUNT(*)
+         FROM booking_slot_allocations allocation
+         JOIN daily_slot_snapshots ds ON ds.id = allocation.slot_snapshot_id
+         WHERE ds.service_date = ? AND ds.is_closed = 0) AS reserved
+       FROM daily_slot_snapshots
+       WHERE service_date = ? AND is_closed = 0`
+    ).bind(date, date).first<{ dailyCapacity: number; reserved: number }>(),
     db.prepare(
       `SELECT COUNT(*) AS count FROM bookings
        WHERE service_date = ? AND reservation_state = 'PENDING_VERIFICATION'`
-    ).bind(date).first<{count:number}>(),
+    ).bind(date).first<{ count: number }>(),
   ]);
 
   const slots = (slotResult.results ?? []).map((row: any) => ({
     slotSnapshotId: row.slotSnapshotId,
-    label: row.labelEn,
     labelEn: row.labelEn,
     labelHi: row.labelHi,
     startTime: row.startTime,
     endTime: row.endTime,
-    capacity: row.capacity,
+    intervalMinutes: row.intervalMinutes,
+    capacity: 1,
     reserved: row.reserved,
-    remaining: Math.max(0, row.capacity - row.reserved),
+    remaining: row.reserved ? 0 : 1,
+    isPublic: row.isPublic === 1,
     isClosed: row.isClosed === 1,
   }));
 
