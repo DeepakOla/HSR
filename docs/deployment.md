@@ -12,7 +12,7 @@ The Cloudflare account already contains these resources. Do not create duplicate
 | Preview database | `hsr_green_energy_preview` | `3220c6e5-64ff-4874-9d5d-0e237f5af9ad` |
 | Production evidence bucket | `hsr-prod` | `EVIDENCE_BUCKET` |
 
-These IDs and bindings are already recorded in `wrangler.jsonc`. That file is the version-controlled configuration source of truth.
+These IDs and bindings are already recorded in `wrangler.jsonc`. That file is the version-controlled configuration source of truth. Preview D1 migrations use the separate `wrangler.preview-migrations.jsonc` file so Wrangler cannot accidentally apply them to the production database.
 
 The production Worker is named `hsr`, matching the existing Cloudflare Worker. Production uses `hsr_green_energy_prod` and the private `hsr-prod` R2 bucket. Worker Previews use the separate `hsr_green_energy_preview` D1 database. The production R2 bucket is deliberately NOT bound to Previews; screenshot uploads remain unavailable in Previews until a separate test bucket is provisioned.
 
@@ -35,7 +35,7 @@ If the repository is already cloned, use `cd` into the existing repository inste
 Inspect the Preview database migration state:
 
 ```powershell
-npx wrangler d1 migrations list hsr_green_energy_preview --remote
+npx wrangler d1 migrations list PREVIEW_DB --remote --config wrangler.preview-migrations.jsonc
 ```
 
 Apply any pending migrations:
@@ -47,8 +47,10 @@ npm run db:migrate:preview
 Verify again:
 
 ```powershell
-npx wrangler d1 migrations list hsr_green_energy_preview --remote
+npx wrangler d1 migrations list PREVIEW_DB --remote --config wrangler.preview-migrations.jsonc
 ```
+
+The separate migration config is intentional: Cloudflare's Preview configuration is separate from the top-level production D1 binding. The migration command must explicitly point at the Preview database.
 
 Do not run a destructive reset. The Preview database is isolated from production and is used for branch testing.
 
