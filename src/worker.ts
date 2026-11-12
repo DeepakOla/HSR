@@ -6,7 +6,7 @@ export default {
     return handle(request, env, ctx);
   },
 
-  async scheduled(_controller: ScheduledController, env: Env, _ctx: ExecutionContext): Promise<void> {
+  async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
     const expiredCount = await expireDueHolds(env.DB);
     console.log(`HSR hold cleanup completed; expired unpaid holds: ${expiredCount}`);
   },
