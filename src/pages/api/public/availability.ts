@@ -9,7 +9,6 @@ const querySchema = z.object({
   fromDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   days: z.coerce.number().int().min(1).max(60).default(45),
   cylinderCount: z.coerce.number().int().min(1).max(20).default(1),
-  includeStaffOnly: z.coerce.boolean().default(false),
 });
 
 export const GET: APIRoute = async ({ url, locals }) => {
@@ -18,7 +17,6 @@ export const GET: APIRoute = async ({ url, locals }) => {
     fromDate: url.searchParams.get('fromDate') ?? undefined,
     days: url.searchParams.get('days') ?? undefined,
     cylinderCount: url.searchParams.get('cylinderCount') ?? undefined,
-    includeStaffOnly: url.searchParams.get('includeStaffOnly') ?? undefined,
   });
   if (!parsed.success) return errorResponse('Invalid query', 400);
 
@@ -28,7 +26,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
   const db = getDb({ locals } as any);
   const slots = await fetchAvailability(
     db, parsed.data.locale, fromDate, parsed.data.days,
-    parsed.data.cylinderCount, parsed.data.includeStaffOnly
+    parsed.data.cylinderCount, false
   );
   return jsonResponse({ slots, cylinderCount: parsed.data.cylinderCount, days: parsed.data.days });
 };
