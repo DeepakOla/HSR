@@ -65,6 +65,8 @@ const labels = {
 };
 
 function asMinutesSafe(value:string){const [hours,minutes]=value.split(':').map(Number);return hours*60+minutes;}
+function inr(value:number|null){return value==null?'':String(value/100);}
+function paise(value:string){if(!value.trim())return null;const amount=Number(value);return Number.isFinite(amount)&&amount>=0?Math.round(amount*100):null;}
 
 export default function OwnerSettings(){
   const [locale,setLocale]=useState<Locale>('en');
