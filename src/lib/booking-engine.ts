@@ -125,12 +125,16 @@ interface CreateHoldInput {
   vehicleRegistration: string;
   source: 'WEB' | 'PHONE' | 'WHATSAPP' | 'WALKIN';
   idempotencyKey: string;
+  reservationState?: 'HELD' | 'CONFIRMED';
+  paymentState?: 'ADVANCE_PENDING' | 'PAID_AT_COUNTER';
 }
 
 type StoredHoldResult = {
   bookingCode: string;
   statusToken: string;
   holdExpiresAt: string;
+  reservationState: 'HELD' | 'CONFIRMED';
+  paymentState: 'ADVANCE_PENDING' | 'PAID_AT_COUNTER';
   category: {
     id: number;
     code: string;
@@ -273,6 +277,8 @@ export async function createHold(db: D1Database, input: CreateHoldInput) {
   const statusTokenHash = sha256(statusToken);
   const now = nowIso();
   const expiresAt = addMinutes(new Date(), settings.hold_minutes).toISOString();
+  const reservationState = input.reservationState ?? 'HELD';
+  const paymentState = input.paymentState ?? 'ADVANCE_PENDING';
 
   const category = {
     id: categoryRow.id,
@@ -290,6 +296,8 @@ export async function createHold(db: D1Database, input: CreateHoldInput) {
     bookingCode,
     statusToken,
     holdExpiresAt: expiresAt,
+    reservationState,
+    paymentState,
     category,
     slot: {
       id: slot.id,
@@ -337,12 +345,12 @@ export async function createHold(db: D1Database, input: CreateHoldInput) {
           slot_start_snapshot, slot_end_snapshot, slot_capacity_snapshot,
           daily_capacity_snapshot, config_version_snapshot, created_at, updated_at
         )
-        SELECT ?, ?, ?, 'HELD', 'ADVANCE_PENDING', ?, ?, ?, 
+        SELECT ?, ?, ?, ?, ?, ?, ?, ?, 
           (SELECT id FROM customers WHERE mobile_e164 = ?),
           (SELECT id FROM vehicles WHERE registration_normalized = ?),
           ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?`
       ).bind(
-        bookingCode, statusTokenHash, input.source, expiresAt, slot.serviceDate, slot.id,
+        bookingCode, statusTokenHash, input.source, reservationState, paymentState, expiresAt, slot.serviceDate, slot.id,
         normalizedPhone, normalizedReg, categoryRow.id, categoryRow.nameEn, categoryRow.nameHi,
         categoryRow.cylinderCount, categoryRow.basePricePaise, categoryRow.gstRateBps,
         gstAmountPaise, totalPricePaise, advancePaise, balancePaise,

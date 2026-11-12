@@ -1,20 +1,12 @@
 ---
 import { requireRole } from '../../lib/auth';
 import { getRuntimeEnv } from '../../lib/runtime-env';
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import ReceptionDashboard from '../../components/admin/ReceptionDashboard';
 
 const auth = await requireRole(Astro.request, getRuntimeEnv(Astro.locals), ['OWNER', 'RECEPTIONIST']);
 if (!auth.ok) return auth.response;
 ---
-
-<!doctype html>
-<html lang="en">
-  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>Reception dashboard</title></head>
-  <body style="font-family:system-ui,sans-serif;margin:0;background:#f8f9f7">
-    <main style="max-width:1100px;margin:1rem auto;padding:1rem">
-      <h1>Reception dashboard</h1>
-      <p>Role: {auth.staff.role}</p>
-      <p><a href="/api/admin/bookings">Load bookings JSON</a></p>
-      <p>Use admin APIs for verify/reject/cancel/check-in/complete and CSV export.</p>
-    </main>
-  </body>
-</html>
+<AdminLayout title="Reception desk" owner={auth.staff.role === 'OWNER'}>
+  <ReceptionDashboard client:load />
+</AdminLayout>
