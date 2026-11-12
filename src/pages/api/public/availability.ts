@@ -17,7 +17,10 @@ export const GET: APIRoute = async ({ url, locals }) => {
 
   if (!parsed.success) return errorResponse('Invalid query', 400);
 
-  const fromDate = parsed.data.fromDate ?? new Date().toISOString().slice(0, 10);
+  const todayParts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+  const todayValues = Object.fromEntries(todayParts.map((part) => [part.type, part.value]));
+  const today = `${todayValues.year}-${todayValues.month}-${todayValues.day}`;
+  const fromDate = parsed.data.fromDate ?? today;
   const db = getDb({ locals } as any);
   const slots = await fetchAvailability(db, parsed.data.locale, fromDate, 14);
   return jsonResponse({ slots });

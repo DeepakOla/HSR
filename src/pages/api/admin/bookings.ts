@@ -27,6 +27,7 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
         b.base_price_paise_snapshot AS basePricePaise,
         b.gst_amount_paise_snapshot AS gstAmountPaise,
         b.total_price_paise_snapshot AS totalPricePaise,
+        b.amount_paid_paise AS amountPaidPaise,
         b.advance_paise_snapshot AS advancePaise,
         b.balance_paise_snapshot AS balancePaise,
         c.name AS customerName,
@@ -92,13 +93,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const timestamp = nowIso();
   const paymentAssignment = target.payment ? ", payment_state = ?" : '';
   const updateBindings = target.payment
-    ? [target.reservation, target.payment, timestamp, parsed.data.bookingCode]
-    : [target.reservation, timestamp, parsed.data.bookingCode];
+    ? [target.reservation, target.payment, parsed.data.action, timestamp, parsed.data.bookingCode]
+    : [target.reservation, parsed.data.action, timestamp, parsed.data.bookingCode];
 
   const results = await db.batch([
     db.prepare(
       `UPDATE bookings
        SET reservation_state = ?${paymentAssignment},
+           amount_paid_paise = CASE WHEN ? = 'VERIFY_PAYMENT' THEN COALESCE(advance_paise_snapshot, 0) ELSE amount_paid_paise END,
            updated_at = ?
        WHERE booking_code = ? AND ${target.from}`
     ).bind(...updateBindings),

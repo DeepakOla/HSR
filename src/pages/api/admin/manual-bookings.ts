@@ -32,6 +32,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       source: parsed.data.source,
       reservationState: 'CONFIRMED',
       paymentState: parsed.data.paymentCollected ? 'PAID_AT_COUNTER' : 'ADVANCE_PENDING',
+      paymentCollected: parsed.data.paymentCollected,
     });
 
     return jsonResponse({
@@ -41,6 +42,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       vehicleName: result.category.name,
       cylinderCount: result.category.cylinderCount,
       totalPricePaise: result.pricing.totalPricePaise,
+      amountPaidPaise: result.pricing.amountPaidPaise,
+      balancePaise: result.pricing.balancePaise,
       paymentState: result.paymentState,
       reservationState: result.reservationState,
     }, 201);

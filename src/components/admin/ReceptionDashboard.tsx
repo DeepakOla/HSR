@@ -17,7 +17,7 @@ type Category = { id: number; name: string; cylinderCount: number; totalPaise: n
 type Booking = {
   bookingCode: string; serviceDate: string; slotStart: string; slotEnd: string;
   reservationState: string; paymentState: string; source: string; cylinderCount: number;
-  totalPricePaise: number; advancePaise: number | null; balancePaise: number | null;
+  totalPricePaise: number; amountPaidPaise: number; advancePaise: number | null; balancePaise: number | null;
   customerName: string; mobile: string; vehicleRegistration: string; utr: string | null;
 };
 type Dashboard = { date: string; dailyCapacity: number; dailyReserved: number; dailyRemaining: number; pendingVerificationCount: number; slots: Slot[] };
@@ -238,7 +238,7 @@ export default function ReceptionDashboard() {
                       <td>{booking.slotStart}–{booking.slotEnd}</td>
                       <td>{booking.cylinderCount}</td>
                       <td><span className={`admin-status ${booking.reservationState === 'PENDING_VERIFICATION' ? 'pending' : ''}`}>{statusLabel(booking.reservationState,locale)}</span></td>
-                      <td>{statusLabel(booking.paymentState,locale)}<div className="admin-note">{booking.utr ? `UTR: ${booking.utr}` : money(booking.totalPricePaise)}</div></td>
+                      <td>{statusLabel(booking.paymentState,locale)}<div className="admin-note">Paid: {money(booking.amountPaidPaise)} / {money(booking.totalPricePaise)}</div>{booking.utr&&<div className="admin-note">UTR: {booking.utr}</div>}</td>
                       <td><div className="admin-row-actions">{actionsFor(booking).map((action) => <button key={action.key} className={action.cls} disabled={busy} onClick={() => void act(booking.bookingCode,action.key)}>{action.text}</button>)}{booking.paymentState === 'EVIDENCE_SUBMITTED' && <button className="admin-button secondary" onClick={() => window.open(`/api/admin/evidence?bookingCode=${encodeURIComponent(booking.bookingCode)}`,'_blank','noopener,noreferrer')}>{t.screenshot}</button>}</div></td>
                     </tr>
                   )) : <tr><td colSpan={8} className="admin-empty">{t.empty}</td></tr>}

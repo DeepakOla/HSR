@@ -127,6 +127,7 @@ interface CreateHoldInput {
   idempotencyKey: string;
   reservationState?: 'HELD' | 'CONFIRMED';
   paymentState?: 'ADVANCE_PENDING' | 'PAID_AT_COUNTER';
+  paymentCollected?: boolean;
 }
 
 type StoredHoldResult = {
@@ -163,6 +164,7 @@ type StoredHoldResult = {
     gstAmountPaise: number;
     totalPricePaise: number;
     advancePaise: number | null;
+    amountPaidPaise: number;
     balancePaise: number | null;
   };
   paymentConfig: {
@@ -270,7 +272,8 @@ export async function createHold(db: D1Database, input: CreateHoldInput) {
   const gstAmountPaise = Math.round((categoryRow.basePricePaise * categoryRow.gstRateBps) / 10_000);
   const totalPricePaise = categoryRow.basePricePaise + gstAmountPaise;
   const advancePaise = categoryRow.advancePaise;
-  const balancePaise = advancePaise == null ? null : totalPricePaise - advancePaise;
+  const amountPaidPaise = input.paymentCollected ? totalPricePaise : 0;
+  const balancePaise = input.paymentCollected ? 0 : advancePaise == null ? null : totalPricePaise - advancePaise;
 
   const bookingCode = generateBookingCode();
   const statusToken = generateOpaqueToken(24);
@@ -316,6 +319,7 @@ export async function createHold(db: D1Database, input: CreateHoldInput) {
       gstAmountPaise,
       totalPricePaise,
       advancePaise,
+      amountPaidPaise,
       balancePaise,
     },
     paymentConfig: {
@@ -340,7 +344,7 @@ export async function createHold(db: D1Database, input: CreateHoldInput) {
           hold_expires_at, service_date, slot_snapshot_id, customer_id, vehicle_id,
           category_id, category_name_en_snapshot, category_name_hi_snapshot,
           cylinder_count_snapshot, base_price_paise_snapshot, gst_rate_bps_snapshot,
-          gst_amount_paise_snapshot, total_price_paise_snapshot, advance_paise_snapshot,
+          gst_amount_paise_snapshot, total_price_paise_snapshot, amount_paid_paise, advance_paise_snapshot,
           balance_paise_snapshot, slot_label_en_snapshot, slot_label_hi_snapshot,
           slot_start_snapshot, slot_end_snapshot, slot_capacity_snapshot,
           daily_capacity_snapshot, config_version_snapshot, created_at, updated_at
@@ -348,12 +352,12 @@ export async function createHold(db: D1Database, input: CreateHoldInput) {
         SELECT ?, ?, ?, ?, ?, ?, ?, ?, 
           (SELECT id FROM customers WHERE mobile_e164 = ?),
           (SELECT id FROM vehicles WHERE registration_normalized = ?),
-          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?`
+          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?`
       ).bind(
         bookingCode, statusTokenHash, input.source, reservationState, paymentState, expiresAt, slot.serviceDate, slot.id,
         normalizedPhone, normalizedReg, categoryRow.id, categoryRow.nameEn, categoryRow.nameHi,
         categoryRow.cylinderCount, categoryRow.basePricePaise, categoryRow.gstRateBps,
-        gstAmountPaise, totalPricePaise, advancePaise, balancePaise,
+        gstAmountPaise, totalPricePaise, amountPaidPaise, advancePaise, balancePaise,
         slot.slotLabelEn, slot.slotLabelHi, slot.startTime, slot.endTime,
         slot.slotCapacity, slot.dayCapacity, slot.configVersion, now, now
       ),
