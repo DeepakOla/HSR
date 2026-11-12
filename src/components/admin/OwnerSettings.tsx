@@ -11,27 +11,27 @@ type Category = {
   code:string; sortOrder:number; nameEn:string; nameHi:string; cylinderCount:number;
   basePricePaise:number; gstRateBps:number; advancePaise:number|null; isActive:boolean;
 };
-type Slot = {labelEn:string;labelHi:string;startTime:string;endTime:string;capacity:number};
 type Schedule = {
   workingDays:number[];openTime:string;closeTime:string;breakStart:string|null;breakEnd:string|null;
-  dailyCapacity:number;slotDurationMinutes:number;slots:Slot[];
+  slotIntervalMinutes:15|20;extendedHoursEnabled:boolean;extendedHoursPublic:boolean;extendedMinutes:number;
+  standardSlotCount:number;extendedSlotCount:number;
 };
 
 const labels = {
   en: {
     title:'Owner settings', intro:'Manage the public business identity, customer prices and future operating schedule.',
-    profile:'Business profile',vehicles:'Vehicle categories and prices',schedule:'Operating hours and slot capacity',
+    profile:'Business profile',vehicles:'Cylinder-count prices',schedule:'Operating hours and appointment intervals',
     nameEn:'Business name (English)',nameHi:'Business name (Hindi)',city:'City / district',address:'Full address',
     map:'Google Maps directions URL',phone:'Call number',whatsapp:'WhatsApp number',email:'Contact email',
     vpa:'Merchant UPI ID',payee:'UPI payee name',hold:'Unpaid hold duration (minutes)',
     seoEn:'English SEO title',seoHi:'Hindi SEO title',descEn:'English meta description',descHi:'Hindi meta description',
     saveProfile:'Save profile',saveCategories:'Save vehicle settings',addCategory:'Add category',
     categoryCode:'Internal code',displayEn:'Display name (English)',displayHi:'Display name (Hindi)',
-    cylinders:'Cylinder count',base:'Base price (₹)',gst:'GST (%)',advance:'Advance amount (₹)',active:'Available for booking',
-    open:'Opening time',close:'Closing time',duration:'Slot duration (minutes)',daily:'Daily cylinder capacity',
+    cylinders:'CNG cylinder count',base:'Total base price for this count (₹)',gst:'GST (fixed at 18%)',advance:'Advance amount (₹)',active:'Available for online booking',
+    open:'Opening time',close:'Closing time',interval:'Appointment interval (minutes)',extended:'Enable ninth hour (3 extra units)',extendedPublic:'Show extra-hour units to customers online',
     breakStart:'Break starts (optional)',breakEnd:'Break ends (optional)',workingDays:'Working days',
     slots:'Slot windows',slotCapacity:'Cylinders',saveSchedule:'Save schedule',
-    note:'Schedule changes apply to future dates after existing reservations. Existing bookings retain their original slot and price.',
+    note:'Each cylinder reserves one continuous appointment unit. At a 20-minute interval, a six-cylinder vehicle needs two consecutive hours. The ninth hour adds three more units. Existing bookings keep their original times and prices.',
     profileSaved:'Business profile saved.',categoriesSaved:'Vehicle settings saved.',scheduleSaved:'Schedule saved.',
     effective:'New schedule applies from',loading:'Loading owner settings…',error:'Could not load owner settings.',
     saveError:'Could not save changes.',lang:'हिंदी',r2:'Payment screenshot upload is disabled until a private R2 bucket is configured and tested.',
@@ -43,18 +43,18 @@ const labels = {
   },
   hi: {
     title:'मालिक की सेटिंग्स',intro:'व्यवसाय की जानकारी, ग्राहक कीमतें और भविष्य का कार्य समय बदलें।',
-    profile:'व्यवसाय प्रोफ़ाइल',vehicles:'वाहन श्रेणियां और कीमतें',schedule:'कार्य समय और स्लॉट क्षमता',
+    profile:'व्यवसाय प्रोफ़ाइल',vehicles:'सिलेंडर संख्या के अनुसार कीमत',schedule:'कार्य समय और अपॉइंटमेंट अंतराल',
     nameEn:'व्यवसाय का नाम (अंग्रेज़ी)',nameHi:'व्यवसाय का नाम (हिंदी)',city:'शहर / ज़िला',address:'पूरा पता',
     map:'Google Maps दिशा URL',phone:'कॉल नंबर',whatsapp:'WhatsApp नंबर',email:'संपर्क ईमेल',
     vpa:'मर्चेंट UPI ID',payee:'UPI प्राप्तकर्ता नाम',hold:'बिना भुगतान होल्ड अवधि (मिनट)',
     seoEn:'अंग्रेज़ी SEO शीर्षक',seoHi:'हिंदी SEO शीर्षक',descEn:'अंग्रेज़ी विवरण',descHi:'हिंदी विवरण',
     saveProfile:'प्रोफ़ाइल सेव करें',saveCategories:'वाहन सेटिंग्स सेव करें',addCategory:'श्रेणी जोड़ें',
     categoryCode:'आंतरिक कोड',displayEn:'दिखने वाला नाम (अंग्रेज़ी)',displayHi:'दिखने वाला नाम (हिंदी)',
-    cylinders:'सिलेंडर संख्या',base:'मूल कीमत (₹)',gst:'GST (%)',advance:'अग्रिम राशि (₹)',active:'बुकिंग में उपलब्ध',
-    open:'खुलने का समय',close:'बंद होने का समय',duration:'स्लॉट अवधि (मिनट)',daily:'दैनिक सिलेंडर क्षमता',
+    cylinders:'CNG सिलेंडर की संख्या',base:'इस संख्या के लिए कुल मूल कीमत (₹)',gst:'GST (18% निश्चित)',advance:'अग्रिम राशि (₹)',active:'ऑनलाइन बुकिंग के लिए उपलब्ध',
+    open:'खुलने का समय',close:'बंद होने का समय',interval:'अपॉइंटमेंट अंतराल (मिनट)',extended:'नौवां घंटा सक्षम करें (3 अतिरिक्त समय इकाइयाँ)',extendedPublic:'अतिरिक्त समय ऑनलाइन ग्राहकों को दिखाएँ',
     breakStart:'ब्रेक शुरू (वैकल्पिक)',breakEnd:'ब्रेक समाप्त (वैकल्पिक)',workingDays:'कार्य दिवस',
     slots:'समय स्लॉट',slotCapacity:'सिलेंडर',saveSchedule:'समय सेव करें',
-    note:'समय में बदलाव मौजूदा आरक्षणों के बाद भविष्य की तारीखों पर लागू होंगे। पुरानी बुकिंग का समय और कीमत नहीं बदलेंगे।',
+    note:'हर CNG सिलेंडर के लिए लगातार एक समय इकाई आरक्षित होती है। 20 मिनट के अंतराल पर छह सिलेंडर के लिए लगातार दो घंटे चाहिए। नौवां घंटा तीन अतिरिक्त इकाइयाँ जोड़ता है। पुरानी बुकिंग का समय और कीमत नहीं बदलेंगे।',
     profileSaved:'व्यवसाय प्रोफ़ाइल सेव हो गई।',categoriesSaved:'वाहन सेटिंग्स सेव हो गईं।',scheduleSaved:'कार्य समय सेव हो गया।',
     effective:'नया समय लागू होगा',loading:'मालिक सेटिंग्स लोड हो रही हैं…',error:'मालिक सेटिंग्स लोड नहीं हो सकीं।',
     saveError:'बदलाव सेव नहीं हो सके।',lang:'English',r2:'निजी R2 बकेट कॉन्फ़िगर और जांचे जाने तक भुगतान स्क्रीनशॉट अपलोड बंद रहेगा।',
@@ -66,33 +66,7 @@ const labels = {
   }
 };
 
-function asMinutes(value:string){const [h,m]=value.split(':').map(Number);return h*60+m;}
-function asTime(value:number){return `${String(Math.floor(value/60)).padStart(2,'0')}:${String(value%60).padStart(2,'0')}`;}
-function inr(paise:number|null){return paise==null?'':String(paise/100);}
-function paise(value:string){if(!value.trim())return null;const n=Number(value);return Number.isFinite(n)&&n>=0?Math.round(n*100):null;}
-
-function createSlots(schedule:Schedule):Slot[]{
-  const start=asMinutes(schedule.openTime),end=asMinutes(schedule.closeTime),duration=Number(schedule.slotDurationMinutes);
-  if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start||duration<30||duration>240)return [];
-  const bs=schedule.breakStart?asMinutes(schedule.breakStart):-1;
-  const be=schedule.breakEnd?asMinutes(schedule.breakEnd):-1;
-  const windows:{startTime:string;endTime:string}[]=[];
-  let cursor=start;
-  while(cursor<end&&windows.length<24){
-    if(bs>=0&&be>bs&&cursor>=bs&&cursor<be)cursor=be;
-    if(cursor>=end)break;
-    let next=Math.min(cursor+duration,end);
-    if(bs>=0&&be>bs&&cursor<bs&&next>bs)next=bs;
-    if(next<=cursor)break;
-    windows.push({startTime:asTime(cursor),endTime:asTime(next)});
-    cursor=next;
-  }
-  const count=windows.length;
-  if(!count)return [];
-  const base=Math.floor(Number(schedule.dailyCapacity)/count);
-  let remainder=Number(schedule.dailyCapacity)-base*count;
-  return windows.map((w)=>{const capacity=base+(remainder>0?1:0);if(remainder>0)remainder--;const label=`${w.startTime} - ${w.endTime}`;return {...w,labelEn:label,labelHi:label,capacity};});
-}
+function asMinutesSafe(value:string){const [hours,minutes]=value.split(':').map(Number);return hours*60+minutes;}
 
 export default function OwnerSettings(){
   const [locale,setLocale]=useState<Locale>('en');
@@ -114,7 +88,7 @@ export default function OwnerSettings(){
       if(!pr.ok||!cr.ok||!sr.ok)throw new Error(p.error?.message??c.error?.message??s.error?.message??t.error);
       setProfile(p.data.settings);
       setCategories((c.data.categories??[]).map((x:any)=>({...x,isActive:x.isActive===1||x.isActive===true})));
-      setSchedule({...s.data,breakStart:s.data.breakStart??'',breakEnd:s.data.breakEnd??''});
+      setSchedule({...s.data,breakStart:s.data.breakStart??'',breakEnd:s.data.breakEnd??'',slotIntervalMinutes:s.data.slotIntervalMinutes===15?15:20,extendedHoursEnabled:!!s.data.extendedHoursEnabled,extendedHoursPublic:!!s.data.extendedHoursPublic,extendedMinutes:60});
     }catch(e){setError(e instanceof Error?e.message:t.error);}
     finally{setLoading(false);}
   },[]);
@@ -146,22 +120,16 @@ export default function OwnerSettings(){
   const editCategory=(index:number,patch:Partial<Category>)=>setCategories((items)=>items.map((item,i)=>i===index?{...item,...patch}:item));
   const addCategory=()=>setCategories((items)=>[...items,{code:`CUSTOM_${items.length+1}`,sortOrder:items.length+1,nameEn:'New vehicle',nameHi:'नया वाहन',cylinderCount:1,basePricePaise:0,gstRateBps:1800,advancePaise:null,isActive:true}]);
 
-  const changeSchedule=(patch:Partial<Schedule>)=>setSchedule((current)=>{
-    if(!current)return current;
-    const next={...current,...patch};
-    if(['openTime','closeTime','slotDurationMinutes','dailyCapacity','breakStart','breakEnd'].some((key)=>key in patch)){
-      next.slots=createSlots(next);
-    }
-    return next;
-  });
+  const changeSchedule=(patch:Partial<Schedule>)=>setSchedule((current)=>current?({...current,...patch}):current);
 
   const saveSchedule=async()=>{
     if(!schedule)return;
-    const total=schedule.slots.reduce((sum,slot)=>sum+Number(slot.capacity),0);
-    if(total!==Number(schedule.dailyCapacity)){setError(`${t.invalidCapacity} ${t.capacityTotal}: ${total}/${schedule.dailyCapacity}`);return;}
     setBusy(true);setError('');setMessage('');
     try{
-      const payload={...schedule,breakStart:schedule.breakStart||null,breakEnd:schedule.breakEnd||null,dailyCapacity:Number(schedule.dailyCapacity),slotDurationMinutes:Number(schedule.slotDurationMinutes),slots:schedule.slots.map((slot)=>({...slot,capacity:Number(slot.capacity)}))};
+      const payload={workingDays:schedule.workingDays,openTime:schedule.openTime,closeTime:schedule.closeTime,
+        breakStart:schedule.breakStart||null,breakEnd:schedule.breakEnd||null,
+        slotIntervalMinutes:Number(schedule.slotIntervalMinutes),extendedHoursEnabled:schedule.extendedHoursEnabled,
+        extendedHoursPublic:schedule.extendedHoursEnabled&&schedule.extendedHoursPublic};
       const r=await fetch('/api/admin/schedule',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
       const data:any=await r.json();if(!r.ok)throw new Error(data.error?.message??t.saveError);
       setEffectiveFrom(data.data.effectiveFrom??'');setMessage(t.scheduleSaved);await load();
@@ -213,11 +181,11 @@ export default function OwnerSettings(){
           <label className="admin-field">{t.displayHi}<input className="admin-input" value={item.nameHi} onChange={e=>editCategory(index,{nameHi:e.target.value})}/></label>
           <label className="admin-field">{t.cylinders}<input className="admin-input" type="number" min="1" max="20" value={item.cylinderCount} onChange={e=>editCategory(index,{cylinderCount:Number(e.target.value)})}/></label>
           <label className="admin-field">{t.base}<input className="admin-input" type="number" min="0" step="0.01" value={inr(item.basePricePaise)} onChange={e=>editCategory(index,{basePricePaise:paise(e.target.value)??0})}/></label>
-          <label className="admin-field">{t.gst}<input className="admin-input" type="number" min="0" max="28" step="0.01" value={item.gstRateBps/100} onChange={e=>editCategory(index,{gstRateBps:Math.round(Number(e.target.value)*100)})}/></label>
+          <label className="admin-field">{t.gst}<input className="admin-input" value="18%" readOnly /></label>
           <label className="admin-field">{t.advance}<input className="admin-input" type="number" min="0" step="0.01" value={inr(item.advancePaise)} onChange={e=>editCategory(index,{advancePaise:paise(e.target.value)})}/></label>
         </div>
       </div>)}</div>
-      <p className="admin-note">{t.addHint}</p>
+      <p className="admin-note">{t.addHint} Default base prices are ₹2,500 per cylinder (₹2,500 × cylinder count). Edit each cylinder-count total independently to apply discounts. GST is fixed at 18%. Blank advance means online booking for that count remains disabled until an advance is configured.</p>
     </section>
 
     {schedule&&<section className="admin-card owner-section">
@@ -225,18 +193,23 @@ export default function OwnerSettings(){
       <div className="owner-grid owner-schedule-grid">
         <label className="admin-field">{t.open}<input className="admin-input" type="time" value={schedule.openTime} onChange={e=>changeSchedule({openTime:e.target.value})}/></label>
         <label className="admin-field">{t.close}<input className="admin-input" type="time" value={schedule.closeTime} onChange={e=>changeSchedule({closeTime:e.target.value})}/></label>
-        <label className="admin-field">{t.duration}<input className="admin-input" type="number" min="30" max="240" step="30" value={schedule.slotDurationMinutes} onChange={e=>changeSchedule({slotDurationMinutes:Number(e.target.value)})}/></label>
-        <label className="admin-field">{t.daily}<input className="admin-input" type="number" min="1" max="1000" value={schedule.dailyCapacity} onChange={e=>changeSchedule({dailyCapacity:Number(e.target.value)})}/></label>
-        <label className="admin-field">{t.breakStart}<input className="admin-input" type="time" value={schedule.breakStart??''} onChange={e=>changeSchedule({breakStart:e.target.value||null})}/></label>
-        <label className="admin-field">{t.breakEnd}<input className="admin-input" type="time" value={schedule.breakEnd??''} onChange={e=>changeSchedule({breakEnd:e.target.value||null})}/></label>
+        <label className="admin-field">{t.interval}<select className="admin-select" value={schedule.slotIntervalMinutes} onChange={e=>changeSchedule({slotIntervalMinutes:Number(e.target.value) as 15|20})}><option value={20}>20 minutes</option><option value={15}>15 minutes</option></select></label>
+        <label className="admin-field">{t.breakStart}<input className="admin-input" type="time" value={schedule.breakStart??""} onChange={e=>changeSchedule({breakStart:e.target.value||null})}/></label>
+        <label className="admin-field">{t.breakEnd}<input className="admin-input" type="time" value={schedule.breakEnd??""} onChange={e=>changeSchedule({breakEnd:e.target.value||null})}/></label>
       </div>
       <div className="owner-days"><strong>{t.workingDays}</strong><div className="owner-day-list">{t.days.map((day,index)=><label key={day} className="admin-check"><input type="checkbox" checked={schedule.workingDays.includes(index)} onChange={e=>setSchedule(s=>s?({...s,workingDays:e.target.checked?[...s.workingDays,index]:s.workingDays.filter(x=>x!==index)}):s)}/>{day}</label>)}</div></div>
-      <div className="owner-slot-table">
-        <div className="owner-slot-heading"><strong>{t.slots}</strong><strong>{t.capacityTotal}: {schedule.slots.reduce((sum,slot)=>sum+Number(slot.capacity),0)} / {schedule.dailyCapacity}</strong></div>
-        {schedule.slots.map((slot,index)=><div className="owner-slot-row" key={index}><span>{slot.startTime} - {slot.endTime}</span><label className="admin-field">{t.slotCapacity}<input className="admin-input" type="number" min="0" max="1000" value={slot.capacity} onChange={e=>setSchedule(s=>s?({...s,slots:s.slots.map((x,i)=>i===index?({...x,capacity:Number(e.target.value)}):x)}):s)}/></label></div>)}
-        {!schedule.slots.length&&<p className="admin-alert error">{t.noSlots}</p>}
+      <div style={{display:"grid",gap:".65rem",marginTop:"1rem"}}>
+        <label className="admin-check"><input type="checkbox" checked={schedule.extendedHoursEnabled} onChange={e=>changeSchedule({extendedHoursEnabled:e.target.checked,extendedHoursPublic:e.target.checked?schedule.extendedHoursPublic:false})}/>{t.extended}</label>
+        <label className="admin-check"><input type="checkbox" checked={schedule.extendedHoursPublic} disabled={!schedule.extendedHoursEnabled} onChange={e=>changeSchedule({extendedHoursPublic:e.target.checked})}/>{t.extendedPublic}</label>
+      </div>
+      <div className="admin-card" style={{marginTop:"1rem",padding:"1rem"}}>
+        <strong>Appointment capacity preview</strong>
+        <p>{schedule.openTime} to {schedule.closeTime} · {schedule.slotIntervalMinutes}-minute units</p>
+        <p>Standard operating hours: {Math.floor((asMinutesSafe(schedule.closeTime)-asMinutesSafe(schedule.openTime))/schedule.slotIntervalMinutes)} units before break adjustments.</p>
+        <p>Extra hour: {schedule.extendedHoursEnabled?60/schedule.slotIntervalMinutes+" additional units":"disabled"} · {schedule.extendedHoursEnabled?(schedule.extendedHoursPublic?"visible to online customers":"staff-only"):"not available"}</p>
+        <p className="admin-note">A booking for N cylinders occupies N consecutive available units. Six cylinders occupy 120 minutes at a 20-minute interval, or 90 minutes at a 15-minute interval. Hidden extra-hour units can be booked by reception staff.</p>
       </div>
       <p className="admin-note">{t.note}</p>
-    </section>}
+    </section>
   </div>;
 }
