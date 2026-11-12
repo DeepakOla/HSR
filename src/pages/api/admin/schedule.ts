@@ -128,12 +128,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
     statements.push(db.prepare(
       `INSERT INTO weekly_schedule(
         weekday, is_open, open_time, close_time, break_start, break_end,
-        daily_capacity, slot_interval_minutes, extended_hours_enabled,
+        daily_capacity, slot_duration_minutes, slot_interval_minutes, extended_hours_enabled,
         extended_hours_public, config_version
-      ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind(
       weekday, isOpen, cfg.openTime, cfg.closeTime, cfg.breakStart, cfg.breakEnd,
-      isOpen ? templates.length : 0, cfg.slotIntervalMinutes,
+      isOpen ? templates.length : 0, 120, cfg.slotIntervalMinutes,
       cfg.extendedHoursEnabled ? 1 : 0, cfg.extendedHoursPublic ? 1 : 0, nextVersion
     ));
   }
