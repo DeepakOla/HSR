@@ -303,7 +303,8 @@ export default function BookingWizard({ locale }: Props) {
               <p>{labels.price}: {inr(category.basePricePaise)}</p>
               <p>{labels.gst}: {inr(category.gstPaise)}</p>
               <p><strong>{labels.total}: {inr(category.totalPaise)}</strong></p>
-              <p>{labels.advance}: {inr(category.advancePaise)}</p>\n              {category.advancePaise != null && <p>{labels.balance}: {inr(category.totalPaise - category.advancePaise)}</p>}
+              <p>{labels.advance}: {inr(category.advancePaise)}</p>
+              {category.advancePaise != null && <p>{labels.balance}: {inr(category.totalPaise - category.advancePaise)}</p>}
               {category.advancePaise == null && <p role="status">{hindi ? 'इस श्रेणी के लिए ऑनलाइन अग्रिम राशि अभी मालिक द्वारा सेट नहीं की गई है।' : 'The owner has not configured an online advance for this cylinder count yet.'}</p>}
             </div>
           )}
@@ -376,7 +377,8 @@ export default function BookingWizard({ locale }: Props) {
           <p>{labels.price}: {inr(result.pricing.basePricePaise)}</p>
           <p>{labels.gst}: {inr(result.pricing.gstAmountPaise)}</p>
           <p><strong>{labels.total}: {inr(result.pricing.totalPricePaise)}</strong></p>
-          <p>{labels.advance}: {inr(result.pricing.advancePaise)}</p>\n          <p>{labels.balance}: {inr(result.pricing.balancePaise)}</p>
+          <p>{labels.advance}: {inr(result.pricing.advancePaise)}</p>
+          <p>{labels.balance}: {inr(result.pricing.balancePaise)}</p>
           {result.upiUri && <p><a href={result.upiUri}>{hindi ? 'UPI ऐप से भुगतान करें' : 'Pay using UPI app'}</a></p>}
           {result.upiQrDataUrl && <img src={result.upiQrDataUrl} alt="UPI payment QR" width={220} height={220} />}
           <label style={{ display: 'grid', gap: '.35rem' }}>{hindi ? 'UTR / भुगतान संदर्भ संख्या' : 'UTR / payment reference'}<input style={{ minHeight: 52 }} value={utr} onChange={(event) => setUtr(event.target.value)} /></label>
