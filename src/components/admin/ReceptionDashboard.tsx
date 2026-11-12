@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import '../../styles/admin.css';
 
 type Locale = 'en' | 'hi';
@@ -116,7 +116,7 @@ export default function ReceptionDashboard() {
     }
   }, [availableSlots, slotId]);
 
-  const submitManualBooking = async (event: FormEvent<HTMLFormElement>) => {
+  const submitManualBooking = async (event: { preventDefault: () => void; currentTarget: HTMLFormElement }) => {
     event.preventDefault();
     setBusy(true); setMessage(''); setError('');
     try {
@@ -129,7 +129,7 @@ export default function ReceptionDashboard() {
           paymentCollected, idempotencyKey
         })
       });
-      const payload = await response.json();
+      const payload: any = await response.json();
       if (!response.ok) throw new Error(payload.error?.message ?? t.loadFail);
       setMessage(t.saved);
       setName(''); setMobile(''); setRegistration(''); setPaymentCollected(false);
@@ -147,7 +147,7 @@ export default function ReceptionDashboard() {
         method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ bookingCode, action })
       });
-      const payload = await response.json();
+      const payload: any = await response.json();
       if (!response.ok) throw new Error(payload.error?.message ?? t.loadFail);
       setMessage(`${bookingCode}: ${statusLabel(payload.data.reservationState, locale)}`);
       await load();
