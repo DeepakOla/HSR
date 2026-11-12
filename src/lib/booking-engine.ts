@@ -6,8 +6,6 @@ import type { SlotAvailability, VehicleCategory } from './types';
 import { findConsecutiveAvailableSlots, markBookableStarts, type OccupiedAppointmentSlot } from './appointment-slots';
 import { calculateServicePrice, FIXED_GST_RATE_BPS } from './pricing';
 
-const ACTIVE_STATES_SQL = "('HELD','PENDING_VERIFICATION','CONFIRMED','CHECKED_IN','IN_PROGRESS')";
-
 export async function fetchAvailability(
   db: D1Database,
   locale: Locale,
