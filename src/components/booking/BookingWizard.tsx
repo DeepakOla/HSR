@@ -131,10 +131,8 @@ export default function BookingWizard({ locale }: Props) {
   const setVehicle = (value: string) => {
     setVehicleClass(value);
     setMoreThan12Selected(false);
-    if (value === 'Truck') {
-      setCylinderCount(4);
-      setSelectedSlotId(null);
-    }
+    setCylinderCount(value === 'Truck' ? 4 : 1);
+    setSelectedSlotId(null);
   };
   const chooseCylinderCount = (value: string) => {
     if (value === 'more') {
