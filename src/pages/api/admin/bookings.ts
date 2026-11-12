@@ -10,16 +10,24 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
   if (!auth.ok) return auth.response;
 
   const q = url.searchParams.get('q')?.trim();
+  const fromDate = url.searchParams.get('fromDate');
   const db = getDb({ locals } as any);
   const rows = await db
     .prepare(
       `SELECT
         b.booking_code AS bookingCode,
         b.service_date AS serviceDate,
+        b.slot_start_snapshot AS slotStart,
+        b.slot_end_snapshot AS slotEnd,
         b.reservation_state AS reservationState,
         b.payment_state AS paymentState,
+        b.source AS source,
         b.cylinder_count_snapshot AS cylinderCount,
+        b.base_price_paise_snapshot AS basePricePaise,
+        b.gst_amount_paise_snapshot AS gstAmountPaise,
         b.total_price_paise_snapshot AS totalPricePaise,
+        b.advance_paise_snapshot AS advancePaise,
+        b.balance_paise_snapshot AS balancePaise,
         c.name AS customerName,
         c.mobile_e164 AS mobile,
         v.registration_display AS vehicleRegistration
@@ -30,10 +38,11 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
              OR b.booking_code LIKE '%' || ?1 || '%'
              OR c.mobile_e164 LIKE '%' || ?1 || '%'
              OR v.registration_normalized LIKE '%' || upper(replace(?1, ' ', '')) || '%')
-      ORDER BY b.created_at DESC
+        AND (?2 IS NULL OR b.service_date = ?2)
+      ORDER BY b.service_date ASC, b.slot_start_snapshot ASC, b.created_at DESC
       LIMIT 200`
     )
-    .bind(q ?? null)
+    .bind(q ?? null, fromDate ?? null)
     .all();
 
   return jsonResponse({ rows: rows.results ?? [] });
@@ -47,39 +56,73 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const parsed = adminBookingStateSchema.safeParse(body);
   if (!parsed.success) return errorResponse('Invalid payload', 400);
 
-  const stateByAction: Record<string, { reservation: string; payment?: string }> = {
-    VERIFY_PAYMENT: { reservation: 'CONFIRMED', payment: 'ADVANCE_VERIFIED' },
-    REJECT: { reservation: 'REJECTED', payment: 'ADVANCE_PENDING' },
-    CANCEL: { reservation: 'CANCELLED', payment: 'ADVANCE_PENDING' },
-    CHECK_IN: { reservation: 'CHECKED_IN' },
-    START: { reservation: 'IN_PROGRESS' },
-    COMPLETE: { reservation: 'COMPLETED' },
+  const transitionByAction: Record<string, { reservation: string; payment?: string; from: string }> = {
+    VERIFY_PAYMENT: {
+      reservation: 'CONFIRMED',
+      payment: 'ADVANCE_VERIFIED',
+      from: "reservation_state = 'PENDING_VERIFICATION' AND payment_state = 'EVIDENCE_SUBMITTED'",
+    },
+    REJECT: {
+      reservation: 'REJECTED',
+      from: "reservation_state = 'PENDING_VERIFICATION' AND payment_state = 'EVIDENCE_SUBMITTED'",
+    },
+    CANCEL: {
+      reservation: 'CANCELLED',
+      from: "reservation_state IN ('HELD','PENDING_VERIFICATION','CONFIRMED')",
+    },
+    CHECK_IN: {
+      reservation: 'CHECKED_IN',
+      from: "reservation_state = 'CONFIRMED'",
+    },
+    START: {
+      reservation: 'IN_PROGRESS',
+      from: "reservation_state = 'CHECKED_IN'",
+    },
+    COMPLETE: {
+      reservation: 'COMPLETED',
+      from: "reservation_state = 'IN_PROGRESS'",
+    },
   };
 
-  const target = stateByAction[parsed.data.action];
+  const target = transitionByAction[parsed.data.action];
   if (!target) return errorResponse('Unsupported action', 400);
 
   const db = getDb({ locals } as any);
-  const update = await db
-    .prepare(
+  const timestamp = nowIso();
+  const paymentAssignment = target.payment ? ", payment_state = ?" : '';
+  const updateBindings = target.payment
+    ? [target.reservation, target.payment, timestamp, parsed.data.bookingCode]
+    : [target.reservation, timestamp, parsed.data.bookingCode];
+
+  const results = await db.batch([
+    db.prepare(
       `UPDATE bookings
-       SET reservation_state = ?,
-           payment_state = COALESCE(?, payment_state),
+       SET reservation_state = ?${paymentAssignment},
            updated_at = ?
-       WHERE booking_code = ?`
-    )
-    .bind(target.reservation, target.payment ?? null, nowIso(), parsed.data.bookingCode)
-    .run();
+       WHERE booking_code = ? AND ${target.from}`
+    ).bind(...updateBindings),
+    db.prepare(
+      `INSERT INTO booking_audit_events(
+        booking_id, event_type, actor_type, actor_id, event_payload_json
+      )
+      SELECT id, ?, 'STAFF', ?, ?
+      FROM bookings
+      WHERE booking_code = ? AND changes() > 0`
+    ).bind(
+      `STATE_${parsed.data.action}`,
+      auth.staff.email,
+      JSON.stringify({ note: parsed.data.note ?? null, role: auth.staff.role }),
+      parsed.data.bookingCode
+    ),
+  ]);
 
-  if ((update.meta.changes ?? 0) < 1) return errorResponse('Booking not found', 404);
-
-  const booking = await db.prepare('SELECT id FROM bookings WHERE booking_code = ?').bind(parsed.data.bookingCode).first<{ id: number }>();
-  if (booking) {
-    await db
-      .prepare('INSERT INTO booking_audit_events(booking_id, event_type, actor_type, actor_id, event_payload_json) VALUES(?, ?, ?, ?, ?)')
-      .bind(booking.id, `STATE_${parsed.data.action}`, 'STAFF', auth.staff.email, JSON.stringify({ note: parsed.data.note ?? null, role: auth.staff.role }))
-      .run();
+  if ((results[0]?.meta.changes ?? 0) !== 1) {
+    return errorResponse('Booking cannot make this status transition. Refresh the booking and check its current status.', 409, 'INVALID_STATE_TRANSITION');
   }
 
-  return jsonResponse({ bookingCode: parsed.data.bookingCode, reservationState: target.reservation, paymentState: target.payment ?? null });
+  return jsonResponse({
+    bookingCode: parsed.data.bookingCode,
+    reservationState: target.reservation,
+    paymentState: target.payment ?? null,
+  });
 };

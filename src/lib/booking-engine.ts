@@ -222,6 +222,22 @@ export async function createHold(db: D1Database, input: CreateHoldInput) {
 
   if (slot.isClosed === 1) throw new Error('This slot is closed');
 
+  const localParts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: settings.timezone || 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date());
+  const local = Object.fromEntries(localParts.map((part) => [part.type, part.value]));
+  const localDate = `${local.year}-${local.month}-${local.day}`;
+  const localTime = `${local.hour}:${local.minute}`;
+  if (slot.serviceDate < localDate || (slot.serviceDate === localDate && slot.startTime <= localTime)) {
+    throw new Error('Selected appointment date or time has already passed');
+  }
+
   const categoryRow = await querySingle<{
     id: number;
     code: string;
