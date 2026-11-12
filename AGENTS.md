@@ -36,3 +36,13 @@
 - Never commit `.env`, `.dev.vars*`, credentials, Access tokens/AUD values, customer data, `.wrangler/`, or `node_modules/`.
 - Run lint, type-check, unit tests and build after code changes. Run browser tests for customer and staff workflows before requesting merge.
 - Distinguish local D1 migrations (`--local`) from Cloudflare Preview remote migrations and Production remote migrations. Follow the exact commands and stop conditions in `ANTIGRAVITY_START_HERE.md`.
+
+## Cloudflare and Antigravity access
+
+- The workspace MCP config at `.agents/mcp_config.json` connects to the official Cloudflare API MCP server. The user must complete Cloudflare OAuth authentication in Antigravity; Wrangler CLI login and MCP OAuth are separate credentials.
+- Use the MCP server and Wrangler CLI for account/resource inspection. Start with read-only inspection of the Worker, Builds integration, Preview settings, D1 migration state, D1 bindings, R2 bindings and Access applications.
+- Do not execute Cloudflare writes, remote D1 migrations, resource deletion/creation, Production deploys, or Access policy changes without the user's explicit approval for that operation.
+- Treat `npx wrangler deploy`, `npm run db:migrate:remote`, and Cloudflare Workers Builds production branch deploys as Production operations.
+- For the first stable main-branch baseline, keep the Workers Builds production command at `npx wrangler versions upload` (save a version without activating it). Only change to `npx wrangler deploy` after explicit Production release approval.
+- Keep the Preview D1 binding separate from Production D1. Never bind the Production R2 bucket to Preview.
+- Keep the Cloudflare API MCP connection in Ask/approval mode. Never paste API tokens, Access AUD values, JWTs, or secrets into chat or Git.

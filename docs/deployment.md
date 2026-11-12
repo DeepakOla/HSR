@@ -105,6 +105,22 @@ Previews deliberately have no R2 bucket binding. Do not add `hsr-prod` to the `p
 
 Do not store Base64 image data in D1.
 
+## Production protection while preparing the first stable baseline
+
+Before merging PR #1 into `main`, inspect the existing Workers Builds configuration. A successful merge to the configured production branch can trigger the Production deploy command automatically.
+
+For the initial baseline merge, configure the Production **Deploy command** as:
+
+```powershell
+npx wrangler versions upload
+```
+
+This saves a Worker version without promoting it to active Production traffic. Keep the Preview command as `npx wrangler preview`. Do not set the Production deploy command to `npx wrangler deploy` until the user has explicitly approved a Production release.
+
+When a live release is approved later, change the Production deploy command to `npx wrangler deploy` and deploy from the reviewed `main` branch only.
+
+If the existing Worker displays a one-time **Set up Worker Previews** migration/switch banner, do not activate it until the current Preview mode, bindings and implications have been reviewed. Cloudflare documents this as a one-way switch for existing Workers Builds integrations.
+
 ## 6. Cloudflare Workers Builds settings
 
 In Cloudflare Dashboard:

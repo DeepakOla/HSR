@@ -156,6 +156,18 @@ npx wrangler deploy
 
 The first applies remote migrations to the top-level Production D1 binding. The second deploys Production Worker code. Neither is needed to test this PR.
 
+## Antigravity connection to Cloudflare
+
+The workspace contains `.agents/mcp_config.json`, which points to the official Cloudflare API MCP endpoint using Antigravity's remote Streamable HTTP format. Open the existing repository folder in Antigravity, open MCP Servers, and authenticate the `cloudflare-api` server through the Cloudflare OAuth flow. The MCP OAuth login is separate from Wrangler CLI login.
+
+There are two independent ways for Antigravity to interact with Cloudflare:
+1. **Wrangler CLI in the Antigravity terminal.** The Windows user's successful `npx wrangler login` is stored in the local Wrangler profile. The Antigravity terminal runs as the same Windows user and should be able to use it. Verify inside Antigravity using `npx wrangler whoami`. Do not copy Wrangler credential files into the repository.
+2. **Cloudflare API MCP.** Antigravity connects to Cloudflare's API using the workspace config. Authenticate in Antigravity, then verify the server status is connected and ask it to list/read the existing `hsr` Worker and the two D1 resources. Start read-only.
+
+Do not assume either connection works merely because a config file exists. Confirm both from the Antigravity application itself before relying on it.
+
+Cloudflare API MCP exposes powerful account-management operations. Keep Antigravity's tool permissions in Ask mode. The agent must inspect first and request approval before remote mutations. Do not grant broad write access merely to inspect settings. Do not place an API token in `.agents/mcp_config.json`; the config contains only the endpoint and uses OAuth.
+
 ## 6. Cloudflare Access and staff portal
 
 The following values are placeholders in both Production and Preview configuration:
