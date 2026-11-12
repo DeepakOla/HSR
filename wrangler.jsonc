@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hsr-green-energy",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "hsr_green_energy_dev",
+      "database_id": "SETUP_REQUIRED"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "EVIDENCE_BUCKET",
+      "bucket_name": "hsr-evidence-dev"
+    }
+  ],
+  "vars": {
+    "APP_BASE_URL": "https://SETUP_REQUIRED.example",
+    "ACCESS_AUDIENCE": "SETUP_REQUIRED",
+    "ACCESS_TEAM_DOMAIN": "SETUP_REQUIRED.cloudflareaccess.com",
+    "R2_MAX_EVIDENCE_BYTES": "1048576"
+  }
+}

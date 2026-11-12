@@ -1,0 +1,38 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getDb, getBusinessSettings } from '../../../lib/db';
+
+const db = getDb(Astro);
+const settings = await getBusinessSettings(db);
+const booking = Astro.url.searchParams.get('booking') ?? '';
+const token = Astro.url.searchParams.get('token') ?? '';
+let data: any = null;
+if (booking && token) {
+  const url = new URL(`/api/status/${encodeURIComponent(booking)}?token=${encodeURIComponent(token)}`, Astro.url.origin);
+  const res = await fetch(url, { headers: { cookie: Astro.request.headers.get('cookie') ?? '' } });
+  if (res.ok) {
+    const payload: any = await res.json();
+    data = payload.data;
+  }
+}
+---
+
+<BaseLayout locale="en" title="Booking status" description="Secure booking status" canonicalPath="/en/status/" businessName={settings.business_name_en}>
+  <section class="section">
+    <div class="container card">
+      <h1>Booking status</h1>
+      {data ? (
+        <ul>
+          <li>Booking code: {data.bookingCode}</li>
+          <li>Reservation state: {data.reservationState}</li>
+          <li>Payment state: {data.paymentState}</li>
+          <li>Date: {data.serviceDate}</li>
+          <li>Slot: {data.slotLabel}</li>
+          <li>Cylinders: {data.cylinderCount}</li>
+        </ul>
+      ) : (
+        <p>Use your secure status link from booking confirmation.</p>
+      )}
+    </div>
+  </section>
+</BaseLayout>

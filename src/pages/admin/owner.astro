@@ -1,0 +1,19 @@
+---
+import { requireRole } from '../../lib/auth';
+
+const auth = requireRole(Astro.request, Astro.getRuntimeEnv(locals), ['OWNER']);
+if (!auth.ok) return auth.response;
+import { getRuntimeEnv } from '../../lib/runtime-env';
+---
+
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>Owner console</title></head>
+  <body style="font-family:system-ui,sans-serif;margin:0;background:#f8f9f7">
+    <main style="max-width:1100px;margin:1rem auto;padding:1rem">
+      <h1>Owner console</h1>
+      <p>Role: {auth.staff.role}</p>
+      <p>Edit settings via <code>/api/admin/settings</code>. Keep production changes owner-only.</p>
+    </main>
+  </body>
+</html>

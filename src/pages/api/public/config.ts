@@ -1,0 +1,21 @@
+import type { APIRoute } from 'astro';
+import { getDb, getBusinessSettings } from '../../../lib/db';
+import { jsonResponse } from '../../../lib/utils';
+
+export const GET: APIRoute = async ({ locals }) => {
+  const db = getDb({ locals } as any);
+  const settings = await getBusinessSettings(db);
+  return jsonResponse({
+    businessNameEn: settings.business_name_en,
+    businessNameHi: settings.business_name_hi,
+    city: settings.city,
+    address: settings.address_line,
+    phone: settings.contact_phone,
+    whatsappNumber: settings.whatsapp_number,
+    mapUrl: settings.map_url,
+    timezone: settings.timezone,
+    holdMinutes: settings.hold_minutes,
+    paymentConfigured: settings.vpa_id !== 'SETUP_REQUIRED' && settings.vpa_payee_name !== 'SETUP_REQUIRED',
+    r2UploadEnabled: settings.r2_enabled === 1,
+  });
+};

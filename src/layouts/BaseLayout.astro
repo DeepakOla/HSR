@@ -1,0 +1,91 @@
+---
+import type { Locale } from '../lib/constants';
+import { localizePath, otherLocale, t } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+  title: string;
+  description: string;
+  canonicalPath: string;
+  businessName: string;
+}
+
+const { locale, title, description, canonicalPath, businessName } = Astro.props;
+const copy = t(locale);
+const alternate = otherLocale(locale);
+const path = canonicalPath.endsWith('/') ? canonicalPath : `${canonicalPath}/`;
+const canonical = new URL(path, Astro.site);
+const alternateHref = new URL(localizePath(path, alternate), Astro.site);
+---
+
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical.toString()} />
+    <link rel="alternate" hreflang={alternate} href={alternateHref.toString()} />
+    <link rel="alternate" hreflang={locale} href={canonical.toString()} />
+    <style>
+      :root {
+        --bg: #f8f9f7;
+        --surface: #fff;
+        --text: #1e2428;
+        --muted: #4f5960;
+        --brand: #0f4a34;
+        --accent: #f5a623;
+        --border: #d9e0dc;
+        --radius: 0.5rem;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: system-ui, -apple-system, sans-serif; color: var(--text); background: var(--bg); }
+      a { color: var(--brand); }
+      .container { width: min(1160px, calc(100% - 2rem)); margin-inline: auto; }
+      header { background: var(--surface); border-bottom: 1px solid var(--border); }
+      .topbar { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+      nav ul { list-style: none; display: flex; gap: 1rem; padding: 0; margin: 0; flex-wrap: wrap; }
+      nav a { text-decoration: none; color: var(--text); font-weight: 600; }
+      .lang { border: 1px solid var(--border); border-radius: 999px; padding: 0.45rem 0.85rem; text-decoration: none; }
+      .cta { display: inline-block; min-height: 56px; padding: 0.8rem 1.2rem; border-radius: var(--radius); border: 0; text-decoration: none; font-weight: 700; }
+      .cta-primary { background: var(--brand); color: #fff; }
+      .cta-secondary { background: #fff; border: 1px solid var(--border); color: var(--text); }
+      footer { border-top: 1px solid var(--border); background: #fff; margin-top: 4rem; }
+      .section { padding: 3.2rem 0; }
+      .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
+      :focus-visible { outline: 3px solid #1f7ae0; outline-offset: 2px; }
+      @media (max-width: 768px) {
+        .topbar { align-items: flex-start; padding: 0.75rem 0; flex-direction: column; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="container topbar">
+        <strong>{businessName}</strong>
+        <nav aria-label={locale === 'en' ? 'Primary navigation' : 'मुख्य नेविगेशन'}>
+          <ul>
+            <li><a href={`/${locale}/`}>{copy.nav.home}</a></li>
+            <li><a href={`/${locale}/services/`}>{copy.nav.services}</a></li>
+            <li><a href={`/${locale}/how-it-works/`}>{copy.nav.how}</a></li>
+            <li><a href={`/${locale}/check-expiry/`}>{copy.nav.expiry}</a></li>
+            <li><a href={`/${locale}/book/`}>{copy.nav.book}</a></li>
+            <li><a href={`/${locale}/contact/`}>{copy.nav.contact}</a></li>
+            <li><a href={`/${locale}/about/`}>{copy.nav.about}</a></li>
+          </ul>
+        </nav>
+        <a class="lang" href={localizePath(Astro.url.pathname, alternate)}>{alternate === 'hi' ? 'हिंदी' : 'English'}</a>
+      </div>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <footer>
+      <div class="container section">
+        <p>{businessName}</p>
+        <p>{locale === 'en' ? 'Owner-managed details may be marked SETUP_REQUIRED until configured.' : 'मालिक कॉन्फ़िगरेशन तक कुछ जानकारी SETUP_REQUIRED दिख सकती है।'}</p>
+      </div>
+    </footer>
+  </body>
+</html>

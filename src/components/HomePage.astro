@@ -1,0 +1,55 @@
+---
+import type { Locale } from '../lib/constants';
+import type { BusinessSettings } from '../lib/types';
+import { t } from '../lib/i18n';
+
+interface Props {
+  locale: Locale;
+  settings: BusinessSettings;
+}
+
+const { locale, settings } = Astro.props;
+const copy = t(locale);
+const businessName = locale === 'hi' ? settings.business_name_hi : settings.business_name_en;
+const heading = locale === 'en'
+  ? `CNG Cylinder Testing & Retesting Centre in ${settings.city}`
+  : `${settings.city} में सीएनजी सिलेंडर टेस्टिंग और रिटेस्टिंग केंद्र`;
+---
+
+<section class="section">
+  <div class="container" style="display:grid;grid-template-columns:1.1fr 1fr;gap:1.5rem;align-items:center;">
+    <div>
+      <p style="margin:0 0 .4rem;color:var(--muted)">{businessName}</p>
+      <h1 style="font-size:clamp(1.8rem,4vw,2.8rem);margin:.3rem 0 1rem">{heading}</h1>
+      <p>
+        {locale === 'en'
+          ? 'Book CNG cylinder hydro testing slots online or via reception. Live slot availability is shared across website, phone, WhatsApp and walk-ins.'
+          : 'सीएनजी सिलेंडर हाइड्रो टेस्टिंग स्लॉट ऑनलाइन या रिसेप्शन से बुक करें। वेबसाइट, फोन, व्हाट्सऐप और वॉक-इन सभी के लिए एक साझा उपलब्धता रहती है।'}
+      </p>
+      <div style="display:flex;flex-wrap:wrap;gap:.75rem;margin-top:1rem">
+        <a class="cta cta-primary" href={`/${locale}/book/`}>{copy.actions.book}</a>
+        <a class="cta cta-secondary" href={`tel:${settings.contact_phone}`}>{copy.actions.call}</a>
+        <a class="cta cta-secondary" href={settings.map_url}>{copy.actions.directions}</a>
+      </div>
+    </div>
+    <figure class="card" style="margin:0;padding:0;overflow:hidden;">
+      <img
+        src="https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1200&q=70"
+        alt={locale === 'en' ? 'Replace with actual HSR facility photo' : 'कृपया वास्तविक एचएसआर सुविधा फोटो से बदलें'}
+        style="display:block;width:100%;height:100%;object-fit:cover;min-height:280px"
+      />
+      <figcaption style="padding:.6rem 1rem;color:var(--muted)">
+        {locale === 'en' ? 'Placeholder image: replace in owner settings/assets.' : 'प्लेसहोल्डर इमेज: इसे मालिक सेटिंग्स/एसेट्स में बदलें।'}
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0">
+  <div class="container" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1rem;">
+    <article class="card"><h2>{locale === 'en' ? 'Vehicle types' : 'वाहन प्रकार'}</h2><p>{locale === 'en' ? 'Private cars, taxis, LCV/tempo and heavy trucks.' : 'प्राइवेट कार, टैक्सी, एलसीवी/टेम्पो और हैवी ट्रक।'}</p></article>
+    <article class="card"><h2>{locale === 'en' ? 'Testing process' : 'टेस्टिंग प्रक्रिया'}</h2><p>{locale === 'en' ? 'Booking → inspection → hydro test/retest workflow.' : 'बुकिंग → निरीक्षण → हाइड्रो टेस्ट/रिटेस्ट वर्कफ़्लो।'}</p></article>
+    <article class="card"><h2>{locale === 'en' ? 'Verified credentials' : 'सत्यापित प्रमाणपत्र'}</h2><p>{locale === 'en' ? 'Public credential claims stay hidden until owner verification.' : 'मालिक सत्यापन तक सार्वजनिक प्रमाणपत्र दावे छुपे रहते हैं।'}</p></article>
+    <article class="card"><h2>{locale === 'en' ? 'Opening hours' : 'खुलने का समय'}</h2><p>{locale === 'en' ? 'Editable in owner console. Confirm before going live.' : 'ओनर कंसोल में बदले जा सकते हैं। लाइव से पहले पुष्टि करें।'}</p></article>
+  </div>
+</section>

@@ -1,0 +1,39 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getDb, getBusinessSettings } from '../../lib/db';
+import { getSeoMeta } from '../../lib/content';
+import { calculateNextRetestDate } from '../../lib/expiry';
+
+const db = getDb(Astro);
+const [settings, seo] = await Promise.all([getBusinessSettings(db), getSeoMeta(db, 'en')]);
+const lastPeriodicTestDate = Astro.url.searchParams.get('lastPeriodicTestDate') ?? '';
+let nextDueDate: string | null = null;
+let error: string | null = null;
+
+if (lastPeriodicTestDate) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(lastPeriodicTestDate)) {
+    nextDueDate = calculateNextRetestDate(lastPeriodicTestDate);
+  } else {
+    error = 'Please use YYYY-MM-DD date format.';
+  }
+}
+---
+
+<BaseLayout locale="en" title="Check CNG Test Expiry" description={seo.description} canonicalPath="/en/check-expiry/" businessName={settings.business_name_en}>
+  <section class="section">
+    <div class="container card">
+      <h1>CNG Cylinder Retest Reminder</h1>
+      <p>Enter last periodic test date from cylinder marking or official records.</p>
+      <form method="get">
+        <label for="lastPeriodicTestDate">Last periodic test date</label>
+        <input id="lastPeriodicTestDate" name="lastPeriodicTestDate" type="date" required value={lastPeriodicTestDate} style="display:block;min-height:56px;padding:.5rem;border:1px solid var(--border);border-radius:var(--radius);margin:.5rem 0 1rem" />
+        <button class="cta cta-primary" type="submit">Check next due date</button>
+      </form>
+      {error && <p role="alert" style="color:#8b0000">{error}</p>}
+      {nextDueDate && <p><strong>Next due date:</strong> {nextDueDate}</p>}
+      <p style="color:var(--muted)">
+        Informational reminder only. Official markings, certificate and applicable standards govern final validity.
+      </p>
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,9 @@
+---
+import { requireRole } from '../../lib/auth';
+
+const auth = requireRole(Astro.request, Astro.getRuntimeEnv(locals), ['OWNER', 'RECEPTIONIST']);
+if (!auth.ok) return auth.response;
+import { getRuntimeEnv } from '../../lib/runtime-env';
+---
+
+<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>Cylinder register</title></head><body><main style="max-width:900px;margin:2rem auto;font-family:system-ui,sans-serif"><h1>Cylinder retest register</h1><p>Create records only after actual completed test outcomes.</p></main></body></html>

@@ -1,0 +1,18 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BookingWizard from '../../components/booking/BookingWizard';
+import { getDb, getBusinessSettings } from '../../lib/db';
+import { getSeoMeta } from '../../lib/content';
+
+const db = getDb(Astro);
+const [settings, seo] = await Promise.all([getBusinessSettings(db), getSeoMeta(db, 'en')]);
+---
+
+<BaseLayout locale="en" title="Book Appointment" description={seo.description} canonicalPath="/en/book/" businessName={settings.business_name_en}>
+  <section class="section">
+    <div class="container card">
+      <h1>Book CNG cylinder hydro testing appointment</h1>
+      <BookingWizard client:load locale="en" />
+    </div>
+  </section>
+</BaseLayout>
