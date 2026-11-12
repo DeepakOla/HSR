@@ -19,7 +19,7 @@ const schema = z.object({
 });
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const auth = requireRole(request, getRuntimeEnv(locals), ['OWNER', 'RECEPTIONIST']);
+  const auth = await requireRole(request, getRuntimeEnv(locals), ['OWNER', 'RECEPTIONIST']);
   if (!auth.ok) return auth.response;
 
   const body = await request.json().catch(() => null);

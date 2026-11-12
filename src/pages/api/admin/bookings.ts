@@ -6,7 +6,7 @@ import { errorResponse, jsonResponse, nowIso } from '../../../lib/utils';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
 
 export const GET: APIRoute = async ({ request, locals, url }) => {
-  const auth = requireRole(request, getRuntimeEnv(locals), ['OWNER', 'RECEPTIONIST']);
+  const auth = await requireRole(request, getRuntimeEnv(locals), ['OWNER', 'RECEPTIONIST']);
   if (!auth.ok) return auth.response;
 
   const q = url.searchParams.get('q')?.trim();
@@ -40,7 +40,7 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const auth = requireRole(request, getRuntimeEnv(locals), ['OWNER', 'RECEPTIONIST']);
+  const auth = await requireRole(request, getRuntimeEnv(locals), ['OWNER', 'RECEPTIONIST']);
   if (!auth.ok) return auth.response;
 
   const body = await request.json().catch(() => null);

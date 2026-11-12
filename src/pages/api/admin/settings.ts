@@ -25,7 +25,7 @@ const updateSchema = z.object({
 });
 
 export const GET: APIRoute = async ({ request, locals }) => {
-  const auth = requireRole(request, getRuntimeEnv(locals), ['OWNER']);
+  const auth = await requireRole(request, getRuntimeEnv(locals), ['OWNER']);
   if (!auth.ok) return auth.response;
 
   const db = getDb({ locals } as any);
@@ -34,7 +34,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const auth = requireRole(request, getRuntimeEnv(locals), ['OWNER']);
+  const auth = await requireRole(request, getRuntimeEnv(locals), ['OWNER']);
   if (!auth.ok) return auth.response;
 
   const body = await request.json().catch(() => null);

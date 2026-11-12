@@ -5,7 +5,7 @@ import { errorResponse } from '../../../lib/utils';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
 
 export const GET: APIRoute = async ({ request, locals, url }) => {
-  const auth = requireRole(request, getRuntimeEnv(locals), ['OWNER', 'RECEPTIONIST']);
+  const auth = await requireRole(request, getRuntimeEnv(locals), ['OWNER', 'RECEPTIONIST']);
   if (!auth.ok) return auth.response;
 
   const bookingCode = url.searchParams.get('bookingCode');

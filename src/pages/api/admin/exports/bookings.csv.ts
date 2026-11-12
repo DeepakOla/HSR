@@ -4,7 +4,7 @@ import { getDb } from '../../../../lib/db';
 import { getRuntimeEnv } from '../../../../lib/runtime-env';
 
 export const GET: APIRoute = async ({ request, locals }) => {
-  const auth = requireRole(request, getRuntimeEnv(locals), ['OWNER', 'RECEPTIONIST']);
+  const auth = await requireRole(request, getRuntimeEnv(locals), ['OWNER', 'RECEPTIONIST']);
   if (!auth.ok) return auth.response;
 
   const db = getDb({ locals } as any);
