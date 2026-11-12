@@ -6,8 +6,8 @@ import type { SlotAvailability, VehicleCategory } from './types';
 const ACTIVE_STATES_SQL = "('HELD','PENDING_VERIFICATION','CONFIRMED','CHECKED_IN','IN_PROGRESS')";
 
 export async function fetchAvailability(db: D1Database, locale: Locale, fromDate: string, days = 14): Promise<SlotAvailability[]> {
-  const endDate = new Date(fromDate);
-  endDate.setDate(endDate.getDate() + days);
+  const endDate = new Date(`${fromDate}T00:00:00Z`);
+  endDate.setUTCDate(endDate.getUTCDate() + days);
   const end = endDate.toISOString().slice(0, 10);
 
   const rows = await queryAll<{
@@ -54,7 +54,16 @@ export async function fetchAvailability(db: D1Database, locale: Locale, fromDate
     [fromDate, end]
   );
 
-  return rows.map((row) => {
+  const clock = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date());
+  const clockParts = Object.fromEntries(clock.map((part) => [part.type, part.value]));
+  const todayInIndia = `${clockParts.year}-${clockParts.month}-${clockParts.day}`;
+  const currentTimeInIndia = `${clockParts.hour}:${clockParts.minute}`;
+
+  return rows.filter((row) => row.serviceDate > todayInIndia || (row.serviceDate === todayInIndia && row.startTime > currentTimeInIndia)).map((row) => {
     const dayRemaining = Math.max(row.dayCapacity - row.dayReserved, 0);
     const slotRemaining = Math.max(Math.min(row.slotCapacity - row.slotReserved, dayRemaining), 0);
     return {

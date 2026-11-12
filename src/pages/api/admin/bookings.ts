@@ -4,6 +4,7 @@ import { getDb } from '../../../lib/db';
 import { adminBookingStateSchema } from '../../../lib/schemas';
 import { errorResponse, jsonResponse, nowIso } from '../../../lib/utils';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
+import { validateOrigin } from '../../../lib/security';
 
 export const GET: APIRoute = async ({ request, locals, url }) => {
   const auth = await requireRole(request, getRuntimeEnv(locals), ['OWNER', 'RECEPTIONIST']);
@@ -53,6 +54,9 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
 export const POST: APIRoute = async ({ request, locals }) => {
   const auth = await requireRole(request, getRuntimeEnv(locals), ['OWNER', 'RECEPTIONIST']);
   if (!auth.ok) return auth.response;
+
+  const originError = validateOrigin(request);
+  if (originError) return originError;
 
   const body = await request.json().catch(() => null);
   const parsed = adminBookingStateSchema.safeParse(body);

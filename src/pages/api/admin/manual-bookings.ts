@@ -5,6 +5,7 @@ import { createHold } from '../../../lib/booking-engine';
 import { getDb } from '../../../lib/db';
 import { errorResponse, jsonResponse } from '../../../lib/utils';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
+import { validateOrigin } from '../../../lib/security';
 
 const schema = z.object({
   locale: z.enum(['en', 'hi']).default('en'),
@@ -21,6 +22,9 @@ const schema = z.object({
 export const POST: APIRoute = async ({ request, locals }) => {
   const auth = await requireRole(request, getRuntimeEnv(locals), ['OWNER', 'RECEPTIONIST']);
   if (!auth.ok) return auth.response;
+
+  const originError = validateOrigin(request);
+  if (originError) return originError;
 
   const body = await request.json().catch(() => null);
   const parsed = schema.safeParse(body);

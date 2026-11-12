@@ -4,7 +4,7 @@ import { getDb } from '../../../lib/db';
 import { errorResponse, jsonResponse } from '../../../lib/utils';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
 
-const ACTIVE_STATES = "('HELD','PENDING_VERIFICATION','CONFIRMED','CHECKED_IN','IN_PROGRESS')";
+const CAPACITY_CONSUMED_STATES = "('HELD','PENDING_VERIFICATION','CONFIRMED','CHECKED_IN','IN_PROGRESS','COMPLETED')";
 
 function todayInIndia() {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -40,7 +40,7 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
       FROM daily_slot_snapshots dss
       LEFT JOIN bookings b
         ON b.slot_snapshot_id = dss.id
-       AND b.reservation_state IN ${ACTIVE_STATES}
+       AND b.reservation_state IN ${CAPACITY_CONSUMED_STATES}
       WHERE dss.service_date = ?
         AND dss.is_closed = 0
       GROUP BY dss.id
@@ -49,7 +49,7 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
     db.prepare(
       `SELECT
         COALESCE(MAX(daily_capacity), 0) AS dailyCapacity,
-        COALESCE((SELECT SUM(cylinder_count_snapshot) FROM bookings WHERE service_date = ? AND reservation_state IN ${ACTIVE_STATES}), 0) AS reserved
+        COALESCE((SELECT SUM(cylinder_count_snapshot) FROM bookings WHERE service_date = ? AND reservation_state IN ${CAPACITY_CONSUMED_STATES}), 0) AS reserved
       FROM daily_slot_snapshots
       WHERE service_date = ? AND is_closed = 0`
     ).bind(date, date).first<{dailyCapacity:number;reserved:number}>(),

@@ -4,6 +4,7 @@ import { requireRole } from '../../../lib/auth';
 import { getDb } from '../../../lib/db';
 import { errorResponse, jsonResponse, nowIso } from '../../../lib/utils';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
+import { validateOrigin } from '../../../lib/security';
 
 const categorySchema = z.object({
   code: z.string().trim().min(2).max(40).regex(/^[A-Z0-9_]+$/),
@@ -46,6 +47,9 @@ export const GET: APIRoute = async ({ request, locals }) => {
 export const POST: APIRoute = async ({ request, locals }) => {
   const auth = await requireRole(request, getRuntimeEnv(locals), ['OWNER']);
   if (!auth.ok) return auth.response;
+
+  const originError = validateOrigin(request);
+  if (originError) return originError;
 
   const body = await request.json().catch(() => null);
   const parsed = saveSchema.safeParse(body);

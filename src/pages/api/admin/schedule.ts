@@ -4,6 +4,7 @@ import { requireRole } from '../../../lib/auth';
 import { getDb } from '../../../lib/db';
 import { errorResponse, jsonResponse } from '../../../lib/utils';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
+import { validateOrigin } from '../../../lib/security';
 
 const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
 const timeSchema = z.string().regex(timePattern);
@@ -81,6 +82,9 @@ export const GET: APIRoute = async ({ request, locals }) => {
 export const POST: APIRoute = async ({ request, locals }) => {
   const auth = await requireRole(request, getRuntimeEnv(locals), ['OWNER']);
   if (!auth.ok) return auth.response;
+
+  const originError = validateOrigin(request);
+  if (originError) return originError;
 
   const body = await request.json().catch(() => null);
   const parsed = saveSchema.safeParse(body);

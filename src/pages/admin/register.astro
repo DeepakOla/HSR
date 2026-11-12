@@ -1,9 +1,12 @@
 ---
 import { requireRole } from '../../lib/auth';
 import { getRuntimeEnv } from '../../lib/runtime-env';
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import RegisterConsole from '../../components/admin/RegisterConsole';
 
 const auth = await requireRole(Astro.request, getRuntimeEnv(Astro.locals), ['OWNER', 'RECEPTIONIST']);
 if (!auth.ok) return auth.response;
 ---
-
-<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>Cylinder register</title></head><body><main style="max-width:900px;margin:2rem auto;font-family:system-ui,sans-serif"><h1>Cylinder retest register</h1><p>Create records only after actual completed test outcomes.</p></main></body></html>
+<AdminLayout title="Cylinder register" owner={auth.staff.role === 'OWNER'}>
+  <RegisterConsole client:load />
+</AdminLayout>

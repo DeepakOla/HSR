@@ -242,9 +242,9 @@ VALUES
 
 -- Seed 45 days of daily slot snapshots.
 WITH RECURSIVE days(d) AS (
-  SELECT date('now', 'localtime')
+  SELECT date('now', '+330 minutes')
   UNION ALL
-  SELECT date(d, '+1 day') FROM days WHERE d < date('now', 'localtime', '+45 day')
+  SELECT date(d, '+1 day') FROM days WHERE d < date('now', '+330 minutes', '+45 day')
 )
 INSERT OR IGNORE INTO daily_slot_snapshots(
   service_date,
