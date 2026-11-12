@@ -11,6 +11,7 @@ const schema = z.object({
   locale: z.enum(['en', 'hi']).default('en'),
   slotSnapshotId: z.number().int().positive(),
   categoryId: z.number().int().positive(),
+  vehicleType: z.string().trim().min(2).max(100),
   customerName: z.string().trim().min(2).max(120),
   mobile: z.string().trim().min(10).max(20),
   vehicleRegistration: z.string().trim().min(4).max(20),
