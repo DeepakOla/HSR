@@ -2,19 +2,20 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getDb, getBusinessSettings } from '../../lib/db';
 import { getSeoMeta } from '../../lib/content';
-import { calculateNextRetestDate } from '../../lib/expiry';
+import { calculateNextRetestDate, isValidIsoDate, todayInIndia } from '../../lib/expiry';
 
 const db = getDb(Astro);
 const [settings, seo] = await Promise.all([getBusinessSettings(db), getSeoMeta(db, 'en')]);
 const lastPeriodicTestDate = Astro.url.searchParams.get('lastPeriodicTestDate') ?? '';
+const today = todayInIndia();
 let nextDueDate: string | null = null;
 let error: string | null = null;
 
 if (lastPeriodicTestDate) {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(lastPeriodicTestDate)) {
+  if (isValidIsoDate(lastPeriodicTestDate) && lastPeriodicTestDate <= today) {
     nextDueDate = calculateNextRetestDate(lastPeriodicTestDate);
   } else {
-    error = 'Please use YYYY-MM-DD date format.';
+    error = 'Enter a real test date that is not in the future.';
   }
 }
 ---
@@ -26,7 +27,7 @@ if (lastPeriodicTestDate) {
       <p>Enter last periodic test date from cylinder marking or official records.</p>
       <form method="get">
         <label for="lastPeriodicTestDate">Last periodic test date</label>
-        <input id="lastPeriodicTestDate" name="lastPeriodicTestDate" type="date" required value={lastPeriodicTestDate} style="display:block;min-height:56px;padding:.5rem;border:1px solid var(--border);border-radius:var(--radius);margin:.5rem 0 1rem" />
+        <input id="lastPeriodicTestDate" name="lastPeriodicTestDate" type="date" required max={today} value={lastPeriodicTestDate} style="display:block;min-height:56px;padding:.5rem;border:1px solid var(--border);border-radius:var(--radius);margin:.5rem 0 1rem" />
         <button class="cta cta-primary" type="submit">Check next due date</button>
       </form>
       {error && <p role="alert" style="color:#8b0000">{error}</p>}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildSnapshotScheduleRanges } from '../src/lib/booking-engine';
+import { buildSnapshotScheduleRanges } from '../src/lib/schedule-ranges';
 
 describe('buildSnapshotScheduleRanges', () => {
   it('keeps the current schedule filling the horizon when the next version starts later', () => {

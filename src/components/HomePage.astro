@@ -11,9 +11,16 @@ interface Props {
 const { locale, settings } = Astro.props;
 const copy = t(locale);
 const businessName = locale === 'hi' ? settings.business_name_hi : settings.business_name_en;
-const heading = locale === 'en'
-  ? `CNG Cylinder Testing & Retesting Centre in ${settings.city}`
-  : `${settings.city} में सीएनजी सिलेंडर टेस्टिंग और रिटेस्टिंग केंद्र`;
+const cityReady = settings.city !== 'SETUP_REQUIRED';
+const phoneReady = settings.contact_phone !== 'SETUP_REQUIRED';
+const mapReady = settings.map_url !== 'SETUP_REQUIRED' && settings.map_url.startsWith('https://');
+const heading = cityReady
+  ? locale === 'en'
+    ? `CNG Cylinder Testing & Retesting Centre in ${settings.city}`
+    : `${settings.city} में सीएनजी सिलेंडर टेस्टिंग और रिटेस्टिंग केंद्र`
+  : locale === 'en'
+    ? 'CNG Cylinder Testing & Retesting Centre'
+    : 'सीएनजी सिलेंडर टेस्टिंग और रिटेस्टिंग केंद्र';
 ---
 
 <section class="section">
@@ -28,8 +35,8 @@ const heading = locale === 'en'
       </p>
       <div style="display:flex;flex-wrap:wrap;gap:.75rem;margin-top:1rem">
         <a class="cta cta-primary" href={`/${locale}/book/`}>{copy.actions.book}</a>
-        <a class="cta cta-secondary" href={`tel:${settings.contact_phone}`}>{copy.actions.call}</a>
-        <a class="cta cta-secondary" href={settings.map_url}>{copy.actions.directions}</a>
+        {phoneReady && <a class="cta cta-secondary" href={`tel:${settings.contact_phone}`}>{copy.actions.call}</a>}
+        {mapReady && <a class="cta cta-secondary" href={settings.map_url} target="_blank" rel="noreferrer">{copy.actions.directions}</a>}
       </div>
     </div>
     <figure class="card" style="margin:0;padding:0;overflow:hidden;">

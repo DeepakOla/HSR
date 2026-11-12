@@ -11,6 +11,5 @@ export default defineConfig({
   }),
   output: 'server',
   integrations: [react()],
-  site: 'https://SETUP_REQUIRED.example',
   trailingSlash: 'always',
 });

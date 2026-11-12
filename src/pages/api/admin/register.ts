@@ -2,26 +2,10 @@ import type { APIRoute } from 'astro';
 import { z } from 'zod';
 import { requireRole } from '../../../lib/auth';
 import { getDb } from '../../../lib/db';
-import { calculateNextRetestDate } from '../../../lib/expiry';
+import { calculateNextRetestDate, isValidIsoDate, todayInIndia } from '../../../lib/expiry';
 import { errorResponse, jsonResponse, normalizeVehicleRegistration } from '../../../lib/utils';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
 import { validateOrigin } from '../../../lib/security';
-
-function todayInIndia() {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit',
-  }).formatToParts(new Date());
-  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return `${values.year}-${values.month}-${values.day}`;
-}
-
-function isRealDate(value: string) {
-  const [year, month, day] = value.split('-').map(Number);
-  const parsed = new Date(Date.UTC(year, month - 1, day));
-  return parsed.getUTCFullYear() === year &&
-    parsed.getUTCMonth() === month - 1 &&
-    parsed.getUTCDate() === day;
-}
 
 const schema = z.object({
   bookingCode: z.string().trim().min(8).max(40),
@@ -29,7 +13,7 @@ const schema = z.object({
   cylinderSerial: z.string().trim().min(2).max(120),
   manufacturer: z.string().trim().max(120).optional(),
   specification: z.string().trim().max(120).optional(),
-  actualPeriodicTestDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(isRealDate, 'Enter a real calendar date'),
+  actualPeriodicTestDate: z.string().refine(isValidIsoDate, 'Enter a real calendar date'),
   testPressureBar: z.string().trim().max(20).optional().refine(
     (value) => !value || (Number.isFinite(Number(value)) && Number(value) > 0),
     'Test pressure must be a positive number'

@@ -14,8 +14,8 @@ const { locale, title, description, canonicalPath, businessName } = Astro.props;
 const copy = t(locale);
 const alternate = otherLocale(locale);
 const path = canonicalPath.endsWith('/') ? canonicalPath : `${canonicalPath}/`;
-const canonical = new URL(path, Astro.site);
-const alternateHref = new URL(localizePath(path, alternate), Astro.site);
+const canonical = new URL(path, Astro.url.origin);
+const alternateHref = new URL(localizePath(path, alternate), Astro.url.origin);
 ---
 
 <!doctype html>

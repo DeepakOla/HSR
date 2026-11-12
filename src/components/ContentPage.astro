@@ -1,15 +1,57 @@
 ---
+import type { Locale } from '../lib/constants';
+
+interface ContactDetails {
+  phone: string;
+  whatsappNumber: string;
+  email: string;
+  address: string;
+  mapUrl: string;
+}
+
 interface Props {
   title: string;
   body: string;
+  locale: Locale;
+  contact?: ContactDetails;
 }
 
-const { title, body } = Astro.props;
+const { title, body, locale, contact } = Astro.props;
+const isConfigured = body.trim() !== 'SETUP_REQUIRED';
+const displayBody = isConfigured
+  ? body
+  : locale === 'en'
+    ? 'This page is being prepared by the business owner. Please check back after the service details have been verified.'
+    : 'यह पृष्ठ व्यवसाय के मालिक द्वारा तैयार किया जा रहा है। सेवाओं की जानकारी सत्यापित होने के बाद दोबारा देखें।';
+const phoneReady = contact && contact.phone !== 'SETUP_REQUIRED';
+const whatsappReady = contact && contact.whatsappNumber !== 'SETUP_REQUIRED';
+const emailReady = contact && contact.email !== 'SETUP_REQUIRED';
+const addressReady = contact && contact.address !== 'SETUP_REQUIRED';
+const mapReady = contact && contact.mapUrl !== 'SETUP_REQUIRED' && contact.mapUrl.startsWith('https://');
+const whatsappLink = contact && whatsappReady ? `https://wa.me/${contact.whatsappNumber.replace(/\D/g, '')}` : null;
 ---
 
 <section class="section">
   <div class="container card">
     <h1>{title}</h1>
-    <p>{body}</p>
+    <p>{displayBody}</p>
+    {contact && (phoneReady || whatsappReady || emailReady || addressReady || mapReady) && (
+      <section aria-label={locale === 'en' ? 'Business contact details' : 'व्यवसाय संपर्क विवरण'} class="contact-details">
+        <h2>{locale === 'en' ? 'Contact details' : 'संपर्क विवरण'}</h2>
+        {addressReady && <p>{contact.address}</p>}
+        <div class="contact-links">
+          {phoneReady && <a href={`tel:${contact.phone}`}>{locale === 'en' ? 'Call' : 'कॉल करें'}: {contact.phone}</a>}
+          {whatsappLink && <a href={whatsappLink} target="_blank" rel="noreferrer">WhatsApp: {contact.whatsappNumber}</a>}
+          {emailReady && <a href={`mailto:${contact.email}`}>{contact.email}</a>}
+          {mapReady && <a href={contact.mapUrl} target="_blank" rel="noreferrer">{locale === 'en' ? 'Get directions' : 'रास्ता देखें'}</a>}
+        </div>
+      </section>
+    )}
   </div>
 </section>
+
+<style>
+  .contact-details { margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border); }
+  .contact-details h2 { font-size:1.1rem; }
+  .contact-links { display:flex; flex-wrap:wrap; gap:.75rem 1rem; }
+</style>
