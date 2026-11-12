@@ -42,6 +42,7 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
         ON b.slot_snapshot_id = dss.id
        AND b.reservation_state IN ${ACTIVE_STATES}
       WHERE dss.service_date = ?
+        AND dss.is_closed = 0
       GROUP BY dss.id
       ORDER BY dss.start_time ASC`
     ).bind(date).all(),
@@ -50,7 +51,7 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
         COALESCE(MAX(daily_capacity), 0) AS dailyCapacity,
         COALESCE((SELECT SUM(cylinder_count_snapshot) FROM bookings WHERE service_date = ? AND reservation_state IN ${ACTIVE_STATES}), 0) AS reserved
       FROM daily_slot_snapshots
-      WHERE service_date = ?`
+      WHERE service_date = ? AND is_closed = 0`
     ).bind(date, date).first<{dailyCapacity:number;reserved:number}>(),
     db.prepare(
       `SELECT COUNT(*) AS count FROM bookings

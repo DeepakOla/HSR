@@ -56,6 +56,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
     headers: {
       'content-type': 'text/csv; charset=utf-8',
       'content-disposition': 'attachment; filename="bookings.csv"',
+      'cache-control': 'private, no-store',
     },
   });
 };

@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 export function jsonResponse(data: unknown, status = 200): Response {
   return new Response(JSON.stringify({ success: status < 400, data }), {
     status,
-    headers: { 'content-type': 'application/json; charset=utf-8' },
+    headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
   });
 }
 
@@ -12,7 +12,7 @@ export function errorResponse(message: string, status = 400, code = 'BAD_REQUEST
     JSON.stringify({ success: false, error: { code, message } }),
     {
       status,
-      headers: { 'content-type': 'application/json; charset=utf-8' },
+      headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
     }
   );
 }

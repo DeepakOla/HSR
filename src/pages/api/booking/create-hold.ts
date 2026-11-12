@@ -16,7 +16,7 @@ function buildUpiUrl(pa: string, pn: string, amountPaise: number | null, booking
 
 export const POST: APIRoute = async ({ request, locals }) => {
   const env = getRuntimeEnv(locals);
-  const originError = validateOrigin(request, env);
+  const originError = validateOrigin(request);
   if (originError) return originError;
 
   if (!checkRateLimit(limitKey(request, 'create-hold'), 20, 60_000)) {

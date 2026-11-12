@@ -19,7 +19,7 @@ function detectImageMime(bytes: Uint8Array): string | null {
 
 export const POST: APIRoute = async ({ request, locals }) => {
   const env = getRuntimeEnv(locals);
-  const originError = validateOrigin(request, env);
+  const originError = validateOrigin(request);
   if (originError) return originError;
 
   if (!checkRateLimit(limitKey(request, 'upload-evidence'), 10, 60_000)) {

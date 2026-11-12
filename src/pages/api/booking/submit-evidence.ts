@@ -5,11 +5,9 @@ import { checkRateLimit, limitKey } from '../../../lib/rate-limit';
 import { submitEvidenceSchema } from '../../../lib/schemas';
 import { validateOrigin } from '../../../lib/security';
 import { errorResponse, jsonResponse } from '../../../lib/utils';
-import { getRuntimeEnv } from '../../../lib/runtime-env';
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const env = getRuntimeEnv(locals);
-  const originError = validateOrigin(request, env);
+  const originError = validateOrigin(request);
   if (originError) return originError;
 
   if (!checkRateLimit(limitKey(request, 'submit-evidence'), 30, 60_000)) {

@@ -35,7 +35,7 @@ export const GET: APIRoute = async ({ request, locals, url }) => {
   return new Response(object.body, {
     headers: {
       'content-type': evidence.mimeType,
-      'cache-control': 'private, max-age=60',
+      'cache-control': 'private, no-store',
     },
   });
 };
