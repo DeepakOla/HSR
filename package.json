@@ -18,7 +18,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "format": "prettier --check .",
-    "format:write": "prettier --write ."
+    "format:write": "prettier --write .",
+    "db:migrate:preview": "npx wrangler d1 migrations apply hsr_green_energy_preview --remote"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.4.7",
