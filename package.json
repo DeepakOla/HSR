@@ -19,7 +19,7 @@
     "test:e2e": "playwright test",
     "format": "prettier --check .",
     "format:write": "prettier --write .",
-    "db:migrate:preview": "npx wrangler d1 migrations apply hsr_green_energy_preview --remote"
+    "db:migrate:preview": "npx wrangler d1 migrations apply PREVIEW_DB --remote --config wrangler.preview-migrations.jsonc"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.4.7",
