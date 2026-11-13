@@ -77,7 +77,20 @@
 ## 5. Verification Commands
 
 ```powershell
-npm run test        # Runs Vitest unit & integration suites
-npm run typecheck   # Runs Astro TypeScript diagnostics
-npm run build       # Validates production build
+npm run test        # Runs Vitest unit & integration suites (19 suites, 466 tests passing)
+npm run typecheck   # Runs Astro TypeScript diagnostics (106 files, 0 errors, 0 warnings)
+npm run build       # Validates production build with prerendered blog and SSR Worker
 ```
+
+---
+
+## 6. Milestone Progress Status
+
+- [x] **M1: Vehicle Registration Module**: State and Bharat (BH) series normalization & validation with localized bilingual errors.
+- [x] **M2: Pricing Engine & ₹500 Flat Advance**: Single source of truth calculation with ₹500 flat advance per booking and fail-closed pre-write UPI payment gate.
+- [x] **M3: Customer Booking Wizard**: Single-tap date advance, 8 vehicle types, Truck 4-cylinder auto-select, public 1–6 cylinder limit, linked time slot calculations.
+- [x] **M4: Administrative Navigation & Validation Parity**: Footer staff login link, reception & register vehicle registration validation parity.
+- [x] **M5: Bilingual Owner Content CMS**: Owner Console Section 04 for managing editable page content (About, Services, How It Works, Contact) in English and Hindi with audit log.
+- [x] **M6: Professional Industrial UI/UX Redesign + Blog + Local SEO**: Direction A tokens (`design-tokens.css`), Astro Content Collections blog, static route prerendering, Schema.org AutoRepair JSON-LD, bilingual RSS feeds, dynamic sitemap.
+- [x] **M7: Defensive Security Audit**: Cloudflare Access RS256 token verification, RBAC role separation, public API PII exposure prevention, CSRF origin verification, D1 concurrency and hold expiry invariants verified.
+- [ ] **M8: Preview Deployment Readiness**: Final verification against Cloudflare Preview environment. Zero production deployment.

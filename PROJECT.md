@@ -62,8 +62,8 @@
 | 10 | Receptionist & Register Validation Parity | Symmetrically apply vehicle registration validation to receptionist manual booking and cylinder register | M4 | ✅ COMPLETE |
 | 11 | Safe Structured Owner Content CMS | Owner Console Section 04 for bilingual page editing (About, Services, How it works, Contact) with audit log | M5 | ✅ COMPLETE |
 | 12 | Professional Industrial UI/UX Redesign + Blog + Local SEO | Direction A design system: industrial typography, tokens, Astro collections blog, Schema.org | M6 | ✅ COMPLETE |
-| 13 | Comprehensive E2E Test Suite & Security Audit | 4-tier test suite + Cloudflare Security Audit independent assessment | M7 | PLANNED |
-| 14 | Preview Readiness & Verification | Safe Preview-only deployment verification; zero production mutation | M8 | PLANNED |
+| 13 | Comprehensive E2E Test Suite & Security Audit | 4-tier test suite + Cloudflare Security Audit independent assessment | M7 | ✅ COMPLETE |
+| 14 | Preview Readiness & Verification | Safe Preview-only deployment verification; zero production mutation | M8 | READY |
 
 ---
 
@@ -78,7 +78,7 @@
 | M4 | Administrative Navigation & Validation Parity | `BaseLayout.astro` footer link, `ReceptionDashboard.tsx`, `RegisterConsole.tsx` | M1, M2 | ✅ COMPLETE |
 | M5 | Bilingual Owner Content CMS | `/api/admin/content.ts`, `OwnerSettings.tsx`, `ContentPage.astro`, `localized_content` | M3, M4 | ✅ COMPLETE |
 | M6 | Professional Industrial UI/UX Redesign + Blog + Local SEO | Direction A tokens (`design-tokens.css`), responsive layouts, blog collections, Schema.org | M3, M5 | ✅ COMPLETE |
-| M7 | Security Audit & Quality Verification | Independent defensive security audit, API trust boundaries, concurrency, and PII protection | M1–M6 | READY |
+| M7 | Security Audit & Quality Verification | Independent defensive security audit, API trust boundaries, concurrency, and PII protection | M1–M6 | ✅ COMPLETE |
 | M8 | Preview Deployment Readiness | Preview D1 migration verification, `staff_users` check (`kumardeepakola@gmail.com`) | M7 | READY |
 
 ---
