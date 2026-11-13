@@ -34,7 +34,7 @@ describe('Milestone M8: Preview Deployment Readiness & Public Demo Experience', 
         })
       );
 
-      const response = await middlewareOnRequest(context, next);
+      const response = (await middlewareOnRequest(context, next)) as Response;
       expect(response.headers.get('X-Content-Type-Options')).toBe('nosniff');
       expect(response.headers.get('X-Frame-Options')).toBe('DENY');
       expect(response.headers.get('Referrer-Policy')).toBe('strict-origin-when-cross-origin');
@@ -60,7 +60,7 @@ describe('Milestone M8: Preview Deployment Readiness & Public Demo Experience', 
           locals: { runtime: { env: {} } },
         };
         const next = vi.fn().mockResolvedValue(new Response('OK', { status: 200 }));
-        const response = await middlewareOnRequest(context, next);
+        const response = (await middlewareOnRequest(context, next)) as Response;
         expect(response.headers.get('X-Robots-Tag')).toBe('noindex, nofollow, noarchive');
       }
     });
@@ -75,7 +75,7 @@ describe('Milestone M8: Preview Deployment Readiness & Public Demo Experience', 
         locals: { runtime: { env: { APP_BASE_URL: 'https://hsrtesting.in' } } },
       };
       const next = vi.fn().mockResolvedValue(new Response('OK', { status: 200 }));
-      const response = await middlewareOnRequest(context, next);
+      const response = (await middlewareOnRequest(context, next)) as Response;
       expect(response.headers.get('X-Robots-Tag')).toBeNull();
     });
   });
@@ -117,7 +117,7 @@ describe('Milestone M8: Preview Deployment Readiness & Public Demo Experience', 
       } as any);
 
       expect(response.status).toBe(422);
-      const data = await response.json();
+      const data = (await response.json()) as any;
       expect(data.error).toBe('Validation failed');
     });
 
@@ -145,7 +145,7 @@ describe('Milestone M8: Preview Deployment Readiness & Public Demo Experience', 
       } as any);
 
       expect(response.status).toBe(200);
-      const data = await response.json();
+      const data = (await response.json()) as any;
       expect(data.success).toBe(true);
       expect(data.message).toContain('Thank you for your feedback');
 
@@ -244,7 +244,7 @@ describe('Milestone M8: Preview Deployment Readiness & Public Demo Experience', 
       } as any);
 
       expect(resetRes.status).toBe(200);
-      const data = await resetRes.json();
+      const data = (await resetRes.json()) as any;
       expect(data.success).toBe(true);
       expect(data.bookingsCancelled).toBeGreaterThanOrEqual(1);
 
