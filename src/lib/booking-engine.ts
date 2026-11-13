@@ -1,10 +1,11 @@
 import type { Locale } from './constants';
 import { buildSnapshotScheduleRanges, type SnapshotScheduleVersion } from './schedule-ranges';
 import { getBusinessSettings, queryAll, querySingle } from './db';
-import { addMinutes, generateBookingCode, generateOpaqueToken, normalizePhoneIndian, normalizeUtr, normalizeVehicleRegistration, nowIso, sha256 } from './utils';
+import { addMinutes, generateBookingCode, generateOpaqueToken, normalizePhoneIndian, normalizeUtr, nowIso, sha256 } from './utils';
 import type { SlotAvailability, VehicleCategory } from './types';
 import { findConsecutiveAvailableSlots, markBookableStarts, type OccupiedAppointmentSlot } from './appointment-slots';
-import { calculateServicePrice, FIXED_GST_RATE_BPS } from './pricing';
+import { calculateBookingPrice, FIXED_GST_RATE_BPS } from './pricing';
+import { validateVehicleRegistration } from './vehicle-registration';
 
 export async function fetchAvailability(
   db: D1Database,
@@ -73,6 +74,7 @@ export async function fetchAvailability(
   });
 }
 export async function fetchVehicleCategories(db: D1Database, locale: Locale): Promise<VehicleCategory[]> {
+  const settings = await getBusinessSettings(db);
   const rows = await queryAll<{
     id: number;
     code: string;
@@ -99,7 +101,8 @@ export async function fetchVehicleCategories(db: D1Database, locale: Locale): Pr
   );
 
   return rows.map((row) => {
-    const price = calculateServicePrice(row.basePricePaise);
+    const advancePaise = row.advancePaise ?? settings.flat_advance_paise ?? 50000;
+    const price = calculateBookingPrice(row.basePricePaise, advancePaise);
     return {
       id: row.id,
       code: row.code,
@@ -109,7 +112,7 @@ export async function fetchVehicleCategories(db: D1Database, locale: Locale): Pr
       gstRateBps: FIXED_GST_RATE_BPS,
       gstPaise: price.gstAmountPaise,
       totalPaise: price.totalPricePaise,
-      advancePaise: row.advancePaise,
+      advancePaise: advancePaise,
     };
   });
 }
@@ -194,7 +197,19 @@ export async function createHold(db: D1Database, input: CreateHoldInput) {
 
   const settings = await getBusinessSettings(db);
   const normalizedPhone = normalizePhoneIndian(input.mobile);
-  const normalizedReg = normalizeVehicleRegistration(input.vehicleRegistration);
+  const regResult = validateVehicleRegistration(input.vehicleRegistration, input.locale);
+  if (!regResult.valid) {
+    throw new Error(regResult.error || 'Invalid vehicle registration number');
+  }
+  const normalizedReg = regResult.normalized;
+
+  if (input.source === 'WEB') {
+    const vpaId = settings.vpa_id?.trim();
+    const payeeName = settings.vpa_payee_name?.trim();
+    if (!vpaId || vpaId === 'SETUP_REQUIRED' || !payeeName || payeeName === 'SETUP_REQUIRED') {
+      throw new Error('ONLINE_PAYMENT_UNAVAILABLE: Online payments are currently being configured.');
+    }
+  }
 
   const slot = await querySingle<{
     id: number; serviceDate: string; slotLabelEn: string; slotLabelHi: string;
@@ -257,14 +272,21 @@ export async function createHold(db: D1Database, input: CreateHoldInput) {
     [input.categoryId]
   );
 
-  const price = calculateServicePrice(categoryRow.basePricePaise);
+  if (input.source === 'WEB' && categoryRow.cylinderCount > 6) {
+    throw new Error('PUBLIC_CYLINDER_LIMIT_EXCEEDED: Online self-service booking is limited to a maximum of 6 cylinders.');
+  }
+
+  const advancePaise = input.source === 'WEB'
+    ? (settings.flat_advance_paise ?? 50000)
+    : (categoryRow.advancePaise ?? settings.flat_advance_paise ?? 50000);
+
+  const price = calculateBookingPrice(categoryRow.basePricePaise, advancePaise);
   const gstAmountPaise = price.gstAmountPaise;
   const totalPricePaise = price.totalPricePaise;
-  const advancePaise = categoryRow.advancePaise;
   const amountPaidPaise = input.paymentCollected ? totalPricePaise : 0;
   const balancePaise = input.reservationState === 'CONFIRMED'
-    ? input.paymentCollected ? 0 : totalPricePaise
-    : advancePaise == null ? null : totalPricePaise - advancePaise;
+    ? (input.paymentCollected ? 0 : totalPricePaise)
+    : price.balancePaise;
 
   const candidateSlots = await queryAll<OccupiedAppointmentSlot>(
     db,

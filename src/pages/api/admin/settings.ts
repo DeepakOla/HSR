@@ -18,6 +18,7 @@ const editableSchema = z.object({
   vpa_id: z.string().trim().min(3).max(120).optional(),
   vpa_payee_name: z.string().trim().min(2).max(120).optional(),
   hold_minutes: z.number().int().min(5).max(120).optional(),
+  flat_advance_paise: z.number().int().min(0).max(10_000_000).optional(),
   r2_enabled: z.number().int().min(0).max(1).optional(),
   seo_title_en: z.string().trim().min(3).max(160).optional(),
   seo_title_hi: z.string().trim().min(3).max(160).optional(),

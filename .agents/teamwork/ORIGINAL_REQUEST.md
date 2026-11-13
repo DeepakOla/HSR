@@ -473,3 +473,44 @@ Do not mark the project complete merely because it builds. The customer journey,
 - Never trust role or pricing from browser.
 - Public APIs must not leak customer PII.
 - Testing commands: `npm run test`, `npm run typecheck`, `npm run build`
+
+
+## Follow-up — 2026-11-13T06:10:20Z
+
+Continue the implementation of the HSR CNG cylinder testing platform according to the approved plan.
+
+## User Request:
+"Continue also tell me recommended setting whne ask for sertings ,Alao why have you removed the agents A B C D etc , what were those ,
+by default whole weboste will be in eng , with the opton to change in hinadi as it is in the plan"
+
+## Confirmed Project Decisions & Invariants:
+1. **Node.js**: Node.js 24.22.3 (`C:\Program Files\nodejs\node.exe`) is verified and operational. All 9 test suites (136 tests) pass. Do not change or reinstall Node.
+2. **Business Name**: Default is **HSR** (not finalised; fully configurable by Owner in `business_settings.business_name_en` & `business_name_hi`).
+3. **Location**: Default is **Rewari** (not finalised; editable by Owner in `business_settings.city`).
+4. **Contact Phone / WhatsApp**: Default is **+91 9910055355** (editable by Owner in `business_settings.contact_phone`).
+5. **Default Language**: By default the entire public website is in **English** (`/en/`), with a clear language toggle to switch to **Hindi** (`/hi/`).
+6. **Commercial Pricing & Advance**:
+   - Base service charge: ₹2,500/cylinder + 18% GST (Total: 1 cyl = ₹2,950; 2 cyl = ₹5,900; 4 cyl = ₹11,800).
+   - Temporary advance: **₹500 flat per booking** for online bookings (1–6 cylinders), stored in `business_settings.flat_advance_paise = 50000` as the single source of truth.
+   - Balance = Total payable - ₹500.
+7. **Cylinder Limits**:
+   - Public online booking dropdown: 1, 2, 3, 4, 5, 6, and "More than 6".
+   - "More than 6" stops online self-service and provides a contact card with phone/WhatsApp (+91 9910055355).
+   - Server-side public API strictly enforces max 6 cylinders for web requests.
+   - Truck preselects 4 cylinders (editable by customer).
+   - Reception desk retains 1–12 cylinder capability.
+8. **UI/UX Design**:
+   - **Direction A — Professional Industrial Trust** (industrial engineering identity, NOT green-energy/eco branding).
+   - Navy/slate/steel industrial palette with action amber/orange accents.
+   - Stock imagery is marked clearly as placeholder; authentic facility images remain pending.
+9. **Admin & Cloudflare Access**:
+   - Admin/Owner email: `kumardeepakola@gmail.com` (role `OWNER` in `staff_users`).
+   - Do not bypass Cloudflare Access JWT validation or invent dummy roles.
+
+## Reference Documents:
+- Plan: `hsr-implementation-plan.md` in artifact directory
+- Project state & roadmap: `PROJECT.md`
+- Onboarding & instructions: `ANTIGRAVITY_START_HERE.md`
+- Codebase guidelines: `AGENTS.md`
+
+Execute Milestones M2 through M8 systematically. Ensure each milestone passes tests and maintains all invariants.

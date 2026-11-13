@@ -15,7 +15,14 @@ export const GET: APIRoute = async ({ locals }) => {
     mapUrl: settings.map_url,
     timezone: settings.timezone,
     holdMinutes: settings.hold_minutes,
-    paymentConfigured: settings.vpa_id !== 'SETUP_REQUIRED' && settings.vpa_payee_name !== 'SETUP_REQUIRED',
+    flatAdvancePaise: settings.flat_advance_paise,
+    paymentConfigured:
+      !!settings.vpa_id &&
+      settings.vpa_id.trim() !== '' &&
+      settings.vpa_id !== 'SETUP_REQUIRED' &&
+      !!settings.vpa_payee_name &&
+      settings.vpa_payee_name.trim() !== '' &&
+      settings.vpa_payee_name !== 'SETUP_REQUIRED',
     r2UploadEnabled: settings.r2_enabled === 1,
   });
 };

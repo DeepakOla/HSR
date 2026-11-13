@@ -10,6 +10,7 @@ export interface BusinessSettings {
   vpa_id: string;
   vpa_payee_name: string;
   hold_minutes: number;
+  flat_advance_paise: number;
   r2_enabled: number;
   evidence_budget_bytes: number;
   timezone: string;
@@ -48,3 +49,7 @@ export interface VehicleCategory {
   totalPaise: number;
   advancePaise: number | null;
 }
+
+export type { BookingPriceBreakdown } from './pricing';
+export { calculateBookingPrice } from './pricing';
+

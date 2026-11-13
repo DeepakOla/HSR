@@ -3,9 +3,7 @@ import { getStaffContext, requireRole } from '../../src/lib/auth';
 import { SYNTHETIC_DATA, createSyntheticHoldInput } from '../fixtures/synthetic-data';
 import { MockD1Database, createMockD1 } from './d1-mock';
 import {
-  createMockSignedJwt,
   fromBase64Url,
-  generateMockKeyPair,
   getDefaultMockKeyPair,
   setupMockJwksServer,
   toBase64Url,
@@ -25,12 +23,32 @@ describe('Test Infrastructure Harness Verification', () => {
     });
 
     it('initializes in-memory database and executes migrations cleanly', async () => {
-      // business_settings should be seeded from 0001_init.sql
+      // business_settings should be seeded from 0001_init.sql and updated by 0006_flat_advance.sql
       const settings = await db
         .prepare('SELECT * FROM business_settings WHERE id = 1')
-        .first<{ id: number; vpa_id: string }>();
+        .first<{
+          id: number;
+          vpa_id: string;
+          flat_advance_paise: number;
+          business_name_en: string;
+          city: string;
+          contact_phone: string;
+        }>();
       expect(settings).not.toBeNull();
       expect(settings?.id).toBe(1);
+      expect(settings?.flat_advance_paise).toBe(50000);
+      expect(settings?.business_name_en).toBe('HSR');
+      expect(settings?.city).toBe('Rewari');
+      expect(settings?.contact_phone).toBe('+919910055355');
+
+      // staff_users should have kumardeepakola@gmail.com seeded with OWNER role
+      const ownerUser = await db
+        .prepare('SELECT * FROM staff_users WHERE email = ?')
+        .bind('kumardeepakola@gmail.com')
+        .first<{ email: string; role: string; is_active: number }>();
+      expect(ownerUser).not.toBeNull();
+      expect(ownerUser?.role).toBe('OWNER');
+      expect(ownerUser?.is_active).toBe(1);
 
       // vehicle_categories should contain seeded categories
       const categories = await db

@@ -25,6 +25,19 @@ function isReadQuery(sql: string): boolean {
   return false;
 }
 
+function createMockMeta(changes = 0, lastRowId = 0): D1Meta & Record<string, unknown> {
+  return {
+    changes,
+    last_row_id: lastRowId,
+    duration: 0,
+    size_after: 0,
+    rows_read: 0,
+    rows_written: changes,
+    changed_db: changes > 0,
+    served_by: 'v3-sqlite-mock',
+  };
+}
+
 export class MockD1PreparedStatement implements D1PreparedStatement {
   constructor(
     private rawDb: DatabaseSync,
@@ -32,7 +45,7 @@ export class MockD1PreparedStatement implements D1PreparedStatement {
     private params: unknown[] = []
   ) {}
 
-  bind(...values: unknown[]): MockD1PreparedStatement {
+  bind(...values: unknown[]): D1PreparedStatement {
     const normalized = values.map((v) => normalizeParam(v));
     return new MockD1PreparedStatement(this.rawDb, this.sql, normalized);
   }
@@ -45,38 +58,34 @@ export class MockD1PreparedStatement implements D1PreparedStatement {
     return row as T;
   }
 
-  async all<T = unknown>(): Promise<D1Result<T>> {
+  async all<T = Record<string, unknown>>(): Promise<D1Result<T>> {
     const stmt = this.rawDb.prepare(this.sql);
     const results = stmt.all(...(this.params as any[])) as T[];
     return {
       results,
       success: true,
-      meta: {
-        changes: 0,
-        duration: 0,
-        served_by: 'v3-sqlite-mock',
-      },
+      meta: createMockMeta(0, 0),
     };
   }
 
-  async run<T = unknown>(): Promise<D1Response> {
+  async run<T = Record<string, unknown>>(): Promise<D1Result<T>> {
     const stmt = this.rawDb.prepare(this.sql);
     const info = stmt.run(...(this.params as any[]));
     return {
+      results: [] as T[],
       success: true,
-      meta: {
-        changes: Number(info.changes),
-        last_row_id: Number(info.lastInsertRowid),
-        duration: 0,
-        served_by: 'v3-sqlite-mock',
-      },
+      meta: createMockMeta(Number(info.changes), Number(info.lastInsertRowid)),
     };
   }
 
-  async raw<T = unknown>(): Promise<T[]> {
+  async raw<T = unknown[]>(options?: { columnNames?: boolean }): Promise<any> {
     const stmt = this.rawDb.prepare(this.sql);
     const rows = stmt.all(...(this.params as any[])) as Record<string, unknown>[];
-    return rows.map((r) => Object.values(r)) as T[];
+    const rawRows = rows.map((r) => Object.values(r));
+    if (options?.columnNames && rows.length > 0) {
+      return [Object.keys(rows[0]), ...rawRows] as unknown as [string[], ...T[]];
+    }
+    return rawRows as unknown as T[];
   }
 
   getSQL(): string {
@@ -91,8 +100,12 @@ export class MockD1PreparedStatement implements D1PreparedStatement {
 export class MockD1Database implements D1Database {
   constructor(private rawDb: DatabaseSync) {}
 
-  prepare(query: string): MockD1PreparedStatement {
+  prepare(query: string): D1PreparedStatement {
     return new MockD1PreparedStatement(this.rawDb, query);
+  }
+
+  withSession(_constraintOrBookmark?: any): D1DatabaseSession {
+    throw new Error('withSession() not supported in in-memory D1 mock');
   }
 
   async batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]> {
@@ -100,7 +113,7 @@ export class MockD1Database implements D1Database {
     this.rawDb.exec('BEGIN IMMEDIATE');
     try {
       for (const statement of statements) {
-        const stmt = statement as MockD1PreparedStatement;
+        const stmt = statement as unknown as MockD1PreparedStatement;
         const sql = stmt.getSQL().trim();
         const prepared = this.rawDb.prepare(sql);
         const params = stmt.getParams() as any[];
@@ -110,22 +123,14 @@ export class MockD1Database implements D1Database {
           results.push({
             results: rows,
             success: true,
-            meta: {
-              changes: 0,
-              duration: 0,
-              served_by: 'v3-sqlite-mock',
-            },
+            meta: createMockMeta(0, 0),
           });
         } else {
           const runResult = prepared.run(...params);
           results.push({
+            results: [] as T[],
             success: true,
-            meta: {
-              changes: Number(runResult.changes),
-              last_row_id: Number(runResult.lastInsertRowid),
-              duration: 0,
-              served_by: 'v3-sqlite-mock',
-            },
+            meta: createMockMeta(Number(runResult.changes), Number(runResult.lastInsertRowid)),
           });
         }
       }
