@@ -2,9 +2,9 @@
 
 This repository uses one Cloudflare Worker named `hsr` with Astro server rendering, static assets, same-origin APIs, production D1, isolated Preview D1, and private production R2 storage. It is not a Cloudflare Pages deployment.
 
-## 1. Cloudflare resources already created
+## 1. Cloudflare resources recorded in repository configuration
 
-The Cloudflare account already contains these resources. Do not create duplicates:
+The following names and IDs are recorded in the repository configuration. This does not, by itself, prove that each resource currently exists or is correctly bound in the connected Cloudflare account. Verify the resources in the dashboard or with Wrangler before creating anything. Do not create duplicates:
 
 | Purpose | Resource | ID / binding |
 |---|---|---|
@@ -52,7 +52,19 @@ npx wrangler d1 migrations list PREVIEW_DB --remote --config wrangler.preview-mi
 
 The separate migration config is intentional: Cloudflare's Preview configuration is separate from the top-level production D1 binding. The migration command must explicitly point at the Preview database.
 
-Do not run a destructive reset. The Preview database is isolated from production and is used for branch testing.
+Do not run a destructive reset. The Preview database is intended to be isolated from Production; verify its actual binding before changing data.
+
+Before applying migration 0005, run these **read-only** checks against Preview:
+
+```powershell
+npx wrangler d1 execute PREVIEW_DB --remote --config wrangler.preview-migrations.jsonc --command "SELECT open_time, close_time, break_start, break_end, COUNT(*) AS open_weekdays FROM weekly_schedule WHERE config_version = (SELECT MAX(config_version) FROM weekly_schedule) AND is_open = 1 GROUP BY open_time, close_time, break_start, break_end;"
+
+npx wrangler d1 execute PREVIEW_DB --remote --config wrangler.preview-migrations.jsonc --command "SELECT reservation_state, COUNT(*) AS booking_count FROM bookings WHERE reservation_state IN ('HELD','PENDING_VERIFICATION','CONFIRMED','CHECKED_IN','IN_PROGRESS') AND service_date >= date('now', '+330 minutes') GROUP BY reservation_state;"
+```
+
+Stop before migration if the first query returns more than one row: migration 0005 currently builds shared slot templates using the first open weekday's hours and therefore assumes that all open weekdays have the same opening, closing and break times. Also stop if the second query returns any active future/today bookings; migration 0005 intentionally aborts in that situation because the previous system did not store their cylinder-level time allocations. Resolve the data/schedule issue and review a revised migration before proceeding.
+
+The Preview migration command changes the remote Preview database. It is not a local-only operation. Do not run it until the migration list, schedule query and active-booking query have all been reviewed.
 
 ## 4. Inspect and apply production D1 migrations
 
@@ -92,6 +104,22 @@ R2 screenshot upload must not be enabled merely because the bucket exists. Websi
 Previews deliberately have no R2 bucket binding. Do not add `hsr-prod` to the `previews.r2_buckets` block: two Previews using the same bucket name share objects. A separate test bucket must be created before enabling screenshot upload in Previews.
 
 Do not store Base64 image data in D1.
+
+## Production protection while preparing the first stable baseline
+
+Before merging PR #1 into `main`, inspect the existing Workers Builds configuration. A successful merge to the configured production branch can trigger the Production deploy command automatically.
+
+For the initial baseline merge, configure the Production **Deploy command** as:
+
+```powershell
+npx wrangler versions upload
+```
+
+This saves a Worker version without promoting it to active Production traffic. Keep the Preview command as `npx wrangler preview`. Do not set the Production deploy command to `npx wrangler deploy` until the user has explicitly approved a Production release.
+
+When a live release is approved later, change the Production deploy command to `npx wrangler deploy` and deploy from the reviewed `main` branch only.
+
+If the existing Worker displays a one-time **Set up Worker Previews** migration/switch banner, do not activate it until the current Preview mode, bindings and implications have been reviewed. Cloudflare documents this as a one-way switch for existing Workers Builds integrations.
 
 ## 6. Cloudflare Workers Builds settings
 

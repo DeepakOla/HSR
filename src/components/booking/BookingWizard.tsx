@@ -1,3 +1,4 @@
+import { readApiJson } from '../../lib/client-api';
 import { useEffect, useMemo, useState } from 'react';
 import type { Locale } from '../../lib/constants';
 import { validateVehicleRegistration } from '../../lib/vehicle-registration';
@@ -248,11 +249,11 @@ export default function BookingWizard({ locale }: Props) {
       setSelectedHour('');
       try {
         const [availabilityRes, categoriesRes] = await Promise.all([
-          fetch('/api/public/availability?locale=' + locale + '&fromDate=' + encodeURIComponent(todayInIndia()) + '&days=60&cylinderCount=' + cylinderCount),
-          fetch('/api/public/vehicle-categories?locale=' + locale),
+          fetch('/api/public/availability/?locale=' + locale + '&fromDate=' + encodeURIComponent(todayInIndia()) + '&days=46&cylinderCount=' + cylinderCount),
+          fetch('/api/public/vehicle-categories/?locale=' + locale),
         ]);
-        const availability: any = await availabilityRes.json();
-        const categoryPayload: any = await categoriesRes.json();
+        const availability: any = await readApiJson(availabilityRes);
+        const categoryPayload: any = await readApiJson(categoriesRes);
         if (!availabilityRes.ok || !categoriesRes.ok) {
           throw new Error(availability.error?.message ?? categoryPayload.error?.message ?? 'Could not load appointment availability');
         }
@@ -311,7 +312,7 @@ export default function BookingWizard({ locale }: Props) {
   }, [selectedDateSlots, selectedSlotId]);
 
   const today = todayInIndia();
-  const lastDate = addDays(today, 59);
+  const lastDate = addDays(today, 45);
   const monthYear = month.getUTCFullYear();
   const monthIndex = month.getUTCMonth();
   const firstWeekday = new Date(Date.UTC(monthYear, monthIndex, 1)).getUTCDay();
@@ -403,7 +404,7 @@ export default function BookingWizard({ locale }: Props) {
     setServerContact(null);
 
     try {
-      const response = await fetch('/api/booking/create-hold', {
+      const response = await fetch('/api/booking/create-hold/', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -418,8 +419,7 @@ export default function BookingWizard({ locale }: Props) {
           idempotencyKey,
         }),
       });
-
-      const payload: any = await response.json();
+      const payload: any = await readApiJson(response);
       if (!response.ok) {
         if (payload.contact) {
           setServerContact(payload.contact);
@@ -438,7 +438,7 @@ export default function BookingWizard({ locale }: Props) {
     if (!result?.bookingCode || !utr.trim() || busy || evidenceSubmitted) return;
     setBusy(true);
     try {
-      const response = await fetch('/api/booking/submit-evidence', {
+      const response = await fetch('/api/booking/submit-evidence/', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -448,7 +448,7 @@ export default function BookingWizard({ locale }: Props) {
           source: 'WEB',
         }),
       });
-      const payload: any = await response.json();
+      const payload: any = await readApiJson(response);
       if (!response.ok) throw new Error(payload.error?.message ?? 'Could not submit payment reference');
       setEvidenceSubmitted(true);
       setMessage(hindi ? 'भुगतान संदर्भ जमा हो गया। रिसेप्शन सत्यापन करेगा।' : 'Payment reference submitted. Reception will verify it.');

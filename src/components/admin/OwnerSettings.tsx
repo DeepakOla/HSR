@@ -1,3 +1,4 @@
+import { readApiJson } from '../../lib/client-api';
 import { useCallback, useEffect, useState } from 'react';
 import '../../styles/admin.css';
 
@@ -126,12 +127,12 @@ export default function OwnerSettings(){
     setLoading(true);setError('');
     try{
       const [pr,cr,sr,ctr]=await Promise.all([
-        fetch('/api/admin/settings'),
-        fetch('/api/admin/categories'),
-        fetch('/api/admin/schedule'),
-        fetch('/api/admin/content'),
+        fetch('/api/admin/settings/'),
+        fetch('/api/admin/categories/'),
+        fetch('/api/admin/schedule/'),
+        fetch('/api/admin/content/'),
       ]);
-      const [p,c,s,ct]=await Promise.all([pr.json(),cr.json(),sr.json(),ctr.json()]) as any[];
+      const [p,c,s,ct]=await Promise.all([readApiJson(pr),readApiJson(cr),readApiJson(sr),readApiJson(ctr)]) as any[];
       if(!pr.ok||!cr.ok||!sr.ok||!ctr.ok)throw new Error(p.error?.message??c.error?.message??s.error?.message??ct.error?.message??t.error);
       setProfile(p.data.settings);
       setCategories((c.data.categories??[]).map((x:any)=>({...x,isActive:x.isActive===1||x.isActive===true})));
@@ -148,8 +149,8 @@ export default function OwnerSettings(){
     if(!profile)return;
     setBusy(true);setError('');setMessage('');
     try{
-      const r=await fetch('/api/admin/settings',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...profile,hold_minutes:Number(profile.hold_minutes)})});
-      const data:any=await r.json();if(!r.ok)throw new Error(data.error?.message??t.saveError);
+      const r=await fetch('/api/admin/settings/',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...profile,hold_minutes:Number(profile.hold_minutes)})});
+      const data:any=await readApiJson(r);if(!r.ok)throw new Error(data.error?.message??t.saveError);
       setMessage(t.profileSaved);
     }catch(e){setError(e instanceof Error?e.message:t.saveError);}
     finally{setBusy(false);}
@@ -159,8 +160,8 @@ export default function OwnerSettings(){
     if(!categories.length)return;
     setBusy(true);setError('');setMessage('');
     try{
-      const r=await fetch('/api/admin/categories',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({categories})});
-      const data:any=await r.json();if(!r.ok)throw new Error(data.error?.message??t.saveError);
+      const r=await fetch('/api/admin/categories/',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({categories})});
+      const data:any=await readApiJson(r);if(!r.ok)throw new Error(data.error?.message??t.saveError);
       setMessage(t.categoriesSaved);await load();
     }catch(e){setError(e instanceof Error?e.message:t.saveError);}
     finally{setBusy(false);}
@@ -178,8 +179,8 @@ export default function OwnerSettings(){
         breakStart:schedule.breakStart||null,breakEnd:schedule.breakEnd||null,
         slotIntervalMinutes:Number(schedule.slotIntervalMinutes),extendedHoursEnabled:schedule.extendedHoursEnabled,
         extendedHoursPublic:schedule.extendedHoursEnabled&&schedule.extendedHoursPublic};
-      const r=await fetch('/api/admin/schedule',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
-      const data:any=await r.json();if(!r.ok)throw new Error(data.error?.message??t.saveError);
+      const r=await fetch('/api/admin/schedule/',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
+      const data:any=await readApiJson(r);if(!r.ok)throw new Error(data.error?.message??t.saveError);
       setEffectiveFrom(data.data.effectiveFrom??'');setMessage(t.scheduleSaved);await load();
     }catch(e){setError(e instanceof Error?e.message:t.saveError);}
     finally{setBusy(false);}
@@ -210,7 +211,7 @@ export default function OwnerSettings(){
     if (!currentContentItem) return;
     setBusy(true); setError(''); setMessage('');
     try {
-      const r = await fetch('/api/admin/content', {
+      const r = await fetch('/api/admin/content/', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -220,7 +221,7 @@ export default function OwnerSettings(){
           body: currentContentItem.body,
         }),
       });
-      const data: any = await r.json();
+      const data: any = await readApiJson(r);
       if (!r.ok) throw new Error(data.error?.message ?? t.saveError);
       setMessage(t.contentSaved);
       await load();
