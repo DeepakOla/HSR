@@ -525,6 +525,6 @@ describe('Challenger M2-1: Concurrency & Atomic Capacity Race Conditions', () =>
     expect(row?.advance_paise_snapshot).toBe(0);
     expect(row?.balance_paise_snapshot).toBe(295000);
     expect(row?.total_price_paise_snapshot).toBe(295000);
-    expect(row?.advance_paise_snapshot! + row?.balance_paise_snapshot!).toBe(row?.total_price_paise_snapshot);
+    expect((row?.advance_paise_snapshot ?? 0) + (row?.balance_paise_snapshot ?? 0)).toBe(row?.total_price_paise_snapshot);
   }, 30000);
 });

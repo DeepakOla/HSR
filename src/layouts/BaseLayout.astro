@@ -3,6 +3,7 @@ import type { Locale } from '../lib/constants';
 import type { BusinessSettings } from '../lib/types';
 import { localizePath, otherLocale, t } from '../lib/i18n';
 import { buildLocalBusinessSchema } from '../lib/seo';
+import FeedbackModal from '../components/FeedbackModal';
 import '../styles/design-tokens.css';
 
 interface Props {
@@ -69,6 +70,23 @@ const schema = buildLocalBusinessSchema({
     <script type="application/ld+json" set:html={JSON.stringify(schema)} />
   </head>
   <body>
+    <!-- Demo Preview Banner (v0.0.1-preview.1) -->
+    <aside class="demo-banner" role="status" aria-label={locale === 'en' ? 'Demonstration Notice' : 'डेमो सूचना'}>
+      <div class="container demo-banner-inner">
+        <div class="demo-banner-content">
+          <span class="demo-tag">{locale === 'en' ? 'DEMO PREVIEW v0.0.1' : 'डेमो पूर्वावलोकन v0.0.1'}</span>
+          <span class="demo-text">
+            {locale === 'en'
+              ? 'Pre-operational verification preview. Online bookings and payments are simulations; no real vehicles or live payments will be processed.'
+              : 'संचालन-पूर्व सत्यापन पूर्वावलोकन। ऑनलाइन बुकिंग और भुगतान सिमुलेशन हैं; कोई वास्तविक वाहन या लाइव भुगतान संसाधित नहीं किया जाएगा।'}
+          </span>
+        </div>
+        <button type="button" class="demo-feedback-btn" id="open-feedback-btn">
+          {locale === 'en' ? 'Give Feedback' : 'प्रतिक्रिया दें'}
+        </button>
+      </div>
+    </aside>
+
     <header class="app-header">
       <div class="container topbar">
         <a href={`/${locale}/`} class="brand-link">
@@ -147,10 +165,67 @@ const schema = buildLocalBusinessSchema({
         </div>
       </div>
     </footer>
+
+    <!-- Interactive Feedback Component (React Island) -->
+    <FeedbackModal client:load locale={locale} />
   </body>
 </html>
 
 <style>
+  /* Demo Preview Banner */
+  .demo-banner {
+    background-color: var(--color-navy-950, #0B132B);
+    color: #F8FAFC;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    border-bottom: 2px solid var(--color-amber-500, #F59E0B);
+  }
+  .demo-banner-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .demo-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .demo-tag {
+    background-color: var(--color-amber-500, #F59E0B);
+    color: #0F172A;
+    font-weight: 800;
+    font-size: 0.72rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--radius-sm, 4px);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .demo-text {
+    color: #E2E8F0;
+    font-size: 0.82rem;
+    margin: 0;
+  }
+  .demo-feedback-btn {
+    background: transparent;
+    border: 1px solid var(--color-amber-500, #F59E0B);
+    color: var(--color-amber-400, #FBBF24);
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full, 9999px);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+  }
+  .demo-feedback-btn:hover {
+    background: var(--color-amber-500, #F59E0B);
+    color: #0F172A;
+  }
+
   .app-header {
     background: #ffffff;
     border-bottom: 1px solid var(--border-default);
@@ -317,6 +392,10 @@ const schema = buildLocalBusinessSchema({
       flex-direction: column;
       align-items: flex-start;
       padding: 1rem 0;
+    }
+    .demo-banner-inner {
+      flex-direction: column;
+      align-items: flex-start;
     }
     .footer-top {
       grid-template-columns: 1fr;

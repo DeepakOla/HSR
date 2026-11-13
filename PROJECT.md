@@ -79,7 +79,7 @@
 | M5 | Bilingual Owner Content CMS | `/api/admin/content.ts`, `OwnerSettings.tsx`, `ContentPage.astro`, `localized_content` | M3, M4 | ✅ COMPLETE |
 | M6 | Professional Industrial UI/UX Redesign + Blog + Local SEO | Direction A tokens (`design-tokens.css`), responsive layouts, blog collections, Schema.org | M3, M5 | ✅ COMPLETE |
 | M7 | Security Audit & Quality Verification | Independent defensive security audit, API trust boundaries, concurrency, and PII protection | M1–M6 | ✅ COMPLETE |
-| M8 | Preview Deployment Readiness | Preview D1 migration verification, `staff_users` check (`kumardeepakola@gmail.com`) | M7 | READY |
+| M8 | Preview Deployment Readiness & Public Demo Experience | Preview D1 isolation, Node 22 build fix (.nvmrc/.node-version), demo banner v0.0.1, feedback widget, reset test data helper, 479 Vitest tests, 11 Playwright E2E tests | M7 | ✅ COMPLETE |
 
 ---
 

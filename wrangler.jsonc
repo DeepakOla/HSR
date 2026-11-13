@@ -41,20 +41,22 @@
     "ACCESS_TEAM_DOMAIN": "SETUP_REQUIRED.cloudflareaccess.com",
     "R2_MAX_EVIDENCE_BYTES": "1048576"
   },
-  "previews": {
-    "d1_databases": [
-      {
-        "binding": "DB",
-        "database_name": "hsr_green_energy_preview",
-        "database_id": "3220c6e5-64ff-4874-9d5d-0e237f5af9ad",
-        "migrations_dir": "migrations"
+  "env": {
+    "preview": {
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "hsr_green_energy_preview",
+          "database_id": "3220c6e5-64ff-4874-9d5d-0e237f5af9ad",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "vars": {
+        "APP_BASE_URL": "https://SETUP_REQUIRED.example",
+        "ACCESS_AUDIENCE": "SETUP_REQUIRED",
+        "ACCESS_TEAM_DOMAIN": "SETUP_REQUIRED.cloudflareaccess.com",
+        "R2_MAX_EVIDENCE_BYTES": "1048576"
       }
-    ],
-    "vars": {
-      "APP_BASE_URL": "https://SETUP_REQUIRED.example",
-      "ACCESS_AUDIENCE": "SETUP_REQUIRED",
-      "ACCESS_TEAM_DOMAIN": "SETUP_REQUIRED.cloudflareaccess.com",
-      "R2_MAX_EVIDENCE_BYTES": "1048576"
     }
   }
 }
