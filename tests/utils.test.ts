@@ -12,6 +12,10 @@ describe('input normalization', () => {
 
   it('normalizes registration and utr', () => {
     expect(normalizeVehicleRegistration('hr 36 ab 1234')).toBe('HR36AB1234');
+    expect(normalizeVehicleRegistration('dl-01-ab-1234')).toBe('DL01AB1234');
+    expect(normalizeVehicleRegistration('HR-26-DQ-5551')).toBe('HR26DQ5551');
+    expect(normalizeVehicleRegistration('22-bh-1234-aa')).toBe('22BH1234AA');
+    expect(normalizeVehicleRegistration('  DL - 01 / AB - 1234  ')).toBe('DL01AB1234');
     expect(normalizeUtr('  abcd 1234  ')).toBe('ABCD1234');
   });
 });

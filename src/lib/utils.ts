@@ -24,9 +24,7 @@ export function normalizePhoneIndian(value: string): string {
   throw new Error('Enter a valid 10-digit Indian mobile number');
 }
 
-export function normalizeVehicleRegistration(value: string): string {
-  return value.toUpperCase().replace(/\s+/g, '').replace(/[^A-Z0-9-]/g, '');
-}
+export { normalizeVehicleRegistration } from './vehicle-registration';
 
 export function inrFromPaise(paise: number): string {
   return new Intl.NumberFormat('en-IN', {
