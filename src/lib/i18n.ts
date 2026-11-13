@@ -10,6 +10,7 @@ const copy = {
       book: 'Book',
       contact: 'Contact',
       about: 'About',
+      blog: 'Guides',
     },
     actions: {
       book: 'Book Appointment',
@@ -29,6 +30,7 @@ const copy = {
       book: 'बुक करें',
       contact: 'संपर्क',
       about: 'हमारे बारे में',
+      blog: 'गाइड',
     },
     actions: {
       book: 'अपॉइंटमेंट बुक करें',

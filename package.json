@@ -24,6 +24,7 @@
   "dependencies": {
     "@astrojs/cloudflare": "^14.4.7",
     "@astrojs/react": "^7.1.8",
+    "@astrojs/rss": "^4.0.19",
     "astro": "^7.4.11",
     "qrcode": "^1.5.4",
     "react": "^19.3.1",

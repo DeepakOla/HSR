@@ -1,0 +1,89 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getDb, getBusinessSettings } from '../../../lib/db';
+import { calculateReadingTime } from '../../../lib/reading-time';
+
+const db = getDb(Astro);
+const settings = await getBusinessSettings(db);
+
+const posts = await getCollection('blog', ({ data }) => !data.draft && data.locale === 'hi');
+posts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+const allTags = Array.from(new Set(posts.flatMap((p) => p.data.tags)));
+---
+
+<BaseLayout
+  locale="hi"
+  title="सीएनजी हाइड्रो टेस्टिंग गाइड और तकनीकी लेख | HSR"
+  description="सीएनजी सिलेंडर हाइड्रो टेस्टिंग नियमों, सुरक्षा मानकों, पुनः परीक्षण समय सीमा और वर्कशॉप प्रक्रियाओं पर विशेषज्ञ जानकारी।"
+  canonicalPath="/hi/blog/"
+  businessName={settings.business_name_hi}
+>
+  <section class="section">
+    <div class="container">
+      <div style="margin-bottom: 2.5rem;">
+        <span class="trust-badge" style="margin-bottom: 0.75rem;">तकनीकी गाइड और जानकारी</span>
+        <h1 style="font-size: 2.5rem; margin-top: 0.5rem; margin-bottom: 0.75rem;">सीएनजी सिलेंडर सुरक्षा एवं टेस्टिंग लेख</h1>
+        <p style="font-size: 1.15rem; color: var(--color-slate-600); max-width: 65ch;">
+          हमारे हाइड्रो टेस्टिंग इंजीनियरों द्वारा आधिकारिक नियम, सुरक्षा मानक और रखरखाव की महत्वपूर्ण जानकारी।
+        </p>
+      </div>
+
+      {allTags.length > 0 && (
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 2rem;">
+          <span style="font-size: 0.85rem; font-weight: 700; align-self: center; margin-right: 0.25rem;">विषय:</span>
+          {allTags.map((tag) => (
+            <span class="trust-badge" style="background: #fff; border-color: var(--border-default);">
+              #{tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem;">
+        {posts.map((post) => {
+          const cleanSlug = post.id.replace(/^hi\//, '').replace(/\.(md|mdx)$/, '');
+          const readingTime = calculateReadingTime(post.body || '', 'hi');
+          const formattedDate = post.data.pubDate.toLocaleDateString('hi-IN', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          });
+
+          return (
+            <article class="card" style="display: flex; flex-direction: column; justify-content: space-between; border-top: 4px solid var(--color-steel-600);">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; font-size: 0.85rem; color: var(--color-slate-600);">
+                  <time datetime={post.data.pubDate.toISOString()}>{formattedDate}</time>
+                  <span>{readingTime}</span>
+                </div>
+                <h2 style="font-size: 1.35rem; margin-bottom: 0.75rem;">
+                  <a href={`/hi/blog/${cleanSlug}/`} style="color: var(--color-navy-900); text-decoration: none;">
+                    {post.data.title}
+                  </a>
+                </h2>
+                <p style="color: var(--color-slate-600); font-size: 0.95rem; margin-bottom: 1.25rem;">
+                  {post.data.description}
+                </p>
+              </div>
+
+              <div>
+                <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 1.25rem;">
+                  {post.data.tags.map((tag) => (
+                    <span style="font-size: 0.75rem; background: var(--color-slate-100); padding: 2px 8px; border-radius: 4px; color: var(--color-slate-700);">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <a href={`/hi/blog/${cleanSlug}/`} class="btn btn-outline" style="min-height: 40px; padding: 0.4rem 1rem; font-size: 0.9rem; width: 100%;">
+                  लेख पढ़ें →
+                </a>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+</BaseLayout>

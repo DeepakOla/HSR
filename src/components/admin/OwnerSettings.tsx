@@ -16,10 +16,18 @@ type Schedule = {
   slotIntervalMinutes:15|20;extendedHoursEnabled:boolean;extendedHoursPublic:boolean;extendedMinutes:number;
   standardSlotCount:number;extendedSlotCount:number;
 };
+type ContentRecord = {
+  id?: number;
+  locale: 'en' | 'hi';
+  page_key: string;
+  title: string;
+  body: string;
+  updated_at?: string;
+};
 
 const labels = {
   en: {
-    title:'Owner settings', intro:'Manage the public business identity, customer prices and future operating schedule.',
+    title:'Owner settings', intro:'Manage the public business identity, customer prices, operating schedule and page content.',
     profile:'Business profile',vehicles:'Cylinder-count prices',schedule:'Operating hours and appointment intervals',
     nameEn:'Business name (English)',nameHi:'Business name (Hindi)',city:'City / district',address:'Full address',
     map:'Google Maps directions URL',phone:'Call number',whatsapp:'WhatsApp number',email:'Contact email',
@@ -32,16 +40,31 @@ const labels = {
     breakStart:'Break starts (optional)',breakEnd:'Break ends (optional)',workingDays:'Working days',
     slots:'Slot windows',slotCapacity:'Cylinders',saveSchedule:'Save schedule',
     note:'Each cylinder reserves one continuous appointment unit. At a 20-minute interval, a six-cylinder vehicle needs two consecutive hours. The extra hour adds three 20-minute units or four 15-minute units. Existing bookings keep their original times and prices.',
-    profileSaved:'Business profile saved.',categoriesSaved:'Cylinder pricing saved.',scheduleSaved:'Schedule saved.',
+    profileSaved:'Business profile saved.',categoriesSaved:'Cylinder pricing saved.',scheduleSaved:'Schedule saved.',contentSaved:'Page content saved successfully.',
     effective:'New schedule applies from',loading:'Loading owner settings…',error:'Could not load owner settings.',
     saveError:'Could not save changes.',lang:'हिंदी',r2:'Payment screenshot upload is disabled until a private R2 bucket is configured and tested.',
     capacityTotal:'Capacity total',invalidCapacity:'Slot capacities must add up to the daily capacity.',
     noSlots:'No slots were generated. Check the opening/closing times and duration.',
     setup:'SETUP_REQUIRED',
     days:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
+    contentSection:'Website content (CMS)',
+    contentIntro:'Edit public informational pages in English and Hindi. Content supports structured sections and bullet points.',
+    selectPage:'Select page',
+    contentLang:'Content language',
+    pageTitle:'Page title',
+    pageBody:'Page content (Structured JSON or clean plain text)',
+    saveContent:'Save page content',
+    insertTemplate:'Insert structured JSON template',
+    preview:'Live preview',
+    pages:{
+      about:'About',
+      services:'Services',
+      'how-it-works':'How It Works',
+      contact:'Contact',
+    },
   },
   hi: {
-    title:'मालिक की सेटिंग्स',intro:'व्यवसाय की जानकारी, ग्राहक कीमतें और भविष्य का कार्य समय बदलें।',
+    title:'मालिक की सेटिंग्स',intro:'व्यवसाय की जानकारी, ग्राहक कीमतें, कार्य समय और वेबसाइट सामग्री बदलें।',
     profile:'व्यवसाय प्रोफ़ाइल',vehicles:'सिलेंडर संख्या के अनुसार कीमत',schedule:'कार्य समय और अपॉइंटमेंट अंतराल',
     nameEn:'व्यवसाय का नाम (अंग्रेज़ी)',nameHi:'व्यवसाय का नाम (हिंदी)',city:'शहर / ज़िला',address:'पूरा पता',
     map:'Google Maps दिशा URL',phone:'कॉल नंबर',whatsapp:'WhatsApp नंबर',email:'संपर्क ईमेल',
@@ -54,13 +77,28 @@ const labels = {
     breakStart:'ब्रेक शुरू (वैकल्पिक)',breakEnd:'ब्रेक समाप्त (वैकल्पिक)',workingDays:'कार्य दिवस',
     slots:'समय स्लॉट',slotCapacity:'सिलेंडर',saveSchedule:'समय सेव करें',
     note:'हर CNG सिलेंडर के लिए लगातार एक समय इकाई आरक्षित होती है। 20 मिनट के अंतराल पर छह सिलेंडर के लिए लगातार दो घंटे चाहिए। अतिरिक्त घंटे में 20-मिनट अंतराल पर तीन या 15-मिनट अंतराल पर चार इकाइयाँ जुड़ती हैं। पुरानी बुकिंग का समय और कीमत नहीं बदलेंगे।',
-    profileSaved:'व्यवसाय प्रोफ़ाइल सेव हो गई।',categoriesSaved:'सिलेंडर की कीमतें सेव हो गईं।',scheduleSaved:'कार्य समय सेव हो गया।',
+    profileSaved:'व्यवसाय प्रोफ़ाइल सेव हो गई।',categoriesSaved:'सिलेंडर की कीमतें सेव हो गईं।',scheduleSaved:'कार्य समय सेव हो गया।',contentSaved:'पृष्ठ सामग्री सफलतापूर्वक सेव हो गई।',
     effective:'नया समय लागू होगा',loading:'मालिक सेटिंग्स लोड हो रही हैं…',error:'मालिक सेटिंग्स लोड नहीं हो सकीं।',
     saveError:'बदलाव सेव नहीं हो सके।',lang:'English',r2:'निजी R2 बकेट कॉन्फ़िगर और जांचे जाने तक भुगतान स्क्रीनशॉट अपलोड बंद रहेगा।',
     capacityTotal:'कुल क्षमता',invalidCapacity:'सभी स्लॉट की क्षमता का योग दैनिक क्षमता के बराबर होना चाहिए।',
     noSlots:'कोई स्लॉट नहीं बना। खुलने/बंद होने का समय और अवधि जांचें।',
     setup:'SETUP_REQUIRED',
     days:['रविवार','सोमवार','मंगलवार','बुधवार','गुरुवार','शुक्रवार','शनिवार'],
+    contentSection:'वेबसाइट सामग्री (CMS)',
+    contentIntro:'अंग्रेज़ी और हिंदी में सार्वजनिक सूचना पृष्ठ संपादित करें। सामग्री संरचित अनुभागों और बुलेट बिंदुओं का समर्थन करती है।',
+    selectPage:'पृष्ठ चुनें',
+    contentLang:'सामग्री भाषा',
+    pageTitle:'पृष्ठ शीर्षक',
+    pageBody:'पृष्ठ सामग्री (संरचित JSON या सादा पाठ)',
+    saveContent:'पृष्ठ सामग्री सेव करें',
+    insertTemplate:'संरचित JSON खाका डालें',
+    preview:'लाइव पूर्वावलोकन',
+    pages:{
+      about:'परिचय (About)',
+      services:'सेवाएँ (Services)',
+      'how-it-works':'प्रक्रिया (How It Works)',
+      contact:'संपर्क (Contact)',
+    },
   }
 };
 
@@ -74,6 +112,10 @@ export default function OwnerSettings(){
   const [profile,setProfile]=useState<Profile|null>(null);
   const [categories,setCategories]=useState<Category[]>([]);
   const [schedule,setSchedule]=useState<Schedule|null>(null);
+  const [contentItems,setContentItems]=useState<ContentRecord[]>([]);
+  const [selectedPage,setSelectedPage]=useState<string>('about');
+  const [contentLang,setContentLang]=useState<Locale>('en');
+
   const [loading,setLoading]=useState(true);
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState('');
@@ -83,12 +125,18 @@ export default function OwnerSettings(){
   const load=useCallback(async()=>{
     setLoading(true);setError('');
     try{
-      const [pr,cr,sr]=await Promise.all([fetch('/api/admin/settings'),fetch('/api/admin/categories'),fetch('/api/admin/schedule')]);
-      const [p,c,s]=await Promise.all([pr.json(),cr.json(),sr.json()]) as any[];
-      if(!pr.ok||!cr.ok||!sr.ok)throw new Error(p.error?.message??c.error?.message??s.error?.message??t.error);
+      const [pr,cr,sr,ctr]=await Promise.all([
+        fetch('/api/admin/settings'),
+        fetch('/api/admin/categories'),
+        fetch('/api/admin/schedule'),
+        fetch('/api/admin/content'),
+      ]);
+      const [p,c,s,ct]=await Promise.all([pr.json(),cr.json(),sr.json(),ctr.json()]) as any[];
+      if(!pr.ok||!cr.ok||!sr.ok||!ctr.ok)throw new Error(p.error?.message??c.error?.message??s.error?.message??ct.error?.message??t.error);
       setProfile(p.data.settings);
       setCategories((c.data.categories??[]).map((x:any)=>({...x,isActive:x.isActive===1||x.isActive===true})));
       setSchedule({...s.data,breakStart:s.data.breakStart??'',breakEnd:s.data.breakEnd??'',slotIntervalMinutes:s.data.slotIntervalMinutes===15?15:20,extendedHoursEnabled:!!s.data.extendedHoursEnabled,extendedHoursPublic:!!s.data.extendedHoursPublic,extendedMinutes:60});
+      setContentItems(ct.data?.content??[]);
     }catch(e){setError(e instanceof Error?e.message:t.error);}
     finally{setLoading(false);}
   },[]);
@@ -108,6 +156,7 @@ export default function OwnerSettings(){
   };
 
   const saveCategories=async()=>{
+    if(!categories.length)return;
     setBusy(true);setError('');setMessage('');
     try{
       const r=await fetch('/api/admin/categories',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({categories})});
@@ -134,6 +183,121 @@ export default function OwnerSettings(){
       setEffectiveFrom(data.data.effectiveFrom??'');setMessage(t.scheduleSaved);await load();
     }catch(e){setError(e instanceof Error?e.message:t.saveError);}
     finally{setBusy(false);}
+  };
+
+  const currentContentItem: ContentRecord = contentItems.find(
+    (c) => c.page_key === selectedPage && c.locale === contentLang
+  ) ?? {
+    page_key: selectedPage,
+    locale: contentLang,
+    title: labels[contentLang].pages[selectedPage as keyof typeof labels['en']['pages']] ?? selectedPage,
+    body: 'SETUP_REQUIRED',
+  };
+
+  const updateCurrentContent = (patch: Partial<ContentRecord>) => {
+    setContentItems((prev) => {
+      const idx = prev.findIndex((c) => c.page_key === selectedPage && c.locale === contentLang);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = { ...next[idx], ...patch };
+        return next;
+      }
+      return [...prev, { ...currentContentItem, ...patch }];
+    });
+  };
+
+  const saveContent = async () => {
+    if (!currentContentItem) return;
+    setBusy(true); setError(''); setMessage('');
+    try {
+      const r = await fetch('/api/admin/content', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          pageKey: selectedPage,
+          locale: contentLang,
+          title: currentContentItem.title,
+          body: currentContentItem.body,
+        }),
+      });
+      const data: any = await r.json();
+      if (!r.ok) throw new Error(data.error?.message ?? t.saveError);
+      setMessage(t.contentSaved);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t.saveError);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const insertTemplate = () => {
+    const template = {
+      summary: contentLang === 'en'
+        ? 'Professional CNG cylinder hydro-testing and PESO compliance verification.'
+        : 'पेशेवर सीएनजी सिलेंडर हाइड्रो-परीक्षण और पीईएसओ अनुपालन सत्यापन।',
+      sections: [
+        {
+          heading: contentLang === 'en' ? 'Quality & Safety Standards' : 'गुणवत्ता और सुरक्षा मानक',
+          subheading: contentLang === 'en' ? 'Rigorous 5-Step Process' : 'कठोर 5-चरणीय प्रक्रिया',
+          paragraphs: [
+            contentLang === 'en'
+              ? 'Our hydro-testing station operates calibrated electronic hydrostatic equipment tested to 300 bar pressure.'
+              : 'हमारा हाइड्रो-परीक्षण स्टेशन 300 बार दबाव तक कैलिब्रेटेड इलेक्ट्रॉनिक हाइड्रोस्टेटिक उपकरणों का उपयोग करता है।',
+          ],
+          bullets: [
+            contentLang === 'en' ? 'Hydrostatic stretch testing to regulatory pressure' : 'नियामक दबाव तक हाइड्रोस्टेटिक खिंचाव परीक्षण',
+            contentLang === 'en' ? 'Internal ultrasonic flaw inspection' : 'आंतरिक अल्ट्रासोनिक दोष निरीक्षण',
+            contentLang === 'en' ? 'Digital tare & water-capacity weight check' : 'डिजिटल टेयर और जल-क्षमता भार जांच',
+            contentLang === 'en' ? 'Official compliance certificate generation' : 'आधिकारिक अनुपालन प्रमाणपत्र जारी करना',
+          ],
+        },
+      ],
+    };
+    updateCurrentContent({ body: JSON.stringify(template, null, 2) });
+  };
+
+  // Safe preview parser
+  const renderPreview = () => {
+    const raw = currentContentItem.body.trim();
+    if (raw === 'SETUP_REQUIRED' || !raw) {
+      return <p style={{ fontStyle: 'italic', color: '#6b7280' }}>Page is in SETUP_REQUIRED state.</p>;
+    }
+    if (raw.startsWith('{') && raw.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(raw);
+        return (
+          <div>
+            {parsed.summary && <p style={{ fontWeight: 600, color: '#374151', marginBottom: '1rem' }}>{parsed.summary}</p>}
+            {Array.isArray(parsed.sections) && parsed.sections.map((sec: any, idx: number) => (
+              <div key={idx} style={{ marginTop: '1rem' }}>
+                {sec.heading && <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: '0.5rem 0' }}>{sec.heading}</h3>}
+                {sec.subheading && <h4 style={{ fontSize: '0.95rem', fontWeight: 600, color: '#4b5563', margin: '0.25rem 0' }}>{sec.subheading}</h4>}
+                {Array.isArray(sec.paragraphs) && sec.paragraphs.map((p: string, pIdx: number) => (
+                  <p key={pIdx} style={{ margin: '0.5rem 0', lineHeight: 1.5 }}>{p}</p>
+                ))}
+                {Array.isArray(sec.bullets) && (
+                  <ul style={{ paddingLeft: '1.25rem', margin: '0.5rem 0' }}>
+                    {sec.bullets.map((b: string, bIdx: number) => (
+                      <li key={bIdx} style={{ margin: '0.25rem 0' }}>{b}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      } catch {
+        // Fall back to plain text
+      }
+    }
+    return (
+      <div>
+        {raw.split(/\n\s*\n/).map((para, idx) => (
+          <p key={idx} style={{ margin: '0.5rem 0', lineHeight: 1.5 }}>{para}</p>
+        ))}
+      </div>
+    );
   };
 
   if(loading&&!profile)return <div className="admin-loading">{t.loading}</div>;
@@ -210,5 +374,101 @@ export default function OwnerSettings(){
       </div>
       <p className="admin-note">{t.note}</p>
     </section>}
+
+    <section className="admin-card owner-section">
+      <div className="owner-section-head">
+        <div>
+          <p className="admin-eyebrow">04 / CONTENT (CMS)</p>
+          <h2 className="admin-section-title">{t.contentSection}</h2>
+          <p className="admin-subtitle" style={{ margin: '4px 0 0 0', fontSize: '13px' }}>{t.contentIntro}</p>
+        </div>
+        <button className="admin-button" disabled={busy} onClick={saveContent}>{t.saveContent}</button>
+      </div>
+
+      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', margin: '0.5rem 0' }}>
+        <div>
+          <span style={{ fontSize: '12px', fontWeight: 700, display: 'block', marginBottom: '4px', color: '#4b5563' }}>{t.selectPage}</span>
+          <div className="owner-tabs">
+            {['about', 'services', 'how-it-works', 'contact'].map((pKey) => (
+              <button
+                key={pKey}
+                type="button"
+                className={`owner-tab ${selectedPage === pKey ? 'active' : ''}`}
+                onClick={() => setSelectedPage(pKey)}
+              >
+                {t.pages[pKey as keyof typeof t.pages] ?? pKey}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <span style={{ fontSize: '12px', fontWeight: 700, display: 'block', marginBottom: '4px', color: '#4b5563' }}>{t.contentLang}</span>
+          <div className="owner-tabs">
+            <button
+              type="button"
+              className={`owner-tab ${contentLang === 'en' ? 'active' : ''}`}
+              onClick={() => setContentLang('en')}
+            >
+              English
+            </button>
+            <button
+              type="button"
+              className={`owner-tab ${contentLang === 'hi' ? 'active' : ''}`}
+              onClick={() => setContentLang('hi')}
+            >
+              हिंदी (Hindi)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gap: '12px' }}>
+        <label className="admin-field">
+          {t.pageTitle}
+          <input
+            className="admin-input"
+            value={currentContentItem.title}
+            onChange={(e) => updateCurrentContent({ title: e.target.value })}
+          />
+        </label>
+
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 600 }}>{t.pageBody}</span>
+            <button
+              type="button"
+              onClick={insertTemplate}
+              style={{
+                background: 'none',
+                border: '1px solid #1e40af',
+                color: '#1e40af',
+                borderRadius: '4px',
+                padding: '2px 8px',
+                fontSize: '12px',
+                cursor: 'pointer',
+                fontWeight: 600,
+              }}
+            >
+              {t.insertTemplate}
+            </button>
+          </div>
+          <textarea
+            className="admin-textarea"
+            style={{ minHeight: '160px', fontFamily: 'monospace', fontSize: '13px' }}
+            value={currentContentItem.body}
+            onChange={(e) => updateCurrentContent({ body: e.target.value })}
+          />
+        </div>
+      </div>
+
+      <div className="owner-preview-box">
+        <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#6b7280', marginBottom: '6px' }}>
+          {t.preview} ({selectedPage} · {contentLang.toUpperCase()})
+        </div>
+        <h3 className="owner-preview-title">{currentContentItem.title || 'Untitled Page'}</h3>
+        <div className="owner-preview-body">{renderPreview()}</div>
+      </div>
+    </section>
   </div>;
 }

@@ -1,5 +1,6 @@
 ---
 import type { Locale } from '../lib/constants';
+import { parsePageContent } from '../lib/content';
 
 interface ContactDetails {
   phone: string;
@@ -17,12 +18,12 @@ interface Props {
 }
 
 const { title, body, locale, contact } = Astro.props;
-const isConfigured = body.trim() !== 'SETUP_REQUIRED';
-const displayBody = isConfigured
-  ? body
-  : locale === 'en'
-    ? 'This page is being prepared by the business owner. Please check back after the service details have been verified.'
-    : 'यह पृष्ठ व्यवसाय के मालिक द्वारा तैयार किया जा रहा है। सेवाओं की जानकारी सत्यापित होने के बाद दोबारा देखें।';
+const content = parsePageContent(body);
+
+const placeholderText = locale === 'en'
+  ? 'This page is being prepared by the business owner. Please check back after the service details have been verified.'
+  : 'यह पृष्ठ व्यवसाय के मालिक द्वारा तैयार किया जा रहा है। सेवाओं की जानकारी सत्यापित होने के बाद दोबारा देखें।';
+
 const phoneReady = contact && contact.phone !== 'SETUP_REQUIRED';
 const whatsappReady = contact && contact.whatsappNumber !== 'SETUP_REQUIRED';
 const emailReady = contact && contact.email !== 'SETUP_REQUIRED';
@@ -32,18 +33,64 @@ const whatsappLink = contact && whatsappReady ? `https://wa.me/${contact.whatsap
 ---
 
 <section class="section">
-  <div class="container card">
-    <h1>{title}</h1>
-    <p>{displayBody}</p>
+  <div class="container card content-page-card">
+    <h1 class="page-title">{title}</h1>
+
+    {content.isStructured ? (
+      <div class="structured-content">
+        {content.summary && <p class="content-summary">{content.summary}</p>}
+        {content.sections.map((section) => (
+          <div class="content-section">
+            {section.heading && <h2 class="content-heading">{section.heading}</h2>}
+            {section.subheading && <h3 class="content-subheading">{section.subheading}</h3>}
+            {section.paragraphs && section.paragraphs.map((para) => (
+              <p class="content-para">{para}</p>
+            ))}
+            {section.bullets && section.bullets.length > 0 && (
+              <ul class="content-bullets">
+                {section.bullets.map((bullet) => (
+                  <li>{bullet}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))}
+      </div>
+    ) : content.isConfigured ? (
+      <div class="plain-content">
+        {content.paragraphs.map((para) => (
+          <p class="content-para">{para}</p>
+        ))}
+      </div>
+    ) : (
+      <p class="content-placeholder">{placeholderText}</p>
+    )}
+
     {contact && (phoneReady || whatsappReady || emailReady || addressReady || mapReady) && (
       <section aria-label={locale === 'en' ? 'Business contact details' : 'व्यवसाय संपर्क विवरण'} class="contact-details">
         <h2>{locale === 'en' ? 'Contact details' : 'संपर्क विवरण'}</h2>
-        {addressReady && <p>{contact.address}</p>}
+        {addressReady && <p class="contact-address">{contact.address}</p>}
         <div class="contact-links">
-          {phoneReady && <a href={`tel:${contact.phone}`}>{locale === 'en' ? 'Call' : 'कॉल करें'}: {contact.phone}</a>}
-          {whatsappLink && <a href={whatsappLink} target="_blank" rel="noreferrer">WhatsApp: {contact.whatsappNumber}</a>}
-          {emailReady && <a href={`mailto:${contact.email}`}>{contact.email}</a>}
-          {mapReady && <a href={contact.mapUrl} target="_blank" rel="noreferrer">{locale === 'en' ? 'Get directions' : 'रास्ता देखें'}</a>}
+          {phoneReady && (
+            <a href={`tel:${contact.phone}`} class="contact-link call-link">
+              <strong>{locale === 'en' ? 'Call' : 'कॉल करें'}:</strong> {contact.phone}
+            </a>
+          )}
+          {whatsappLink && (
+            <a href={whatsappLink} target="_blank" rel="noreferrer" class="contact-link whatsapp-link">
+              <strong>WhatsApp:</strong> {contact.whatsappNumber}
+            </a>
+          )}
+          {emailReady && (
+            <a href={`mailto:${contact.email}`} class="contact-link email-link">
+              <strong>Email:</strong> {contact.email}
+            </a>
+          )}
+          {mapReady && (
+            <a href={contact.mapUrl} target="_blank" rel="noreferrer" class="contact-link map-link">
+              {locale === 'en' ? 'Get directions →' : 'रास्ता देखें →'}
+            </a>
+          )}
         </div>
       </section>
     )}
@@ -51,7 +98,91 @@ const whatsappLink = contact && whatsappReady ? `https://wa.me/${contact.whatsap
 </section>
 
 <style>
-  .contact-details { margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border); }
-  .contact-details h2 { font-size:1.1rem; }
-  .contact-links { display:flex; flex-wrap:wrap; gap:.75rem 1rem; }
+  .content-page-card {
+    padding: 2.5rem 2rem;
+  }
+  .page-title {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    color: var(--brand, #0f4a34);
+    line-height: 1.25;
+  }
+  .content-summary {
+    font-size: 1.15rem;
+    line-height: 1.6;
+    color: var(--muted, #4f5960);
+    margin-bottom: 2rem;
+    font-weight: 500;
+  }
+  .content-section {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+  }
+  .content-heading {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--text, #1e2428);
+    border-bottom: 1px solid var(--border, #d9e0dc);
+    padding-bottom: 0.4rem;
+  }
+  .content-subheading {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    color: var(--muted, #4f5960);
+  }
+  .content-para {
+    line-height: 1.7;
+    margin-bottom: 1rem;
+    color: var(--text, #1e2428);
+  }
+  .content-bullets {
+    margin: 0.75rem 0 1.25rem 1.5rem;
+    padding-left: 0.5rem;
+    line-height: 1.7;
+    color: var(--text, #1e2428);
+  }
+  .content-bullets li {
+    margin-bottom: 0.35rem;
+  }
+  .content-placeholder {
+    font-style: italic;
+    color: var(--muted, #4f5960);
+    line-height: 1.6;
+  }
+  .contact-details {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border, #d9e0dc);
+  }
+  .contact-details h2 {
+    font-size: 1.25rem;
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+  }
+  .contact-address {
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+  .contact-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+  }
+  .contact-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    text-decoration: none;
+    color: var(--brand, #0f4a34);
+    font-size: 0.95rem;
+  }
+  .contact-link:hover {
+    text-decoration: underline;
+  }
 </style>

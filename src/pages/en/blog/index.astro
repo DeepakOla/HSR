@@ -1,0 +1,90 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getDb, getBusinessSettings } from '../../../lib/db';
+import { calculateReadingTime } from '../../../lib/reading-time';
+
+const db = getDb(Astro);
+const settings = await getBusinessSettings(db);
+
+const posts = await getCollection('blog', ({ data }) => !data.draft && data.locale === 'en');
+posts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+// Collect unique tags
+const allTags = Array.from(new Set(posts.flatMap((p) => p.data.tags)));
+---
+
+<BaseLayout
+  locale="en"
+  title="CNG Hydro Testing Guides & Technical Articles | HSR"
+  description="Expert guides on CNG cylinder hydro testing regulations, safety standards, re-testing frequency, and workshop technical procedures."
+  canonicalPath="/en/blog/"
+  businessName={settings.business_name_en}
+>
+  <section class="section">
+    <div class="container">
+      <div style="margin-bottom: 2.5rem;">
+        <span class="trust-badge" style="margin-bottom: 0.75rem;">Technical Guides & Knowledge</span>
+        <h1 style="font-size: 2.5rem; margin-top: 0.5rem; margin-bottom: 0.75rem;">CNG Cylinder Safety & Testing Articles</h1>
+        <p style="font-size: 1.15rem; color: var(--color-slate-600); max-width: 65ch;">
+          Official standards, regulatory compliance advice, and maintenance walkthroughs from our hydro testing engineers.
+        </p>
+      </div>
+
+      {allTags.length > 0 && (
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 2rem;">
+          <span style="font-size: 0.85rem; font-weight: 700; align-self: center; margin-right: 0.25rem;">Topics:</span>
+          {allTags.map((tag) => (
+            <span class="trust-badge" style="background: #fff; border-color: var(--border-default);">
+              #{tag}
+            </span>
+          ))}
+        </div>
+      )}
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem;">
+        {posts.map((post) => {
+          const cleanSlug = post.id.replace(/^en\//, '').replace(/\.(md|mdx)$/, '');
+          const readingTime = calculateReadingTime(post.body || '', 'en');
+          const formattedDate = post.data.pubDate.toLocaleDateString('en-IN', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          });
+
+          return (
+            <article class="card" style="display: flex; flex-direction: column; justify-content: space-between; border-top: 4px solid var(--color-steel-600);">
+              <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; font-size: 0.85rem; color: var(--color-slate-600);">
+                  <time datetime={post.data.pubDate.toISOString()}>{formattedDate}</time>
+                  <span>{readingTime}</span>
+                </div>
+                <h2 style="font-size: 1.35rem; margin-bottom: 0.75rem;">
+                  <a href={`/en/blog/${cleanSlug}/`} style="color: var(--color-navy-900); text-decoration: none;">
+                    {post.data.title}
+                  </a>
+                </h2>
+                <p style="color: var(--color-slate-600); font-size: 0.95rem; margin-bottom: 1.25rem;">
+                  {post.data.description}
+                </p>
+              </div>
+
+              <div>
+                <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 1.25rem;">
+                  {post.data.tags.map((tag) => (
+                    <span style="font-size: 0.75rem; background: var(--color-slate-100); padding: 2px 8px; border-radius: 4px; color: var(--color-slate-700);">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+                <a href={`/en/blog/${cleanSlug}/`} class="btn btn-outline" style="min-height: 40px; padding: 0.4rem 1rem; font-size: 0.9rem; width: 100%;">
+                  Read Technical Guide →
+                </a>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+</BaseLayout>
