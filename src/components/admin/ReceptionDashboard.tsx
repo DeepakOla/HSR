@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import '../../styles/admin.css';
+import { validateVehicleRegistration } from '../../lib/vehicle-registration';
 
 type Locale = 'en' | 'hi';
 type SlotUnit = {
@@ -98,6 +99,7 @@ export default function ReceptionDashboard() {
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
   const [registration, setRegistration] = useState('');
+  const [regError, setRegError] = useState('');
   const [vehicleType, setVehicleType] = useState('Car');
   const [vehicleModel, setVehicleModel] = useState('');
   const [cylinderCount, setCylinderCount] = useState(1);
@@ -161,9 +163,38 @@ export default function ReceptionDashboard() {
     setSlotId('');
   };
 
+  const handleRegistrationChange = (val: string) => {
+    const upper = val.toUpperCase();
+    setRegistration(upper);
+    if (regError) {
+      const res = validateVehicleRegistration(upper, locale);
+      if (res.valid) setRegError('');
+    }
+  };
+
+  const handleRegistrationBlur = () => {
+    if (!registration.trim()) return;
+    const res = validateVehicleRegistration(registration, locale);
+    if (!res.valid) {
+      setRegError(res.error || (locale === 'hi' ? 'अमान्य वाहन पंजीकरण संख्या' : 'Invalid vehicle registration number'));
+    } else {
+      setRegistration(res.normalized);
+      setRegError('');
+    }
+  };
+
   const submitManualBooking = async (event: { preventDefault: () => void }) => {
     event.preventDefault();
     if (!category || !slotId || !vehicleDescription || busy) return;
+
+    const regCheck = validateVehicleRegistration(registration, locale);
+    if (!regCheck.valid) {
+      const errMsg = regCheck.error || (locale === 'hi' ? 'अमान्य वाहन पंजीकरण संख्या' : 'Invalid vehicle registration number');
+      setRegError(errMsg);
+      setError(errMsg);
+      return;
+    }
+
     setBusy(true); setMessage(''); setError('');
     try {
       const response = await fetch('/api/admin/manual-bookings', {
@@ -172,13 +203,13 @@ export default function ReceptionDashboard() {
         body: JSON.stringify({
           locale, slotSnapshotId: Number(slotId), categoryId: category.id,
           vehicleType: vehicleDescription, customerName: name, mobile,
-          vehicleRegistration: registration, source, paymentCollected, idempotencyKey
+          vehicleRegistration: regCheck.normalized, source, paymentCollected, idempotencyKey
         })
       });
       const payload: any = await response.json();
       if (!response.ok) throw new Error(payload.error?.message ?? t.loadFail);
       setMessage(t.saved + ' ' + payload.data.bookingCode);
-      setName(''); setMobile(''); setRegistration(''); setVehicleModel('');
+      setName(''); setMobile(''); setRegistration(''); setRegError(''); setVehicleModel('');
       setVehicleType('Car'); setCylinderCount(1); setPaymentCollected(false);
       setIdempotencyKey(crypto.randomUUID());
       await load();
@@ -271,7 +302,10 @@ export default function ReceptionDashboard() {
                 <label className="admin-field">{t.model}
                   <input className="admin-input" required={vehicleType === 'Other'} value={vehicleModel} onChange={(e) => setVehicleModel(e.target.value)} placeholder="e.g. Tata 407, Maruti WagonR" />
                 </label>
-                <label className="admin-field">{t.registration}<input className="admin-input" required minLength={4} value={registration} onChange={(e) => setRegistration(e.target.value.toUpperCase())} /></label>
+                <label className="admin-field">{t.registration}
+                  <input className="admin-input" required minLength={4} value={registration} onChange={(e) => handleRegistrationChange(e.target.value)} onBlur={handleRegistrationBlur} />
+                  {regError && <span style={{ color: '#dc2626', fontSize: '0.8rem', marginTop: '0.2rem' }}>{regError}</span>}
+                </label>
                 <label className="admin-field">{t.cylinder}
                   <select className="admin-select" required value={cylinderCount} onChange={(e) => handleCylinderChange(e.target.value)}>
                     {Array.from({ length: 12 }, (_, index) => index + 1).map((count) =>

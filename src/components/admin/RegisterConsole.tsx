@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import '../../styles/admin.css';
+import { validateVehicleRegistration } from '../../lib/vehicle-registration';
 
 type Booking = {
   bookingCode: string;
@@ -24,6 +25,7 @@ export default function RegisterConsole() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [bookingCode, setBookingCode] = useState('');
   const [registration, setRegistration] = useState('');
+  const [regError, setRegError] = useState('');
   const [serial, setSerial] = useState('');
   const [manufacturer, setManufacturer] = useState('');
   const [specification, setSpecification] = useState('');
@@ -62,10 +64,40 @@ export default function RegisterConsole() {
   const selectBooking = (code: string) => {
     setBookingCode(code);
     setRegistration(bookings.find((booking) => booking.bookingCode === code)?.vehicleRegistration ?? '');
+    setRegError('');
+  };
+
+  const handleRegistrationChange = (val: string) => {
+    const upper = val.toUpperCase();
+    setRegistration(upper);
+    if (regError) {
+      const res = validateVehicleRegistration(upper);
+      if (res.valid) setRegError('');
+    }
+  };
+
+  const handleRegistrationBlur = () => {
+    if (!registration.trim()) return;
+    const res = validateVehicleRegistration(registration);
+    if (!res.valid) {
+      setRegError(res.error || 'Please enter a valid Indian vehicle registration number');
+    } else {
+      setRegistration(res.normalized);
+      setRegError('');
+    }
   };
 
   const submit = async (event: { preventDefault: () => void }) => {
     event.preventDefault();
+
+    const regCheck = validateVehicleRegistration(registration);
+    if (!regCheck.valid) {
+      const errMsg = regCheck.error || 'Please enter a valid Indian vehicle registration number';
+      setRegError(errMsg);
+      setError(errMsg);
+      return;
+    }
+
     setSaving(true);
     setError('');
     setMessage('');
@@ -75,7 +107,7 @@ export default function RegisterConsole() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           bookingCode,
-          vehicleRegistration: registration,
+          vehicleRegistration: regCheck.normalized,
           cylinderSerial: serial,
           manufacturer,
           specification,
@@ -142,7 +174,8 @@ export default function RegisterConsole() {
         <form className="admin-form" onSubmit={submit}>
           <div className="owner-grid">
             <label className="admin-field">Vehicle registration
-              <input className="admin-input" value={registration} onChange={(event) => setRegistration(event.target.value.toUpperCase())} required minLength={4} />
+              <input className="admin-input" value={registration} onChange={(event) => handleRegistrationChange(event.target.value)} onBlur={handleRegistrationBlur} required minLength={4} />
+              {regError && <span style={{ color: '#dc2626', fontSize: '0.8rem', marginTop: '0.2rem' }}>{regError}</span>}
             </label>
             <label className="admin-field">Cylinder serial number
               <input className="admin-input" value={serial} onChange={(event) => setSerial(event.target.value)} required minLength={2} maxLength={120} />

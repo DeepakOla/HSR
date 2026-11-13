@@ -1,6 +1,9 @@
 ---
 import type { Locale } from '../lib/constants';
+import type { BusinessSettings } from '../lib/types';
 import { localizePath, otherLocale, t } from '../lib/i18n';
+import { buildLocalBusinessSchema } from '../lib/seo';
+import '../styles/design-tokens.css';
 
 interface Props {
   locale: Locale;
@@ -8,84 +11,320 @@ interface Props {
   description: string;
   canonicalPath: string;
   businessName: string;
+  settings?: BusinessSettings;
 }
 
-const { locale, title, description, canonicalPath, businessName } = Astro.props;
+const { locale, title, description, canonicalPath, businessName, settings } = Astro.props;
 const copy = t(locale);
 const alternate = otherLocale(locale);
 const path = canonicalPath.endsWith('/') ? canonicalPath : `${canonicalPath}/`;
 const canonical = new URL(path, Astro.url.origin);
 const alternateHref = new URL(localizePath(path, alternate), Astro.url.origin);
+
+const schema = buildLocalBusinessSchema({
+  settings: settings ?? ({
+    business_name_en: businessName,
+    business_name_hi: businessName,
+    city: 'Rewari',
+    address_line: 'SETUP_REQUIRED',
+    contact_phone: '+919910055355',
+    whatsapp_number: '+919910055355',
+    contact_email: 'SETUP_REQUIRED',
+    map_url: 'SETUP_REQUIRED',
+    seo_title_en: title,
+    seo_title_hi: title,
+    seo_desc_en: description,
+    seo_desc_hi: description,
+  } as any),
+  locale,
+  currentUrl: canonical.toString(),
+});
 ---
 
 <!doctype html>
 <html lang={locale}>
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical.toString()} />
     <link rel="alternate" hreflang={alternate} href={alternateHref.toString()} />
     <link rel="alternate" hreflang={locale} href={canonical.toString()} />
-    <style>
-      :root {
-        --bg: #f8f9f7;
-        --surface: #fff;
-        --text: #1e2428;
-        --muted: #4f5960;
-        --brand: #0f4a34;
-        --accent: #f5a623;
-        --border: #d9e0dc;
-        --radius: 0.5rem;
-      }
-      * { box-sizing: border-box; }
-      body { margin: 0; font-family: system-ui, -apple-system, sans-serif; color: var(--text); background: var(--bg); }
-      a { color: var(--brand); }
-      .container { width: min(1160px, calc(100% - 2rem)); margin-inline: auto; }
-      header { background: var(--surface); border-bottom: 1px solid var(--border); }
-      .topbar { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-      nav ul { list-style: none; display: flex; gap: 1rem; padding: 0; margin: 0; flex-wrap: wrap; }
-      nav a { text-decoration: none; color: var(--text); font-weight: 600; }
-      .lang { border: 1px solid var(--border); border-radius: 999px; padding: 0.45rem 0.85rem; text-decoration: none; }
-      .cta { display: inline-block; min-height: 56px; padding: 0.8rem 1.2rem; border-radius: var(--radius); border: 0; text-decoration: none; font-weight: 700; }
-      .cta-primary { background: var(--brand); color: #fff; }
-      .cta-secondary { background: #fff; border: 1px solid var(--border); color: var(--text); }
-      footer { border-top: 1px solid var(--border); background: #fff; margin-top: 4rem; }
-      .section { padding: 3.2rem 0; }
-      .card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
-      :focus-visible { outline: 3px solid #1f7ae0; outline-offset: 2px; }
-      @media (max-width: 768px) {
-        .topbar { align-items: flex-start; padding: 0.75rem 0; flex-direction: column; }
-      }
-    </style>
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical.toString()} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:locale" content={locale === 'hi' ? 'hi_IN' : 'en_IN'} />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content={canonical.toString()} />
+    <meta property="twitter:title" content={title} />
+    <meta property="twitter:description" content={description} />
+
+    <!-- Schema.org JSON-LD -->
+    <script type="application/ld+json" set:html={JSON.stringify(schema)} />
   </head>
   <body>
-    <header>
+    <header class="app-header">
       <div class="container topbar">
-        <strong>{businessName}</strong>
-        <nav aria-label={locale === 'en' ? 'Primary navigation' : 'मुख्य नेविगेशन'}>
-          <ul>
+        <a href={`/${locale}/`} class="brand-link">
+          <span class="brand-logo-text">{businessName || 'HSR'}</span>
+          <span class="brand-subtext">{locale === 'en' ? 'Hydro Testing Station' : 'हाइड्रो टेस्टिंग केंद्र'}</span>
+        </a>
+
+        <nav aria-label={locale === 'en' ? 'Primary navigation' : 'मुख्य नेविगेशन'} class="primary-nav">
+          <ul class="nav-list">
             <li><a href={`/${locale}/`}>{copy.nav.home}</a></li>
             <li><a href={`/${locale}/services/`}>{copy.nav.services}</a></li>
             <li><a href={`/${locale}/how-it-works/`}>{copy.nav.how}</a></li>
             <li><a href={`/${locale}/check-expiry/`}>{copy.nav.expiry}</a></li>
-            <li><a href={`/${locale}/book/`}>{copy.nav.book}</a></li>
+            <li><a href={`/${locale}/blog/`}>{copy.nav.blog}</a></li>
             <li><a href={`/${locale}/contact/`}>{copy.nav.contact}</a></li>
             <li><a href={`/${locale}/about/`}>{copy.nav.about}</a></li>
           </ul>
         </nav>
-        <a class="lang" href={localizePath(Astro.url.pathname, alternate)}>{alternate === 'hi' ? 'हिंदी' : 'English'}</a>
+
+        <div class="header-actions">
+          <a class="lang-pill" href={localizePath(Astro.url.pathname, alternate)} aria-label="Change language">
+            {alternate === 'hi' ? 'हिंदी' : 'English'}
+          </a>
+          <a href={`/${locale}/book/`} class="btn btn-primary nav-book-btn">
+            {copy.actions.book}
+          </a>
+        </div>
       </div>
     </header>
-    <main>
+
+    <main id="main-content">
       <slot />
     </main>
-    <footer>
-      <div class="container section">
-        <p>{businessName}</p>
-        <p>{locale === 'en' ? 'Owner-managed details may be marked SETUP_REQUIRED until configured.' : 'मालिक कॉन्फ़िगरेशन तक कुछ जानकारी SETUP_REQUIRED दिख सकती है।'}</p>
+
+    <footer class="app-footer">
+      <div class="container footer-content">
+        <div class="footer-top">
+          <div class="footer-brand-col">
+            <strong class="footer-brand-title">{businessName || 'HSR'}</strong>
+            <p class="footer-brand-desc">
+              {locale === 'en'
+                ? 'High-precision CNG cylinder hydrostatic stretch testing up to 300 bar. Certified testing for cars, taxis, commercial LCVs and heavy multi-cylinder transport trucks.'
+                : '300 बार दबाव तक उच्च-सटीक सीएनजी सिलेंडर हाइड्रोस्टेटिक स्ट्रेच टेस्टिंग। कार, टैक्सी, एलसीवी और भारी मल्टी-सिलेंडर ट्रकों के लिए प्रमाणित टेस्टिंग।'}
+            </p>
+            <div class="trust-badge-group">
+              <span class="trust-badge">300 Bar Hydrostatic Test</span>
+              <span class="trust-badge">Ultrasonic Flaw Scan</span>
+              <span class="trust-badge">MoRTH Compliance</span>
+            </div>
+          </div>
+
+          <div class="footer-links-col">
+            <strong class="footer-heading">{locale === 'en' ? 'Quick Links' : 'त्वरित लिंक'}</strong>
+            <ul class="footer-nav-list">
+              <li><a href={`/${locale}/book/`}>{copy.actions.book}</a></li>
+              <li><a href={`/${locale}/check-expiry/`}>{copy.nav.expiry}</a></li>
+              <li><a href={`/${locale}/services/`}>{copy.nav.services}</a></li>
+              <li><a href={`/${locale}/blog/`}>{copy.nav.blog}</a></li>
+              <li><a href={`/${locale}/how-it-works/`}>{copy.nav.how}</a></li>
+              <li><a href={`/${locale}/contact/`}>{copy.nav.contact}</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <p class="footer-disclaimer">
+            {locale === 'en'
+              ? 'Owner-managed business details and accreditations may be marked SETUP_REQUIRED until officially verified by facility management.'
+              : 'मालिक द्वारा प्रबंधित जानकारी और प्रमाणपत्र विवरण आधिकारिक सत्यापन तक SETUP_REQUIRED के रूप में चिह्नित हो सकते हैं।'}
+          </p>
+          <div class="footer-staff-login">
+            <a href="/admin/login/" class="staff-login-link">
+              {locale === 'en' ? 'Staff / Admin Login' : 'कर्मचारी / एडमिन लॉगिन'}
+            </a>
+          </div>
+        </div>
       </div>
     </footer>
   </body>
 </html>
+
+<style>
+  .app-header {
+    background: #ffffff;
+    border-bottom: 1px solid var(--border-default);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+  .topbar {
+    min-height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+  .brand-link {
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+  }
+  .brand-logo-text {
+    font-family: var(--font-heading);
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--color-navy-700);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+  .brand-subtext {
+    font-size: 0.72rem;
+    color: var(--color-slate-600);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .primary-nav {
+    display: flex;
+    align-items: center;
+  }
+  .nav-list {
+    list-style: none;
+    display: flex;
+    gap: 1.25rem;
+    padding: 0;
+    margin: 0;
+    flex-wrap: wrap;
+  }
+  .nav-list a {
+    text-decoration: none;
+    color: var(--color-slate-700);
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
+    transition: all 0.15s ease;
+  }
+  .nav-list a:hover {
+    color: var(--color-steel-600);
+    background-color: var(--color-slate-100);
+  }
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .lang-pill {
+    border: 1px solid var(--border-default);
+    background: var(--color-slate-100);
+    border-radius: var(--radius-full);
+    padding: 0.45rem 0.95rem;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-slate-700);
+    transition: all 0.15s ease;
+  }
+  .lang-pill:hover {
+    background: #ffffff;
+    border-color: var(--color-steel-600);
+    color: var(--color-steel-600);
+  }
+  .nav-book-btn {
+    min-height: 40px;
+    padding: 0.45rem 1rem;
+    font-size: 0.9rem;
+  }
+  .app-footer {
+    border-top: 1px solid var(--border-default);
+    background: #ffffff;
+    margin-top: 5rem;
+    padding: 3.5rem 0 2rem;
+  }
+  .footer-top {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 3rem;
+    margin-bottom: 2.5rem;
+  }
+  .footer-brand-title {
+    font-size: 1.3rem;
+    color: var(--color-navy-900);
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+  .footer-brand-desc {
+    color: var(--color-slate-600);
+    font-size: 0.95rem;
+    max-width: 55ch;
+    margin-bottom: 1rem;
+  }
+  .trust-badge-group {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .footer-heading {
+    display: block;
+    margin-bottom: 0.75rem;
+    color: var(--color-navy-900);
+    font-size: 1rem;
+  }
+  .footer-nav-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.5rem;
+  }
+  .footer-nav-list a {
+    color: var(--color-slate-600);
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .footer-nav-list a:hover {
+    color: var(--color-steel-600);
+    text-decoration: underline;
+  }
+  .footer-bottom {
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .footer-disclaimer {
+    font-size: 0.85rem;
+    color: var(--color-slate-600);
+    margin: 0;
+    max-width: 70ch;
+  }
+  .staff-login-link {
+    color: var(--color-slate-600);
+    font-size: 0.85rem;
+    text-decoration: none;
+  }
+  .staff-login-link:hover {
+    text-decoration: underline;
+    color: var(--color-navy-900);
+  }
+  @media (max-width: 840px) {
+    .topbar {
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 1rem 0;
+    }
+    .footer-top {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+    .footer-bottom {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>

@@ -51,18 +51,18 @@
 | # | Feature | Description | Milestone | Status |
 |---|---------|-------------|-----------|--------|
 | 1 | Vehicle Registration Validation | Normalization & regex validation for Indian State & Bharat (BH) series | M1 | ✅ COMPLETE |
-| 2 | Flat ₹500 Advance & Single Source Pricing | Flat ₹500 advance per booking in `business_settings.flat_advance_paise`; balance = total - ₹500 | M2 | PLANNED |
-| 3 | Pre-Write UPI Payment Gating | Prevent D1 hold creation when UPI VPA/payee are `SETUP_REQUIRED`, routing cleanly to Phone/WhatsApp | M2 | PLANNED |
-| 4 | Server-Side Public Cylinder Limit | Enforce max 6 cylinders on public APIs (`source === 'WEB'`) while retaining 1–12 for receptionists | M2 | PLANNED |
-| 5 | Single-Tap Date Progression | Instant advancement to vehicle step upon date selection; remove redundant continue button | M3 | PLANNED |
-| 6 | Vehicle Selection & Truck Preselection | Dropdown: Car, Taxi, Tempo, Van, LCV, Truck, Bus, Other; Truck auto-selects 4 cylinders | M3 | PLANNED |
-| 7 | Public 1–6 Cylinder Dropdown & Contact Routing | Public dropdown shows 1 to 6 cylinders; "More than 6" halts online self-service with contact support card | M3 | PLANNED |
-| 8 | Linked Time Dropdowns & Finish Time | Hour dropdown first, Exact Start Time second; dynamic schedule intervals (15/20m); finish time display | M3 | PLANNED |
-| 9 | Staff / Admin Login Footer Link | Discreet bilingual link in footer to `/admin/login/`; direct links to Owner & Reception | M4 | PLANNED |
-| 10 | Receptionist & Register Validation Parity | Symmetrically apply vehicle registration validation to receptionist manual booking and cylinder register | M4 | PLANNED |
-| 11 | Safe Structured Owner Content CMS | Owner Console Section 04 for bilingual page editing (About, Services, How it works, Contact) with audit log | M5 | PLANNED |
-| 12 | Professional Industrial UI/UX Redesign | Direction A design system: clean industrial typography, high-contrast tokens, mobile-first layouts | M6 | PLANNED |
-| 13 | Comprehensive E2E Test Suite | 4-tier test suite covering unit, boundary, combinations, and real-world Playwright E2E flows | M7 | PLANNED |
+| 2 | Flat ₹500 Advance & Single Source Pricing | Flat ₹500 advance per booking in `business_settings.flat_advance_paise`; balance = total - ₹500 | M2 | ✅ COMPLETE |
+| 3 | Pre-Write UPI Payment Gating | Prevent D1 hold creation when UPI VPA/payee are `SETUP_REQUIRED`, routing cleanly to Phone/WhatsApp | M2 | ✅ COMPLETE |
+| 4 | Server-Side Public Cylinder Limit | Enforce max 6 cylinders on public APIs (`source === 'WEB'`) while retaining 1–12 for receptionists | M2 | ✅ COMPLETE |
+| 5 | Single-Tap Date Progression | Instant advancement to vehicle step upon date selection; remove redundant continue button | M3 | ✅ COMPLETE |
+| 6 | Vehicle Selection & Truck Preselection | Dropdown: Car, Taxi, Tempo, Van, LCV, Truck, Bus, Other; Truck auto-selects 4 cylinders | M3 | ✅ COMPLETE |
+| 7 | Public 1–6 Cylinder Dropdown & Contact Routing | Public dropdown shows 1 to 6 cylinders; "More than 6" halts online self-service with contact support card | M3 | ✅ COMPLETE |
+| 8 | Linked Time Dropdowns & Finish Time | Hour dropdown first, Exact Start Time second; dynamic schedule intervals (15/20m); finish time display | M3 | ✅ COMPLETE |
+| 9 | Staff / Admin Login Footer Link | Discreet bilingual link in footer to `/admin/login/`; direct links to Owner & Reception | M4 | ✅ COMPLETE |
+| 10 | Receptionist & Register Validation Parity | Symmetrically apply vehicle registration validation to receptionist manual booking and cylinder register | M4 | ✅ COMPLETE |
+| 11 | Safe Structured Owner Content CMS | Owner Console Section 04 for bilingual page editing (About, Services, How it works, Contact) with audit log | M5 | ✅ COMPLETE |
+| 12 | Professional Industrial UI/UX Redesign + Blog + Local SEO | Direction A design system: industrial typography, tokens, Astro collections blog, Schema.org | M6 | ✅ COMPLETE |
+| 13 | Comprehensive E2E Test Suite & Security Audit | 4-tier test suite + Cloudflare Security Audit independent assessment | M7 | PLANNED |
 | 14 | Preview Readiness & Verification | Safe Preview-only deployment verification; zero production mutation | M8 | PLANNED |
 
 ---
@@ -73,12 +73,12 @@
 |---|------|-------|-------------|--------|
 | M0 | Runtime Environment Verification | Node.js v24.22.3 (`C:\Program Files\nodejs\node.exe`) verified & operational | none | ✅ COMPLETE |
 | M1 | Vehicle Registration Validation Module | `src/lib/vehicle-registration.ts`, 73 Vitest tests passing | M0 | ✅ COMPLETE |
-| M2 | Pricing Engine & ₹500 Flat Advance | `0006_flat_advance.sql`, `pricing.ts`, `create-hold.ts`, pre-write payment gating | M0, M1 | READY |
-| M3 | Customer Booking Wizard Overhaul | `BookingWizard.tsx` (1-tap date, vehicle/truck, 1-6 cyl, linked time dropdowns) | M1, M2 | READY |
-| M4 | Administrative Navigation & Validation Parity | `BaseLayout.astro` footer link, `ReceptionDashboard.tsx`, `RegisterConsole.tsx` | M1, M2 | READY |
-| M5 | Bilingual Owner Content CMS | `/api/admin/content.ts`, `OwnerSettings.tsx`, `ContentPage.astro`, `localized_content` | M3, M4 | READY |
-| M6 | Professional Industrial UI/UX Redesign | Direction A tokens (`design-tokens.css`), responsive layouts, mobile-first styling | M3, M5 | READY |
-| M7 | Comprehensive Testing Matrix | Vitest unit/integration (Tiers 1–3), Playwright E2E & WCAG 2.1 AA audits | M1–M6 | READY |
+| M2 | Pricing Engine & ₹500 Flat Advance | `0006_flat_advance.sql`, `pricing.ts`, `create-hold.ts`, pre-write payment gating | M0, M1 | ✅ COMPLETE |
+| M3 | Customer Booking Wizard Overhaul | `BookingWizard.tsx` (1-tap date, vehicle/truck, 1-6 cyl, linked time dropdowns) | M1, M2 | ✅ COMPLETE |
+| M4 | Administrative Navigation & Validation Parity | `BaseLayout.astro` footer link, `ReceptionDashboard.tsx`, `RegisterConsole.tsx` | M1, M2 | ✅ COMPLETE |
+| M5 | Bilingual Owner Content CMS | `/api/admin/content.ts`, `OwnerSettings.tsx`, `ContentPage.astro`, `localized_content` | M3, M4 | ✅ COMPLETE |
+| M6 | Professional Industrial UI/UX Redesign + Blog + Local SEO | Direction A tokens (`design-tokens.css`), responsive layouts, blog collections, Schema.org | M3, M5 | ✅ COMPLETE |
+| M7 | Security Audit & Quality Verification | Independent defensive security audit, API trust boundaries, concurrency, and PII protection | M1–M6 | READY |
 | M8 | Preview Deployment Readiness | Preview D1 migration verification, `staff_users` check (`kumardeepakola@gmail.com`) | M7 | READY |
 
 ---

@@ -3,9 +3,10 @@ import { z } from 'zod';
 import { requireRole } from '../../../lib/auth';
 import { getDb } from '../../../lib/db';
 import { calculateNextRetestDate, isValidIsoDate, todayInIndia } from '../../../lib/expiry';
-import { errorResponse, jsonResponse, normalizeVehicleRegistration } from '../../../lib/utils';
+import { errorResponse, jsonResponse } from '../../../lib/utils';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
 import { validateOrigin } from '../../../lib/security';
+import { validateVehicleRegistration } from '../../../lib/vehicle-registration';
 
 const schema = z.object({
   bookingCode: z.string().trim().min(8).max(40),
@@ -33,6 +34,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return errorResponse('Invalid cylinder register details', 400);
 
+  const regResult = validateVehicleRegistration(parsed.data.vehicleRegistration);
+  if (!regResult.valid) {
+    return errorResponse(
+      regResult.error || 'Invalid vehicle registration number',
+      400,
+      'INVALID_VEHICLE_REGISTRATION'
+    );
+  }
+
   if (parsed.data.actualPeriodicTestDate > todayInIndia()) {
     return errorResponse('The actual periodic test date cannot be in the future', 400);
   }
@@ -53,8 +63,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return errorResponse('A register entry can only be created against a completed booking', 409, 'BOOKING_NOT_COMPLETED');
   }
 
-  const normalizedRegistration = normalizeVehicleRegistration(parsed.data.vehicleRegistration);
-  if (normalizedRegistration !== booking.registration) {
+  if (regResult.normalized !== booking.registration) {
     return errorResponse('Vehicle registration does not match the selected booking', 409, 'VEHICLE_MISMATCH');
   }
 

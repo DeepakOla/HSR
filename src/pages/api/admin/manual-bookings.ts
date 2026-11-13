@@ -6,6 +6,7 @@ import { getDb } from '../../../lib/db';
 import { errorResponse, jsonResponse } from '../../../lib/utils';
 import { getRuntimeEnv } from '../../../lib/runtime-env';
 import { validateOrigin } from '../../../lib/security';
+import { validateVehicleRegistration } from '../../../lib/vehicle-registration';
 
 const schema = z.object({
   locale: z.enum(['en', 'hi']).default('en'),
@@ -31,9 +32,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return errorResponse('Invalid manual booking details', 400);
 
+  const regResult = validateVehicleRegistration(parsed.data.vehicleRegistration, parsed.data.locale);
+  if (!regResult.valid) {
+    return errorResponse(
+      regResult.error || (parsed.data.locale === 'hi' ? 'अमान्य वाहन पंजीकरण संख्या' : 'Invalid vehicle registration number'),
+      400,
+      'INVALID_VEHICLE_REGISTRATION'
+    );
+  }
+
   try {
     const result = await createHold(getDb({ locals } as any), {
       ...parsed.data,
+      vehicleRegistration: regResult.normalized,
       source: parsed.data.source,
       reservationState: 'CONFIRMED',
       paymentState: parsed.data.paymentCollected ? 'PAID_AT_COUNTER' : 'ADVANCE_PENDING',
