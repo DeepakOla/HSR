@@ -2,9 +2,10 @@ import type { APIRoute } from 'astro';
 import { getStaffContext } from '../../../lib/auth';
 import { jsonResponse, errorResponse } from '../../../lib/utils';
 import { normalizeVehicleRegistration } from '../../../lib/vehicle-registration';
+import { getRuntimeEnv } from '../../../lib/runtime-env';
 
 export const GET: APIRoute = async ({ request, locals }) => {
-  const env = locals?.runtime?.env;
+  const env = getRuntimeEnv(locals);
   if (!env?.DB) return errorResponse('DB unavailable', 500, 'DB_UNAVAILABLE');
 
   const staff = await getStaffContext(request, env);

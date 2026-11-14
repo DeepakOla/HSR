@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { hashSha256 } from '../../../../lib/customer-auth';
 import { normalizeIndianPhoneE164 } from '../../../../types/hsr-contracts';
 import { jsonResponse, errorResponse } from '../../../../lib/utils';
+import { getRuntimeEnv } from '../../../../lib/runtime-env';
 import type {
   RequestCustomerChallengeRequest,
   RequestCustomerChallengeResponse,
@@ -9,7 +10,7 @@ import type {
 } from '../../../../types/hsr-contracts';
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const env = locals?.runtime?.env;
+  const env = getRuntimeEnv(locals);
   if (!env?.DB) {
     return errorResponse('Database connection unavailable', 500, 'DB_UNAVAILABLE');
   }

@@ -1,10 +1,11 @@
 import type { APIRoute } from 'astro';
 import { createStaffSessionToken, SESSION_COOKIE_NAME } from '../../../../lib/auth';
 import { errorResponse } from '../../../../lib/utils';
+import { getRuntimeEnv } from '../../../../lib/runtime-env';
 import type { StaffLoginRequest, StaffLoginResponse, StaffRole } from '../../../../types/hsr-contracts';
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const env = locals?.runtime?.env;
+  const env = getRuntimeEnv(locals);
   if (!env?.DB) {
     return errorResponse('Database connection unavailable', 500, 'DB_UNAVAILABLE');
   }
@@ -45,16 +46,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return errorResponse('Admin console access requires Owner credentials', 403, 'FORBIDDEN_WORKSPACE');
     }
 
-    let redirectUrl: '/staff/reception' | '/staff/testing' | '/admin' = '/staff/reception';
+    let redirectUrl: '/staff/reception/' | '/staff/testing/' | '/admin/' = '/staff/reception/';
     if (effectiveRole === 'ADMIN_OWNER' || effectiveRole === 'OWNER') {
-      redirectUrl = '/admin';
+      redirectUrl = '/admin/';
     } else if (effectiveRole === 'TECHNICIAN') {
-      redirectUrl = '/staff/testing';
+      redirectUrl = '/staff/testing/';
     }
 
     // Map role back to OWNER | RECEPTIONIST for legacy session token helper
     const legacyRole = effectiveRole === 'ADMIN_OWNER' ? 'OWNER' : (effectiveRole === 'TECHNICIAN' ? 'RECEPTIONIST' : effectiveRole as any);
     const sessionToken = await createStaffSessionToken(staff.email, legacyRole, env);
+
+    const isHttps = request.url.startsWith('https:');
+    const secureFlag = isHttps ? '; Secure' : '';
+    const cookieHeader = `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secureFlag}`;
 
     const responsePayload: StaffLoginResponse = {
       staffUserId: String(staff.id),
@@ -68,7 +73,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Set-Cookie': `${SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800; Secure`,
+        'Set-Cookie': cookieHeader,
       },
     });
   } catch (err: any) {

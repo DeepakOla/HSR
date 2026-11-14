@@ -1,10 +1,8 @@
 ---
 import StaffLayout from '../../layouts/StaffLayout.astro';
-import { getStaffContext } from '../../lib/auth';
 import { getRuntimeEnv } from '../../lib/runtime-env';
 
 const env = getRuntimeEnv(Astro.locals);
-const staff = await getStaffContext(Astro.request, env);
 
 let activeBayVehicles: any[] = [];
 if (env?.DB) {

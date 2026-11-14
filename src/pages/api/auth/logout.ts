@@ -30,6 +30,6 @@ export const GET: APIRoute = async () => {
     'Set-Cookie',
     `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
   );
-  headers.set('Location', '/login');
+  headers.set('Location', '/login/');
   return new Response(null, { status: 302, headers });
 };

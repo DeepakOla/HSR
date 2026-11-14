@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { getCustomerSessionFromCookie } from '../../../lib/customer-auth';
 import { jsonResponse, errorResponse } from '../../../lib/utils';
 import { normalizeVehicleRegistration } from '../../../lib/vehicle-registration';
+import { getRuntimeEnv } from '../../../lib/runtime-env';
 
 function formatDisplayReg(reg: string) {
   if (reg.length >= 8) {
@@ -11,7 +12,7 @@ function formatDisplayReg(reg: string) {
 }
 
 export const GET: APIRoute = async ({ request, locals }) => {
-  const env = locals?.runtime?.env;
+  const env = getRuntimeEnv(locals);
   if (!env?.DB) return errorResponse('DB unavailable', 500, 'DB_UNAVAILABLE');
 
   const session = await getCustomerSessionFromCookie(request, env);
@@ -43,7 +44,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const env = locals?.runtime?.env;
+  const env = getRuntimeEnv(locals);
   if (!env?.DB) return errorResponse('DB unavailable', 500, 'DB_UNAVAILABLE');
 
   const session = await getCustomerSessionFromCookie(request, env);

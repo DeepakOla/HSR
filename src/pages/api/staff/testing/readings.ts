@@ -2,10 +2,11 @@ import type { APIRoute } from 'astro';
 import { getStaffContext } from '../../../../lib/auth';
 import { evaluatePesoTestOutcome } from '../../../../types/hsr-contracts';
 import { jsonResponse, errorResponse } from '../../../../lib/utils';
+import { getRuntimeEnv } from '../../../../lib/runtime-env';
 import type { SubmitCylinderTestReadingRequest } from '../../../../types/hsr-contracts';
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const env = locals?.runtime?.env;
+  const env = getRuntimeEnv(locals);
   if (!env?.DB) return errorResponse('DB unavailable', 500, 'DB_UNAVAILABLE');
 
   const staff = await getStaffContext(request, env);

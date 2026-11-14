@@ -1,10 +1,11 @@
 import type { APIRoute } from 'astro';
 import { getCustomerSessionFromCookie } from '../../../lib/customer-auth';
 import { jsonResponse, errorResponse } from '../../../lib/utils';
+import { getRuntimeEnv } from '../../../lib/runtime-env';
 import type { CustomerOverviewResponse } from '../../../types/hsr-contracts';
 
 export const GET: APIRoute = async ({ request, locals }) => {
-  const env = locals?.runtime?.env;
+  const env = getRuntimeEnv(locals);
   if (!env?.DB) {
     return errorResponse('Database connection unavailable', 500, 'DB_UNAVAILABLE');
   }

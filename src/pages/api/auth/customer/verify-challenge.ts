@@ -5,6 +5,7 @@ import {
   CUSTOMER_SESSION_COOKIE_NAME,
 } from '../../../../lib/customer-auth';
 import { jsonResponse, errorResponse } from '../../../../lib/utils';
+import { getRuntimeEnv } from '../../../../lib/runtime-env';
 import type {
   VerifyCustomerChallengeRequest,
   VerifyCustomerChallengeResponse,
@@ -13,7 +14,7 @@ import type {
 } from '../../../../types/hsr-contracts';
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const env = locals?.runtime?.env;
+  const env = getRuntimeEnv(locals);
   if (!env?.DB) {
     return errorResponse('Database connection unavailable', 500, 'DB_UNAVAILABLE');
   }
@@ -196,11 +197,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
       env
     );
 
+    const isHttps = request.url.startsWith('https:');
+    const secureFlag = isHttps ? '; Secure' : '';
+    const cookieHeader = `${CUSTOMER_SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000${secureFlag}`;
+
     const headers = new Headers();
-    headers.set(
-      'Set-Cookie',
-      `${CUSTOMER_SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000; Secure`
-    );
+    headers.set('Set-Cookie', cookieHeader);
 
     const responsePayload: VerifyCustomerChallengeResponse = {
       authenticated: true,
@@ -210,7 +212,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         partyId: selectedParty.id,
         fullName: selectedParty.full_name,
         phoneE164,
-        redirectUrl: '/app',
+        redirectUrl: '/app/',
       },
     };
 
@@ -218,7 +220,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Set-Cookie': `${CUSTOMER_SESSION_COOKIE_NAME}=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000; Secure`,
+        'Set-Cookie': cookieHeader,
       },
     });
   } catch (err: any) {

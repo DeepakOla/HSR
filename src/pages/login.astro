@@ -595,9 +595,9 @@ const businessName = hindi ? (settings.business_name_hi || 'एचएसआर �
             return;
           }
 
-          // Verified successfully -> navigate to /app
+          // Verified successfully -> navigate to /app/
           showAlert('Signed in successfully! Opening your Customer Workspace...', true);
-          const redirectUrl = json.data.session?.redirectUrl || '/app';
+          const redirectUrl = json.data.session?.redirectUrl || '/app/';
           setTimeout(() => {
             window.location.href = redirectUrl;
           }, 400);

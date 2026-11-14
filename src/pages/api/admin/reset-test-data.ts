@@ -1,9 +1,10 @@
 import type { APIRoute } from 'astro';
 import { requireRole } from '../../../lib/auth';
 import { validateOrigin } from '../../../lib/security';
+import { getRuntimeEnv } from '../../../lib/runtime-env';
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const env = locals.runtime.env;
+  const env = getRuntimeEnv(locals);
 
   const originError = validateOrigin(request);
   if (originError) return originError;

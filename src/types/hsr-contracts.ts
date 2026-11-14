@@ -492,7 +492,7 @@ export interface StaffLoginResponse {
   fullName: string;
   role: StaffRole;
   canVerifyPayments: boolean;
-  redirectUrl: '/staff/reception' | '/staff/testing' | '/admin';
+  redirectUrl: '/staff/reception/' | '/staff/testing/' | '/admin/' | '/staff/reception' | '/staff/testing' | '/admin';
 }
 
 // ----------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { z } from 'zod';
 import { validateOrigin } from '../../lib/security';
+import { getRuntimeEnv } from '../../lib/runtime-env';
 
 const feedbackSchema = z.object({
   rating: z.number().int().min(1).max(5).default(5),
@@ -13,7 +14,7 @@ const feedbackSchema = z.object({
 });
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const env = locals.runtime.env;
+  const env = getRuntimeEnv(locals);
 
   // Origin verification
   const originError = validateOrigin(request);
