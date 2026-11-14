@@ -28,6 +28,8 @@ interface AccessJwk extends JsonWebKey {
 
 let cachedKeys: { issuer: string; keys: AccessJwk[]; expiresAt: number } | undefined;
 
+export const SESSION_COOKIE_NAME = 'hsr_staff_session';
+
 function decodeBase64Url(value: string): ArrayBuffer {
   const base64 = value.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (value.length % 4)) % 4);
   const binary = atob(base64);
@@ -117,8 +119,80 @@ async function verifyAccessJwt(request: Request, env: Env): Promise<string | nul
   }
 }
 
+function getSessionSecret(env: Env): string {
+  return (env.ACCESS_AUDIENCE || '').trim() || 'hsr_green_energy_internal_session_secret_2026';
+}
+
+export async function createStaffSessionToken(email: string, role: StaffRole, env: Env): Promise<string> {
+  const secret = getSessionSecret(env);
+  const exp = Math.floor(Date.now() / 1000) + 7 * 24 * 3600; // 7 days
+  const payloadObj = { email: email.trim().toLowerCase(), role, exp };
+  const payloadStr = JSON.stringify(payloadObj);
+  const encoder = new TextEncoder();
+  const payloadB64 = btoa(payloadStr).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const sigBuf = await crypto.subtle.sign('HMAC', key, encoder.encode(payloadB64));
+  const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sigBuf))).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  return `${payloadB64}.${sigB64}`;
+}
+
+export async function verifyStaffSessionToken(token: string, env: Env): Promise<{ email: string; role: StaffRole } | null> {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 2) return null;
+    const [payloadB64, sigB64] = parts;
+    const secret = getSessionSecret(env);
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['verify']
+    );
+    const sigBytes = decodeBase64Url(sigB64);
+    const valid = await crypto.subtle.verify('HMAC', key, sigBytes, encoder.encode(payloadB64));
+    if (!valid) return null;
+    const payload = JSON.parse(new TextDecoder().decode(decodeBase64Url(payloadB64))) as { email?: string; role?: StaffRole; exp?: number };
+    const now = Math.floor(Date.now() / 1000);
+    if (!payload.exp || payload.exp <= now || !payload.email || !payload.role) return null;
+    return { email: payload.email.trim().toLowerCase(), role: payload.role };
+  } catch {
+    return null;
+  }
+}
+
+export async function getStaffSessionFromCookie(request: Request, env: Env): Promise<{ email: string; role: StaffRole } | null> {
+  const cookieHeader = request.headers.get('cookie') || '';
+  const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${SESSION_COOKIE_NAME}=([^;]+)`));
+  if (!match) return null;
+  const token = match[1].trim();
+  return verifyStaffSessionToken(token, env);
+}
+
 export async function getStaffContext(request: Request, env: Env): Promise<StaffContext | null> {
-  const email = await verifyAccessJwt(request, env);
+  const hasAccessHeader = request.headers.has('cf-access-jwt-assertion');
+  let email: string | null = null;
+  let sessionRole: StaffRole | null = null;
+
+  if (hasAccessHeader) {
+    email = await verifyAccessJwt(request, env);
+    if (!email) return null;
+  } else {
+    const session = await getStaffSessionFromCookie(request, env);
+    if (session) {
+      email = session.email;
+      sessionRole = session.role;
+    }
+  }
+
   if (!email) return null;
 
   try {
@@ -127,6 +201,7 @@ export async function getStaffContext(request: Request, env: Env): Promise<Staff
     ).bind(email).first<{ role: StaffRole }>();
 
     if (!staff || (staff.role !== 'OWNER' && staff.role !== 'RECEPTIONIST')) return null;
+    if (sessionRole && staff.role !== sessionRole) return null;
     return { email, role: staff.role };
   } catch {
     return null;
@@ -136,6 +211,18 @@ export async function getStaffContext(request: Request, env: Env): Promise<Staff
 export async function requireRole(request: Request, env: Env, allowedRoles: StaffRole[]) {
   const staff = await getStaffContext(request, env);
   if (!staff) {
+    const accept = request.headers.get('accept') || '';
+    if (accept.includes('text/html') && request.method === 'GET') {
+      const url = new URL(request.url);
+      const redirectUrl = `/admin/login/?redirect=${encodeURIComponent(url.pathname + url.search)}`;
+      return {
+        ok: false as const,
+        response: new Response(null, {
+          status: 302,
+          headers: { Location: redirectUrl, 'Cache-Control': 'no-store' },
+        }),
+      };
+    }
     return { ok: false as const, response: errorResponse('Authentication required', 401, 'UNAUTHORIZED') };
   }
   if (!allowedRoles.includes(staff.role)) {

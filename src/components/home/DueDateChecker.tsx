@@ -20,9 +20,7 @@ interface DueDateCheckerProps {
 
 export default function DueDateChecker({ locale, bookUrl = `/${locale}/book/`, stationPhone }: DueDateCheckerProps) {
   const hindi = locale === 'hi';
-  const [mode, setMode] = useState<'VEHICLE' | 'MOBILE'>('VEHICLE');
-  const [vehicleInput, setVehicleInput] = useState<string>('');
-  const [mobileInput, setMobileInput] = useState<string>('');
+  const [queryInput, setQueryInput] = useState<string>('');
   const [manualDate, setManualDate] = useState<string>('');
   const [showManualDateFallback, setShowManualDateFallback] = useState<boolean>(false);
 
@@ -89,9 +87,20 @@ export default function DueDateChecker({ locale, bookUrl = `/${locale}/book/`, s
     setNotFoundMsg('');
     setResults(null);
 
+    const clean = queryInput.trim();
+    if (!clean) {
+      setError(hindi ? 'कृपया वाहन पंजीकरण संख्या या 10-अंकों का मोबाइल नंबर दर्ज करें।' : 'Please enter vehicle registration number or 10-digit mobile number.');
+      return;
+    }
+
+    const digitsOnly = clean.replace(/\D/g, '');
+    const isMobile = digitsOnly.length === 10 && !/[a-zA-Z]/.test(clean);
+
     const queryParams = new URLSearchParams({ locale });
-    if (mode === 'VEHICLE') {
-      const cleanReg = vehicleInput.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (isMobile) {
+      queryParams.set('mobile', digitsOnly);
+    } else {
+      const cleanReg = clean.toUpperCase().replace(/[^A-Z0-9]/g, '');
       if (cleanReg.length < 5) {
         setError(hindi ? 'कृपया मान्य वाहन पंजीकरण संख्या दर्ज करें (उदा. HR26AB1234)।' : 'Please enter a valid vehicle registration number (e.g. HR26AB1234).');
         return;
@@ -100,13 +109,6 @@ export default function DueDateChecker({ locale, bookUrl = `/${locale}/book/`, s
       if (manualDate) {
         queryParams.set('lastTestDate', manualDate);
       }
-    } else {
-      const cleanPhone = mobileInput.replace(/\D/g, '');
-      if (cleanPhone.length < 10) {
-        setError(hindi ? 'कृपया 10-अंकों का मोबाइल नंबर दर्ज करें।' : 'Please enter a valid 10-digit mobile phone number.');
-        return;
-      }
-      queryParams.set('mobile', cleanPhone);
     }
 
     setLoading(true);
@@ -146,8 +148,12 @@ export default function DueDateChecker({ locale, bookUrl = `/${locale}/book/`, s
         locale,
         lastTestDate: manualDate,
       });
-      if (vehicleInput.trim()) {
-        queryParams.set('regNumber', vehicleInput.trim().toUpperCase().replace(/[^A-Z0-9]/g, ''));
+
+      const clean = queryInput.trim();
+      const digitsOnly = clean.replace(/\D/g, '');
+      const isMobile = digitsOnly.length === 10 && !/[a-zA-Z]/.test(clean);
+      if (clean && !isMobile) {
+        queryParams.set('regNumber', clean.toUpperCase().replace(/[^A-Z0-9]/g, ''));
       }
 
       const res = await fetch(`/api/public/due-date-lookup/?${queryParams.toString()}`);
@@ -174,108 +180,51 @@ export default function DueDateChecker({ locale, bookUrl = `/${locale}/book/`, s
     setNotFoundMsg('');
     setError('');
     setShowManualDateFallback(false);
-    setVehicleInput('');
-    setMobileInput('');
+    setQueryInput('');
     setManualDate('');
   };
 
   return (
     <div className="due-date-checker-card">
-      <div className="checker-header">
-        <span className="metric-chip metric-cyan">
-          🔍 {hindi ? 'ऑनलाइन वैधता जाँच' : 'Instant Validity Verification'}
-        </span>
-        <h2 className="checker-title">
-          {hindi ? 'सीएनजी सिलेंडर रीटेस्ट ड्यू-डेट चेकर' : 'Check CNG Cylinder Retest Due Date'}
-        </h2>
-        <p className="checker-subtitle">
-          {hindi
-            ? 'अपने वाहन का नंबर दर्ज करें और तुरंत जानें कि आपकी सीएनजी सिलेंडर टेस्टिंग कब देय है तथा कितना समय शेष है।'
-            : 'Enter your vehicle number to instantly verify cylinder testing status, next due date, and remaining time.'}
-        </p>
-      </div>
-
       {!results ? (
-        <div className="checker-body">
-          {/* Lookup Mode Toggle */}
-          <div className="checker-mode-tabs" role="tablist">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === 'VEHICLE'}
-              className={`mode-tab ${mode === 'VEHICLE' ? 'active' : ''}`}
-              onClick={() => {
-                setMode('VEHICLE');
-                setError('');
-                setNotFoundMsg('');
-              }}
-            >
-              🚗 {hindi ? 'वाहन नंबर द्वारा' : 'By Vehicle Registration'}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mode === 'MOBILE'}
-              className={`mode-tab ${mode === 'MOBILE' ? 'active' : ''}`}
-              onClick={() => {
-                setMode('MOBILE');
-                setError('');
-                setNotFoundMsg('');
-              }}
-            >
-              📱 {hindi ? 'मोबाइल नंबर द्वारा (फ्लीट)' : 'By Mobile (Multi-Vehicle)'}
-            </button>
+        <div className="checker-compact-box">
+          {/* Line 1: Header / Title */}
+          <div className="checker-compact-header">
+            <div className="checker-title-inline">
+              <span className="metric-chip metric-cyan">🔍 {hindi ? 'वैधता जाँच' : 'Retest Due Checker'}</span>
+              <h3 className="checker-title-compact">
+                {hindi ? 'सीएनजी सिलेंडर रीटेस्ट ड्यू-डेट' : 'Check CNG Cylinder Retest Due Date'}
+              </h3>
+            </div>
+            <span className="checker-subtext-inline">
+              {hindi ? '3 वर्ष वैधानिक वैधता जाँच' : 'Statutory 3-Year Retest Verification'}
+            </span>
           </div>
 
-          <form onSubmit={handleLookup} className="checker-form">
-            {mode === 'VEHICLE' ? (
-              <div className="input-group">
-                <label htmlFor="checker-vehicle-reg" className="input-label">
-                  {hindi ? 'वाहन पंजीकरण संख्या' : 'Vehicle Registration Number'}
-                </label>
-                <div className="input-with-button">
-                  <input
-                    id="checker-vehicle-reg"
-                    type="text"
-                    required
-                    placeholder="HR26DQ1234 / 22BH1234AA"
-                    value={vehicleInput}
-                    onChange={(e) => setVehicleInput(e.target.value.toUpperCase())}
-                    className="checker-input font-mono-num"
-                    autoComplete="off"
-                  />
-                  <button type="submit" className="btn btn-primary checker-submit-btn" disabled={loading}>
-                    {loading ? (hindi ? 'जाँच हो रही है...' : 'Checking...') : (hindi ? 'स्थिति जाँचें →' : 'Check Status →')}
-                  </button>
-                </div>
-                <span className="input-hint">
-                  {hindi ? 'राज्य श्रृंखला (उदा. HR26, DL01) या भारत श्रृंखला (BH) संख्या दर्ज करें।' : 'Supports State series (e.g. HR26, DL01) and Bharat (BH) series.'}
-                </span>
+          {/* Line 2: Single unified input row */}
+          <form onSubmit={handleLookup} className="checker-compact-form">
+            <div className="checker-compact-input-row">
+              <div className="checker-input-wrapper">
+                <span className="checker-input-icon">🚗/📱</span>
+                <input
+                  id="checker-query-input"
+                  type="text"
+                  required
+                  placeholder={
+                    hindi
+                      ? 'वाहन पंजीकरण संख्या या फोन नंबर (Multi-Vehicle)'
+                      : 'Vehicle Registration Number or Phone number (Multi-Vehicle)'
+                  }
+                  value={queryInput}
+                  onChange={(e) => setQueryInput(e.target.value)}
+                  className="checker-input-compact font-mono-num"
+                  autoComplete="off"
+                />
               </div>
-            ) : (
-              <div className="input-group">
-                <label htmlFor="checker-mobile" className="input-label">
-                  {hindi ? '10-अंकों का मोबाइल नंबर' : '10-Digit Mobile Phone Number'}
-                </label>
-                <div className="input-with-button">
-                  <input
-                    id="checker-mobile"
-                    type="tel"
-                    required
-                    placeholder="9876543210"
-                    value={mobileInput}
-                    onChange={(e) => setMobileInput(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                    className="checker-input font-mono-num"
-                  />
-                  <button type="submit" className="btn btn-primary checker-submit-btn" disabled={loading}>
-                    {loading ? (hindi ? 'जाँच हो रही है...' : 'Checking...') : (hindi ? 'स्थिति जाँचें →' : 'Check Status →')}
-                  </button>
-                </div>
-                <span className="input-hint">
-                  {hindi ? 'इस नंबर से पंजीकृत सभी वाहनों की टेस्टिंग स्थिति एक साथ देखें।' : 'Lists all vehicles associated with this contact number.'}
-                </span>
-              </div>
-            )}
+              <button type="submit" className="btn btn-primary checker-compact-btn" disabled={loading}>
+                {loading ? (hindi ? 'जाँच हो रही है...' : 'Checking...') : (hindi ? 'स्थिति जाँचें →' : 'Check Status →')}
+              </button>
+            </div>
           </form>
 
           {/* Error Message */}

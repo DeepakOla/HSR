@@ -87,7 +87,7 @@ const schema = buildLocalBusinessSchema({
         <div class="ticker-track">
           <span class="ticker-item">
             <span class="ticker-badge demo-tag">⚡ {locale === 'en' ? 'GOVERNMENT APPROVED' : 'सरकारी प्रमाणित'}</span>
-            <span class="demo-text">{locale === 'en' ? 'Certified CNG Cylinder Hydro Testing Facility — Rewari, Haryana' : 'प्रमाणित सीएनजी सिलेंडर हाइड्रो टेस्टिंग सुविधा — रेवाड़ी, हरियाणा'}</span>
+            <span class="demo-text">{locale === 'en' ? 'Government Approved Testing Facility (PESO Certified) — Rewari, Haryana' : 'सरकारी प्रमाणित टेस्टिंग सुविधा (PESO Certified) — रेवाड़ी, हरियाणा'}</span>
           </span>
           <span class="ticker-item">
             <span class="ticker-badge">⏱️ {locale === 'en' ? 'FAST' : 'त्वरित'}</span>
@@ -100,7 +100,7 @@ const schema = buildLocalBusinessSchema({
           <!-- Duplicate for seamless loop -->
           <span class="ticker-item">
             <span class="ticker-badge demo-tag">⚡ {locale === 'en' ? 'GOVERNMENT APPROVED' : 'सरकारी प्रमाणित'}</span>
-            <span class="demo-text">{locale === 'en' ? 'Certified CNG Cylinder Hydro Testing Facility — Rewari, Haryana' : 'प्रमाणित सीएनजी सिलेंडर हाइड्रो टेस्टिंग सुविधा — रेवाड़ी, हरियाणा'}</span>
+            <span class="demo-text">{locale === 'en' ? 'Government Approved Testing Facility (PESO Certified) — Rewari, Haryana' : 'सरकारी प्रमाणित टेस्टिंग सुविधा (PESO Certified) — रेवाड़ी, हरियाणा'}</span>
           </span>
           <span class="ticker-item">
             <span class="ticker-badge">⏱️ {locale === 'en' ? 'FAST' : 'त्वरित'}</span>
@@ -213,17 +213,6 @@ const schema = buildLocalBusinessSchema({
           <div class="footer-brand-col">
             <strong class="footer-brand-title">{businessName || 'HSR'}</strong>
             <span class="footer-badge-tag">{locale === 'en' ? 'Precision Hydro Test Station' : 'प्रमाणित हाइड्रो टेस्टिंग स्टेशन'}</span>
-            <p class="footer-brand-desc">
-              {locale === 'en'
-                ? 'High-precision CNG cylinder hydrostatic stretch testing up to 300 bar pressure. Certified testing for cars, commercial LCVs, and multi-cylinder transport trucks under statutory Gas Cylinders Rules and MoRTH compliance.'
-                : '300 बार दबाव तक उच्च-सटीक सीएनजी सिलेंडर हाइड्रोस्टेटिक स्ट्रेच टेस्टिंग। वैधानिक गैस सिलेंडर नियमों और सड़क परिवहन मंत्रालय मानकों के तहत कार, कमर्शियल एलसीवी और ट्रकों के लिए प्रमाणित टेस्टिंग।'}
-            </p>
-            <div class="trust-badge-group">
-              <span class="trust-badge">300 Bar Hydrostatic Test</span>
-              <span class="trust-badge">Ultrasonic Scan</span>
-              <span class="trust-badge">MoRTH Compliant</span>
-              <span class="trust-badge">Gas Cylinders Rules 2016</span>
-            </div>
           </div>
 
           <div class="footer-links-col">
@@ -231,7 +220,7 @@ const schema = buildLocalBusinessSchema({
             <ul class="footer-nav-list">
               <li><a href={getAnchor('booking')}>{copy.actions.book}</a></li>
               <li><a href={getAnchor('refused-cng')}>{locale === 'en' ? 'Refused at CNG Pump?' : 'पंप पर मना किया?'}</a></li>
-              <li><a href={getAnchor('pricing')}>{locale === 'en' ? 'Transparent Pricing (₹500 Adv)' : 'पारदर्शी शुल्क (₹500 अग्रिम)'}</a></li>
+              <li><a href={getAnchor('pricing')}>{locale === 'en' ? 'Transparent Pricing' : 'पारदर्शी शुल्क'}</a></li>
               <li><a href={getAnchor('process')}>{locale === 'en' ? '5-Step Testing Methodology' : '5-चरणीय परीक्षण विधि'}</a></li>
               <li><a href={getAnchor('standards')}>{locale === 'en' ? 'Statutory Standards' : 'वैधानिक सुरक्षा मानक'}</a></li>
             </ul>
@@ -330,6 +319,18 @@ const schema = buildLocalBusinessSchema({
             closeDrawer();
           }
         });
+
+        // Header Pin on Scroll (only shows sticky when scrolled past hero)
+        const header = document.querySelector('.app-header');
+        if (header) {
+          window.addEventListener('scroll', function() {
+            if (window.scrollY > 250) {
+              header.classList.add('scrolled-pinned');
+            } else {
+              header.classList.remove('scrolled-pinned');
+            }
+          }, { passive: true });
+        }
       })();
     </script>
   </body>
@@ -394,10 +395,25 @@ const schema = buildLocalBusinessSchema({
   .app-header {
     background: #ffffff;
     border-bottom: 1px solid var(--border-default);
-    position: sticky;
-    top: 0;
+    position: relative;
     z-index: 50;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .app-header.scrolled-pinned {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    box-shadow: 0 4px 14px rgba(10, 17, 40, 0.08);
+    animation: slideDownHeader 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes slideDownHeader {
+    from {
+      transform: translateY(-100%);
+    }
+    to {
+      transform: translateY(0);
+    }
   }
   .topbar {
     height: 64px;

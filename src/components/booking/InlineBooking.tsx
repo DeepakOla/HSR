@@ -121,6 +121,19 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
   const [fleetDate, setFleetDate] = useState<string>(() => addDays(todayInIndia(), 1));
   const [fleetSubmitted, setFleetSubmitted] = useState<boolean>(false);
 
+  // Calendar Picker Ref for Native showPicker API
+  const datePickerRef = React.useRef<HTMLInputElement>(null);
+  const handleOpenCalendar = () => {
+    if (datePickerRef.current) {
+      if (typeof (datePickerRef.current as any).showPicker === 'function') {
+        (datePickerRef.current as any).showPicker();
+      } else {
+        datePickerRef.current.focus();
+        datePickerRef.current.click();
+      }
+    }
+  };
+
   // Active Tier helper
   const activeTier = useMemo(() => {
     return VEHICLE_TIERS.find((t) => t.id === selectedTier) || VEHICLE_TIERS[0];
@@ -415,25 +428,42 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                   })}
                 </div>
 
-                {/* Cylinder Dropdown */}
-                <div className="cylinder-dropdown-row">
-                  <div className="cyl-dropdown-wrap">
-                    <label htmlFor="cylinder-select" className="sub-label">
+                {/* Cylinder Selection Pills (1 to 6) */}
+                <div className="cylinder-pills-selection">
+                  <div className="cyl-pills-wrap">
+                    <label className="sub-label">
                       {hindi ? 'सिलेंडर संख्या चुनें:' : 'Select Number of Cylinders:'}
+                      <span className="cyl-tier-hint" style={{ fontSize: '0.8rem', color: 'var(--color-slate-500)', marginLeft: '0.5rem', fontWeight: 500 }}>
+                        ({hindi ? activeTier.descHi : activeTier.descEn})
+                      </span>
                     </label>
-                    <div className="cyl-select-box">
-                      <select
-                        id="cylinder-select"
-                        className="form-input cylinder-select-dropdown font-mono-num"
-                        value={cylinderCount}
-                        onChange={(e) => setCylinderCount(Number(e.target.value))}
-                      >
-                        {activeTier.allowedCylinders.map((num) => (
-                          <option key={num} value={num}>
-                            {num} {hindi ? 'सिलेंडर' : num === 1 ? 'Cylinder' : 'Cylinders'}
-                          </option>
-                        ))}
-                      </select>
+                    <div className="cylinder-pills-row">
+                      {[1, 2, 3, 4, 5, 6].map((num) => {
+                        const isSelected = cylinderCount === num;
+                        return (
+                          <button
+                            type="button"
+                            key={num}
+                            className={`cyl-pill-btn ${isSelected ? 'selected' : ''}`}
+                            onClick={() => {
+                              setCylinderCount(num);
+                              if (num <= 2 && selectedTier !== 'PASSENGER_CAR' && selectedTier !== 'COMMERCIAL_VAN_LCV') {
+                                setSelectedTier('PASSENGER_CAR');
+                                setVehicleClass('Passenger Cars & Taxis');
+                              } else if ((num === 3 || num === 4) && selectedTier === 'PASSENGER_CAR') {
+                                setSelectedTier('COMMERCIAL_VAN_LCV');
+                                setVehicleClass('Commercial Vans, Tempos & LCVs');
+                              } else if (num >= 5) {
+                                setSelectedTier('HEAVY_TRUCK_BUS');
+                                setVehicleClass('Heavy Commercial Trucks & Buses');
+                              }
+                            }}
+                          >
+                            <span className="cyl-num font-mono-num">{num}</span>
+                            <span className="cyl-label">{num === 1 ? (hindi ? 'सिलेंडर' : 'Cyl') : (hindi ? 'सिलेंडर' : 'Cyls')}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                   <a
@@ -469,8 +499,10 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                         {qd.label}
                       </button>
                     ))}
-                    <label
+                    <button
+                      type="button"
                       className={`date-pill calendar-pill-btn ${!quickDates.some((q) => q.dateStr === serviceDate) ? 'selected' : ''}`}
+                      onClick={handleOpenCalendar}
                       title={hindi ? 'कैलेंडर से तारीख चुनें (30 दिन)' : 'Choose date from calendar (30 days)'}
                     >
                       <span className="cal-btn-icon">📅</span>
@@ -478,6 +510,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                         {!quickDates.some((q) => q.dateStr === serviceDate) ? serviceDate : (hindi ? 'कैलेंडर...' : 'Calendar...')}
                       </span>
                       <input
+                        ref={datePickerRef}
                         id="booking-date-picker"
                         type="date"
                         min={todayInIndia()}
@@ -488,7 +521,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                         }}
                         className="calendar-hidden-input"
                       />
-                    </label>
+                    </button>
                   </div>
                 </div>
 
@@ -607,7 +640,9 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                       required
                     />
                     <span className="field-hint">
-                      {hindi ? 'पुष्टि और गेट पास हेतु' : 'SMS / Pass sent here'}
+                      {hindi
+                        ? '10-अंकों का मोबाइल नंबर (WhatsApp अनुशंसित — टेस्ट सर्टिफिकेट व गेट पास यहाँ भेजा जाएगा)'
+                        : '10-digit mobile number (WhatsApp preferred — test certificate & gate pass will be sent here)'}
                     </span>
                   </div>
                 </div>
@@ -680,10 +715,12 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
 
                   <div className="advance-highlight-banner">
                     <div className="advance-info">
-                      <span className="adv-tag">{hindi ? 'कुल ऑनलाइन भुगतान' : 'Full Payment at Booking'}</span>
-                      <strong className="adv-amt">{inr(selectedCategory.totalPaise)}</strong>
+                      <span className="adv-tag">{hindi ? 'अग्रिम ऑनलाइन टोकन' : 'Advance Payable Online'}</span>
+                      <strong className="adv-amt">{inr(selectedCategory.advancePaise || 50000)}</strong>
                       <span className="adv-desc">
-                        {hindi ? 'अपनी टेस्टिंग बे एवं तकनीशियन का समय आरक्षित करने के लिए कुल वैधानिक शुल्क का ऑनलाइन भुगतान करें।' : 'Pay full certified testing fee online to confirm your dedicated bay and technician allocation.'}
+                        {hindi
+                          ? `₹500 अग्रिम ऑनलाइन देकर स्लॉट आरक्षित करें। शेष ${inr(selectedCategory.totalPaise - (selectedCategory.advancePaise || 50000))} टेस्टिंग पूर्ण होने पर स्टेशन पर देय होगा।`
+                          : `Pay ₹500 advance online to confirm testing bay. Balance ${inr(selectedCategory.totalPaise - (selectedCategory.advancePaise || 50000))} payable on arrival after inspection.`}
                       </span>
                     </div>
                   </div>
@@ -718,18 +755,33 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
               <div className="hold-header">
                 <span className="metric-chip metric-amber">⏳ {hindi ? 'स्लॉट 15 मिनट के लिए सुरक्षित' : 'Bay Held for 15 Minutes'}</span>
                 <h3 className="hold-title">
-                  {hindi ? 'ऑनलाइन भुगतान पूर्ण करें: ' : 'Complete Online Payment: '}
-                  {inr(holdResult.category?.totalPaise || selectedCategory?.totalPaise || 200000)}
+                  {hindi ? 'ऑनलाइन टोकन अग्रिम: ' : 'Online Advance Payment: '}
+                  {inr(holdResult.pricing?.advancePaise || 50000)}
                 </h3>
                 <p className="hold-meta">
                   <strong>{hindi ? 'बुकिंग कोड:' : 'Booking Reference:'}</strong> <code className="booking-code">{holdResult.bookingCode}</code>
+                  {holdResult.pricing?.remainingPaise && (
+                    <span className="hold-remaining-hint" style={{ display: 'block', marginTop: '0.25rem', fontSize: '0.85rem', color: 'var(--color-slate-600)' }}>
+                      {hindi ? `(शेष ${inr(holdResult.pricing.remainingPaise)} स्टेशन पर देय)` : `(Balance ${inr(holdResult.pricing.remainingPaise)} payable at station)`}
+                    </span>
+                  )}
                 </p>
               </div>
 
               <div className="upi-payment-grid">
                 {/* QR Code Container */}
                 <div className="upi-qr-box">
-                  {holdResult.upiUri ? (
+                  {holdResult.upiQrDataUrl ? (
+                    <div className="qr-img-wrap">
+                      <img
+                        src={holdResult.upiQrDataUrl}
+                        alt="UPI Payment QR"
+                        className="qr-img"
+                        width={180}
+                        height={180}
+                      />
+                    </div>
+                  ) : holdResult.upiUri ? (
                     <div className="qr-img-wrap">
                       <img
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(holdResult.upiUri)}`}

@@ -28,7 +28,7 @@ const subHeading = locale === 'en'
   <div class="container hero-grid">
     <div class="hero-content">
       <div class="trust-badge trust-badge-amber">
-        ⚡ {locale === 'en' ? 'Government Approved Testing Facility' : 'सरकारी प्रमाणित टेस्टिंग सुविधा'}
+        ⚡ {locale === 'en' ? 'Government Approved Testing Facility (PESO Certified)' : 'सरकारी प्रमाणित टेस्टिंग सुविधा (PESO Certified)'}
       </div>
       <p class="hero-brand">{businessName || 'HSR'}</p>
       <h1 class="hero-title">{heading}</h1>
@@ -44,9 +44,6 @@ const subHeading = locale === 'en'
       <div class="hero-actions">
         <a class="btn btn-primary hero-btn-main" href={`/${locale}/book/`}>
           ⚡ {locale === 'en' ? 'Book Testing Appointment' : 'टेस्टिंग स्लॉट बुक करें'} →
-        </a>
-        <a class="btn btn-outline" href="#check-due-date" style="background: rgba(255, 255, 255, 0.08); color: #ffffff; border-color: rgba(255, 255, 255, 0.3);">
-          🔍 {locale === 'en' ? 'Check Retest Due Date' : 'रीटेस्ट ड्यू-डेट जाँचें'} ↓
         </a>
         {phoneReady && (
           <a class="btn btn-secondary" href={`tel:${settings.contact_phone}`}>
@@ -74,7 +71,7 @@ const subHeading = locale === 'en'
 </section>
 
 <!-- SECTION 2: INTELLIGENT CNG DUE-DATE CHECKER -->
-<section class="section due-date-section" id="check-due-date" style="background: var(--color-slate-100); padding: 3rem 0;">
+<section class="section due-date-section" id="check-due-date" style="background: var(--color-slate-100); padding: 1.75rem 0;">
   <div class="container">
     <DueDateChecker
       client:load
@@ -103,32 +100,32 @@ const subHeading = locale === 'en'
     <div class="standards-grid">
       <article class="card standard-card">
         <span class="step-num">01</span>
-        <h3>{locale === 'en' ? 'Degassing & Purging' : 'डीगैसिंग और सफाई'}</h3>
-        <p>{locale === 'en' ? 'Complete evacuation of volatile residual methane under controlled explosion-proof conditions before water filling.' : 'पानी भरने से पूर्व नियंत्रित और सुरक्षित वातावरण में बची हुई वाष्पशील मीथेन गैस को पूरी तरह निकालना।'}</p>
+        <h3>{locale === 'en' ? 'Degas & Empty' : 'गैस खाली करना'}</h3>
+        <p>{locale === 'en' ? 'Safely empty leftover gas before filling with water.' : 'पानी भरने से पूर्व बची हुई गैस को सुरक्षित तरीके से खाली करना।'}</p>
       </article>
 
       <article class="card standard-card">
         <span class="step-num">02</span>
-        <h3>{locale === 'en' ? 'Ultrasonic Inspection' : 'अल्ट्रासोनिक जांच'}</h3>
-        <p>{locale === 'en' ? 'Internal optical endoscopy and ultrasonic wall-thickness measurement to detect corrosion pitting and micro-cracks.' : 'आंतरिक एंडोस्कोपी और दीवार मोटाई जांच जिससे आंतरिक जंग और सूक्ष्म दरारों का तुरंत पता लगाया जा सके।'}</p>
+        <h3>{locale === 'en' ? 'Visual & Ultrasonic Check' : 'विजुअल व अल्ट्रासोनिक जांच'}</h3>
+        <p>{locale === 'en' ? 'Inspect cylinder inside and out for corrosion, dents, and wall thickness.' : 'सिलेंडर के अंदर और बाहर जंग, खरोंच व दीवार की मोटाई की सटीक जांच।'}</p>
       </article>
 
       <article class="card standard-card">
         <span class="step-num">03</span>
-        <h3>{locale === 'en' ? '300 Bar Water Jacket' : '300 बार वाटर जैकेट टेस्ट'}</h3>
-        <p>{locale === 'en' ? 'Hydrostatic expansion stretch measurement in a sealed water chamber at 300 bar hydraulic pressure to measure permanent stretch.' : 'सील किए गए वाटर चैंबर में 300 बार हाइड्रोलिक दबाव पर सिलेंडर के खिंचाव का सटीक मापन।'}</p>
+        <h3>{locale === 'en' ? '300 Bar Water Pressure Test' : '300 बार वाटर प्रेशर टेस्ट'}</h3>
+        <p>{locale === 'en' ? 'High-pressure water test at 300 bar inside a water jacket to measure expansion and strength.' : 'वाटर जैकेट में 300 बार दबाव पर पानी भरकर मजबूती व फैलाव की जांच।'}</p>
       </article>
 
       <article class="card standard-card">
         <span class="step-num">04</span>
-        <h3>{locale === 'en' ? 'Internal Baking' : 'आंतरिक डिहाइड्रेशन'}</h3>
-        <p>{locale === 'en' ? 'Heated dry air circulation ensuring 100% moisture removal from internal steel surfaces to prevent internal rust formation.' : 'गर्म सूखी हवा का प्रवाह जिससे 100% नमी बाहर निकल जाए और सिलेंडर के अंदर जंग न लगे।'}</p>
+        <h3>{locale === 'en' ? 'Heat Dry' : 'गर्म हवा से सुखाना'}</h3>
+        <p>{locale === 'en' ? 'Dry inside with hot air to ensure zero moisture or rust remains.' : 'गर्म हवा से अंदरूनी नमी को पूरी तरह सुखाना ताकि जंग न लगे।'}</p>
       </article>
 
       <article class="card standard-card">
         <span class="step-num">05</span>
-        <h3>{locale === 'en' ? 'Plate & Certificate' : 'प्रमाणपत्र और प्लेट'}</h3>
-        <p>{locale === 'en' ? 'Stamping of hydrostatic test dates, official brass plate installation near filler valve, and digital test certificate issuance.' : 'टेस्ट तारीख की मोहर, फिलर वाल्व के पास आधिकारिक पीतल की प्लेट की फिटिंग और डिजिटल सर्टिफिकेट जारी करना।'}</p>
+        <h3>{locale === 'en' ? 'Brass Plate & Certificate' : 'ब्रास प्लेट व सर्टिफिकेट'}</h3>
+        <p>{locale === 'en' ? 'Stamp test date, fix official brass plate near filler valve, and issue test certificate.' : 'टेस्ट तारीख की मोहर, फिलर वाल्व के पास पीतल की प्लेट लगाना और डिजिटल सर्टिफिकेट जारी करना।'}</p>
       </article>
     </div>
   </div>

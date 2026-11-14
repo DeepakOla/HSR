@@ -1,12 +1,18 @@
 ---
 import { getDb, getBusinessSettings } from '../../lib/db';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+import { getStaffContext } from '../../lib/auth';
 
 const db = getDb(Astro);
+const env = getRuntimeEnv(Astro.locals);
 const settings = await getBusinessSettings(db);
+const staff = await getStaffContext(Astro.request, env);
+
 const rawLocale = Astro.url.searchParams.get('locale');
 const locale = rawLocale === 'hi' ? 'hi' : 'en';
 const hindi = locale === 'hi';
 const businessName = hindi ? (settings.business_name_hi || settings.business_name_en || 'HSR') : (settings.business_name_en || 'HSR');
+const redirectParam = Astro.url.searchParams.get('redirect') || '';
 ---
 
 <!doctype html>
@@ -15,7 +21,7 @@ const businessName = hindi ? (settings.business_name_hi || settings.business_nam
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex,nofollow" />
-    <title>{hindi ? `साइन-इन एवं एक्सेस पोर्टल | ${businessName}` : `Authentication & Access Portal | ${businessName}`}</title>
+    <title>{hindi ? `स्टाफ साइन-इन एवं एक्सेस पोर्टल | ${businessName}` : `Staff Sign-In & Access Portal | ${businessName}`}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
@@ -31,8 +37,8 @@ const businessName = hindi ? (settings.business_name_hi || settings.business_nam
         flex-direction: column;
       }
       .login-container {
-        max-width: 960px;
-        margin: 3rem auto;
+        max-width: 900px;
+        margin: 2.5rem auto;
         padding: 0 1.5rem;
         flex: 1;
       }
@@ -58,7 +64,7 @@ const businessName = hindi ? (settings.business_name_hi || settings.business_nam
       }
       .login-header {
         text-align: center;
-        margin-bottom: 2.5rem;
+        margin-bottom: 2rem;
       }
       .login-brand-tag {
         display: inline-block;
@@ -73,28 +79,167 @@ const businessName = hindi ? (settings.business_name_hi || settings.business_nam
       }
       .login-title {
         font-family: 'Plus Jakarta Sans', sans-serif;
-        font-size: clamp(1.8rem, 3vw, 2.3rem);
+        font-size: clamp(1.75rem, 3vw, 2.25rem);
         color: #0a1128;
         margin: 0.25rem 0 0.5rem;
         letter-spacing: -0.02em;
       }
       .login-subtitle {
         color: #475569;
-        font-size: 1rem;
+        font-size: 0.95rem;
         max-width: 580px;
         margin: 0 auto;
       }
+      .auth-card {
+        background: #ffffff;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        margin-bottom: 2rem;
+      }
+      .auth-card-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #0a1128;
+        margin: 0 0 0.5rem;
+      }
+      .auth-card-desc {
+        color: #64748b;
+        font-size: 0.9rem;
+        margin-bottom: 1.25rem;
+      }
+      .quick-profiles-row {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.25rem;
+      }
+      .profile-chip {
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        padding: 0.4rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #334155;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+      .profile-chip:hover {
+        background: #e2e8f0;
+        border-color: #94a3b8;
+      }
+      .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+      }
+      .form-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #1e293b;
+      }
+      .form-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 6px;
+        font-size: 0.95rem;
+        box-sizing: border-box;
+      }
+      .form-input:focus {
+        outline: none;
+        border-color: #0284c7;
+        box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+      }
+      .btn-submit-login {
+        background: #0a1128;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 0.95rem;
+        padding: 0.85rem 1.5rem;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+      .btn-submit-login:hover {
+        background: #ea580c;
+      }
+      .login-alert {
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        margin-top: 1rem;
+      }
+      .login-alert-error {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+      }
+      .login-alert-success {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+      }
+      .session-active-box {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #f0fdf4;
+        border: 1.5px solid #86efac;
+        padding: 1rem 1.25rem;
+        border-radius: 8px;
+        margin-bottom: 1.75rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+      .session-user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+      .role-badge {
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.2rem 0.6rem;
+        border-radius: 4px;
+        text-transform: uppercase;
+      }
+      .role-owner { background: #ea580c; color: #ffffff; }
+      .role-reception { background: #0284c7; color: #ffffff; }
+      .btn-signout {
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        color: #475569;
+        padding: 0.45rem 0.9rem;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+      }
+      .btn-signout:hover {
+        background: #f8fafc;
+        border-color: #94a3b8;
+        color: #dc2626;
+      }
       .portals-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2.5rem;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 2rem;
       }
       .portal-card {
         background: #ffffff;
         border: 2px solid #e2e8f0;
         border-radius: 12px;
-        padding: 1.75rem;
+        padding: 1.5rem;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
@@ -113,22 +258,22 @@ const businessName = hindi ? (settings.business_name_hi || settings.business_nam
         border-radius: 4px;
         display: inline-block;
         width: fit-content;
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.5rem;
       }
       .badge-customer { background: #f0fdf4; color: #15803d; }
       .badge-staff { background: #eff6ff; color: #1d4ed8; }
       .badge-admin { background: #fff7ed; color: #c2410c; }
       .portal-name {
-        font-size: 1.25rem;
+        font-size: 1.15rem;
         font-weight: 700;
         color: #0a1128;
-        margin: 0 0 0.5rem;
+        margin: 0 0 0.4rem;
       }
       .portal-desc {
         color: #64748b;
-        font-size: 0.88rem;
-        line-height: 1.5;
-        margin-bottom: 1.5rem;
+        font-size: 0.85rem;
+        line-height: 1.45;
+        margin-bottom: 1.25rem;
         flex: 1;
       }
       .portal-btn {
@@ -139,8 +284,8 @@ const businessName = hindi ? (settings.business_name_hi || settings.business_nam
         background: #0a1128;
         color: #ffffff;
         font-weight: 600;
-        font-size: 0.9rem;
-        padding: 0.75rem 1rem;
+        font-size: 0.88rem;
+        padding: 0.7rem 1rem;
         border-radius: 6px;
         text-decoration: none;
         transition: background 0.15s ease;
@@ -162,10 +307,10 @@ const businessName = hindi ? (settings.business_name_hi || settings.business_nam
         font-size: 0.85rem;
         color: #475569;
         line-height: 1.5;
+        margin-bottom: 1.5rem;
       }
       .back-home-link {
         display: inline-block;
-        margin-top: 1.5rem;
         color: #0284c7;
         text-decoration: none;
         font-weight: 600;
@@ -178,67 +323,172 @@ const businessName = hindi ? (settings.business_name_hi || settings.business_nam
   <body>
     <main class="login-container">
       <div class="login-top-bar">
-        <a href={hindi ? '/admin/login/?locale=en' : '/admin/login/?locale=hi'} class="lang-switch-btn">
+        <a href={hindi ? `/admin/login/?locale=en${redirectParam ? `&redirect=${encodeURIComponent(redirectParam)}` : ''}` : `/admin/login/?locale=hi${redirectParam ? `&redirect=${encodeURIComponent(redirectParam)}` : ''}`} class="lang-switch-btn">
           🌐 {hindi ? 'English' : 'हिंदी'}
         </a>
       </div>
 
       <div class="login-header">
-        <span class="login-brand-tag">⚡ {businessName} {hindi ? 'एक्सेस पोर्टल' : 'Access Portal'}</span>
-        <h1 class="login-title">{hindi ? 'एचएसआर सिस्टम में साइन-इन करें' : 'Sign in to HSR Systems'}</h1>
+        <span class="login-brand-tag">⚡ {businessName} {hindi ? 'प्रबंधन पोर्टल' : 'Management Portal'}</span>
+        <h1 class="login-title">{hindi ? 'स्टाफ एवं एडमिनिस्ट्रेशन साइन-इन' : 'Staff & Administration Sign-In'}</h1>
         <p class="login-subtitle">
           {hindi
-            ? 'नीचे अपना गंतव्य पोर्टल चुनें। स्टाफ एवं एडमिनिस्ट्रेटिव सिस्टम क्लाउडफ्लेयर एक्सेस सुरक्षा द्वारा सुरक्षित हैं।'
-            : 'Select your destination portal below. Staff and administrative systems are secured with Cloudflare Access zero-trust identity verification.'}
+            ? 'अधिकृत स्टेशन कर्मचारी एवं प्रबंधक अपने सुरक्षित कार्यक्षेत्र में प्रवेश करने के लिए साइन-इन करें।'
+            : 'Authorized station technicians and management sign in below to access operational consoles.'}
         </p>
       </div>
 
-      <div class="portals-grid">
-        <!-- Portal 1: Customer Portal -->
-        <div class="portal-card">
-          <div>
-            <span class="portal-badge badge-customer">🚗 {hindi ? 'ग्राहक स्वयं-सेवा' : 'Customer Self-Service'}</span>
-            <h2 class="portal-name">{hindi ? 'ग्राहक पोर्टल' : 'Customer Portal'}</h2>
-            <p class="portal-desc">
-              {hindi
-                ? 'अपने वाहन सिलेंडर टेस्टिंग की लाइव स्थिति देखें, अपॉइंटमेंट ट्रैक करें या रजिस्ट्रेशन नंबर से प्रमाणपत्र विवरण प्राप्त करें।'
-                : 'Check your vehicle cylinder testing status, view upcoming appointments, track booking progress, or view certificate records using your vehicle registration number.'}
-            </p>
+      {staff ? (
+        /* ALREADY AUTHENTICATED VIEW */
+        <div>
+          <div class="session-active-box">
+            <div class="session-user-info">
+              <span>👤</span>
+              <div>
+                <strong>{staff.email}</strong>
+                <span style="margin: 0 0.5rem; color: #94a3b8;">•</span>
+                <span class={`role-badge ${staff.role === 'OWNER' ? 'role-owner' : 'role-reception'}`}>
+                  {staff.role === 'OWNER' ? (hindi ? '👑 स्टेशन ओनर' : '👑 Station Owner') : (hindi ? '📋 रिसेप्शन स्टाफ' : '📋 Reception Staff')}
+                </span>
+              </div>
+            </div>
+            <button type="button" id="logout-btn" class="btn-signout">
+              🚪 {hindi ? 'साइन आउट' : 'Sign Out'}
+            </button>
           </div>
+
+          <h2 style="font-size: 1.15rem; margin-bottom: 1rem; color: #0a1128;">
+            {hindi ? 'आपके अधिकृत कंसोल:' : 'Your Authorized Consoles:'}
+          </h2>
+
+          <div class="portals-grid">
+            {staff.role === 'OWNER' && (
+              <div class="portal-card">
+                <div>
+                  <span class="portal-badge badge-admin">⚙️ {hindi ? 'प्रबंधन' : 'Management'}</span>
+                  <h3 class="portal-name">{hindi ? 'ओनर कंसोल' : 'Owner Console'}</h3>
+                  <p class="portal-desc">
+                    {hindi
+                      ? 'व्यवसाय विवरण, प्रति-सिलेंडर दरें, साप्ताहिक बे क्षमता, तारीख अवकाश, स्टाफ अनुमतियाँ व रीटेस्ट रिमाइंडर प्रबंधित करें।'
+                      : 'Configure business details, per-cylinder pricing rates, weekly bay schedule capacity, date overrides, staff user permissions, and retest reminders.'}
+                  </p>
+                </div>
+                <a href="/admin/owner/" class="portal-btn">
+                  ⚙️ {hindi ? 'ओनर कंसोल खोलें →' : 'Open Owner Console →'}
+                </a>
+              </div>
+            )}
+
+            <div class="portal-card">
+              <div>
+                <span class="portal-badge badge-staff">📋 {hindi ? 'संचालन' : 'Operations'}</span>
+                <h3 class="portal-name">{hindi ? 'रिसेप्शन डेस्क' : 'Reception Desk'}</h3>
+                <p class="portal-desc">
+                  {hindi
+                    ? 'वाहनों का आगमन, सिलेंडर प्रविष्टि, ऑनलाइन यूटीआर भुगतान सत्यापन एवं टेस्टिंग बे का आवंटन करें।'
+                    : 'Manage vehicle arrivals, register cylinders into the official test register, verify customer UTR payment references, and allocate testing bays.'}
+                </p>
+              </div>
+              <a href="/admin/reception/" class="portal-btn portal-btn-secondary">
+                📋 {hindi ? 'रिसेप्शन डेस्क खोलें →' : 'Open Reception Desk →'}
+              </a>
+            </div>
+
+            <div class="portal-card">
+              <div>
+                <span class="portal-badge badge-staff">📝 {hindi ? 'वैधानिक रजिस्टर' : 'Statutory Register'}</span>
+                <h3 class="portal-name">{hindi ? 'सिलेंडर रजिस्टर' : 'Cylinder Register'}</h3>
+                <p class="portal-desc">
+                  {hindi
+                    ? 'सभी हाइड्रो-परीक्षण किए गए सिलेंडरों का वैधानिक रिकॉर्ड, टेस्ट नंबर, हाइड्रो प्रेशर परिणाम एवं प्रमाणपत्र स्थिति देखें।'
+                    : 'Statutory log of all hydro-tested cylinders, sequential test numbering, hydro test pressure readings, and certification records.'}
+                </p>
+              </div>
+              <a href="/admin/cylinder-register/" class="portal-btn">
+                📝 {hindi ? 'सिलेंडर रजिस्टर खोलें →' : 'Open Cylinder Register →'}
+              </a>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* LOGIN FORM VIEW */
+        <div class="auth-card">
+          <h2 class="auth-card-title">🔐 {hindi ? 'स्टाफ लॉगिन क्रेडेंशियल' : 'Staff Login Credentials'}</h2>
+          <p class="auth-card-desc">
+            {hindi
+              ? 'प्रबंधन अथवा रिसेप्शन डेस्क में प्रवेश के लिए अपना अधिकृत स्टाफ ईमेल दर्ज करें:'
+              : 'Enter your registered staff email address to access your assigned console:'}
+          </p>
+
+          <div class="quick-profiles-row">
+            <span style="font-size: 0.8rem; font-weight: 600; color: #64748b; align-self: center;">
+              {hindi ? 'त्वरित चयन:' : 'Quick Select:'}
+            </span>
+            <button type="button" class="profile-chip" data-email="kumardeepakola@gmail.com">
+              👑 kumardeepakola@gmail.com (Owner)
+            </button>
+            <button type="button" class="profile-chip" data-email="owner@hsr.test">
+              ⚙️ owner@hsr.test (Owner)
+            </button>
+            <button type="button" class="profile-chip" data-email="reception@hsr.test">
+              📋 reception@hsr.test (Reception)
+            </button>
+          </div>
+
+          <form id="staff-login-form" class="login-form">
+            <div class="form-group">
+              <label for="staff-email-input" class="form-label">
+                {hindi ? 'अधिकृत ईमेल पता *' : 'Registered Staff Email *'}
+              </label>
+              <input
+                id="staff-email-input"
+                type="email"
+                required
+                placeholder="staff@hsrgreenenergy.com"
+                class="form-input"
+                autocomplete="email"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="staff-pin-input" class="form-label">
+                {hindi ? 'स्टाफ पिन / पासवर्ड (वैकल्पिक)' : 'Staff Security PIN (Optional for Dev)'}
+              </label>
+              <input
+                id="staff-pin-input"
+                type="password"
+                placeholder="••••••"
+                class="form-input font-mono-num"
+                autocomplete="current-password"
+              />
+            </div>
+
+            <button type="submit" id="submit-login-btn" class="btn-submit-login">
+              🔐 {hindi ? 'कंसोल में साइन-इन करें →' : 'Sign In to Console →'}
+            </button>
+
+            <div id="login-alert-box" style="display: none;"></div>
+          </form>
+        </div>
+      )}
+
+      <!-- Customer Lookup Fallback Card -->
+      <div class="portal-card" style="margin-bottom: 2rem;">
+        <div>
+          <span class="portal-badge badge-customer">🚗 {hindi ? 'ग्राहक स्वयं-सेवा' : 'Customer Self-Service'}</span>
+          <h3 class="portal-name">{hindi ? 'क्या आप वाहन की स्थिति या रीटेस्ट ड्यू-डेट देखना चाहते हैं?' : 'Looking for Vehicle Testing or Due Date Status?'}</h3>
+          <p class="portal-desc">
+            {hindi
+              ? 'यदि आप वाहन मालिक हैं, तो वाहन नंबर दर्ज करके तुरंत लाइव टेस्टिंग स्थिति या 3-वर्षीय वैधानिक रीटेस्ट तारीख देख सकते हैं।'
+              : 'If you are a vehicle owner or fleet manager, you can check live inspection progress or statutory 3-year retest validity directly.'}
+          </p>
+        </div>
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
           <a href={hindi ? '/hi/status/' : '/en/status/'} class="portal-btn">
-            🔍 {hindi ? 'बुकिंग एवं वाहन स्थिति जाँचें →' : 'Check Booking & Vehicle Status →'}
+            🔍 {hindi ? 'लाइव वाहन स्थिति देखें →' : 'Check Vehicle Live Status →'}
           </a>
-        </div>
-
-        <!-- Portal 2: Staff Console (Receptionist & Inspection Desk) -->
-        <div class="portal-card">
-          <div>
-            <span class="portal-badge badge-staff">📋 {hindi ? 'स्टाफ एवं संचालन' : 'Staff & Operations'}</span>
-            <h2 class="portal-name">{hindi ? 'स्टाफ डेस्क (रिसेप्शन)' : 'Staff Desk (Reception)'}</h2>
-            <p class="portal-desc">
-              {hindi
-                ? 'वाहनों का आगमन, सिलेंडर रजिस्टर में प्रविष्टि, ऑनलाइन यूटीआर भुगतान सत्यापन एवं टेस्टिंग बे का आवंटन करें।'
-                : 'Manage vehicle arrivals, register cylinders into the official test register, verify customer UTR payment references, and allocate testing bays.'}
-            </p>
-          </div>
-          <a href="/admin/reception/" class="portal-btn portal-btn-secondary">
-            📋 {hindi ? 'रिसेप्शन डेस्क खोलें →' : 'Open Reception Desk →'}
-          </a>
-        </div>
-
-        <!-- Portal 3: Admin Console (Owner Settings & Schedules) -->
-        <div class="portal-card">
-          <div>
-            <span class="portal-badge badge-admin">⚙️ {hindi ? 'प्रबंधन एवं सेटिंग्स' : 'Management & Settings'}</span>
-            <h2 class="portal-name">{hindi ? 'ओनर कंसोल' : 'Owner Console'}</h2>
-            <p class="portal-desc">
-              {hindi
-                ? 'व्यवसाय विवरण, प्रति-सिलेंडर दरें, साप्ताहिक बे क्षमता, तारीख अवकाश, स्टाफ अनुमतियाँ व रीटेस्ट रिमाइंडर प्रबंधित करें।'
-                : 'Configure business details, per-cylinder pricing rates, weekly bay schedule capacity, date overrides, staff user permissions, and retest reminders.'}
-            </p>
-          </div>
-          <a href="/admin/owner/" class="portal-btn">
-            ⚙️ {hindi ? 'ओनर कंसोल खोलें →' : 'Open Owner Console →'}
+          <a href={hindi ? '/hi/#check-due-date' : '/en/#check-due-date'} class="portal-btn portal-btn-secondary">
+            📅 {hindi ? 'रीटेस्ट ड्यू-डेट चेकर' : 'Retest Due-Date Checker'}
           </a>
         </div>
       </div>
@@ -246,15 +496,103 @@ const businessName = hindi ? (settings.business_name_hi || settings.business_nam
       <div class="security-notice-box">
         <strong>🛡️ {hindi ? 'जीरो-ट्रस्ट सुरक्षा प्रणाली:' : 'Zero-Trust Security Architecture:'}</strong>{' '}
         {hindi
-          ? 'स्टाफ और प्रशासक खातों को क्लाउडफ्लेयर एक्सेस के माध्यम से ईमेल सत्यापन की आवश्यकता होती है। यदि आप अधिकृत कर्मचारी हैं और प्रवेश नहीं कर पा रहे हैं, तो कृपया स्टेशन स्वामी से संपर्क करें।'
-          : 'Staff and Administrator accounts require authenticated email verification through Cloudflare Access. If you are a staff technician or manager and cannot access your console, please contact the station owner to ensure your email is enrolled in the staff user directory.'}
+          ? 'स्टाफ एवं प्रबंधन कंसोल आंतरिक सुरक्षा द्वारा सुरक्षित हैं। उत्पादन परिवेश में क्लाउडफ्लेयर एक्सेस प्रमाणीकरण सक्रिय रहता है। स्थानीय/पूर्वावलोकन में सत्र कुकी द्वारा सुरक्षित पहुंच प्रदान की जाती है।'
+          : 'Staff and Administrator accounts are protected by Cloudflare Access zero-trust identity verification in production environments, with cryptographic HMAC session tokens in local/preview environments.'}
       </div>
 
       <div style="text-align: center;">
         <a href={hindi ? '/hi/' : '/en/'} class="back-home-link">
-          ← {hindi ? 'मुख्य पृष्ठ पर वापस जाएँ' : 'Return to Public Homepage'}
+          ← {hindi ? 'मुख्य वेबसाइट पर वापस जाएँ' : 'Return to Public Homepage'}
         </a>
       </div>
     </main>
+
+    <script is:inline define:vars={{ redirectParam }}>
+      (function() {
+        const loginForm = document.getElementById('staff-login-form');
+        const emailInput = document.getElementById('staff-email-input');
+        const alertBox = document.getElementById('login-alert-box');
+        const submitBtn = document.getElementById('submit-login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const profileChips = document.querySelectorAll('.profile-chip');
+
+        // Quick profile chip click handler
+        profileChips.forEach(chip => {
+          chip.addEventListener('click', () => {
+            const email = chip.getAttribute('data-email');
+            if (email && emailInput) {
+              emailInput.value = email;
+              emailInput.focus();
+            }
+          });
+        });
+
+        // Logout handler
+        if (logoutBtn) {
+          logoutBtn.addEventListener('click', async () => {
+            try {
+              logoutBtn.disabled = true;
+              logoutBtn.textContent = '...';
+              await fetch('/api/admin/auth/session/', { method: 'DELETE' });
+              window.location.reload();
+            } catch (err) {
+              console.error('Logout error:', err);
+              window.location.reload();
+            }
+          });
+        }
+
+        // Login submit handler
+        if (loginForm) {
+          loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!emailInput || !emailInput.value.trim()) return;
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Verifying...';
+            if (alertBox) alertBox.style.display = 'none';
+
+            try {
+              const res = await fetch('/api/admin/auth/session/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: emailInput.value.trim() }),
+              });
+
+              const data = await res.json();
+              if (!res.ok) {
+                throw new Error(data?.error?.message || 'Login failed');
+              }
+
+              if (alertBox) {
+                alertBox.className = 'login-alert login-alert-success';
+                alertBox.textContent = '✅ Sign in successful! Redirecting...';
+                alertBox.style.display = 'block';
+              }
+
+              // Determine destination
+              setTimeout(() => {
+                if (redirectParam && redirectParam.startsWith('/admin/')) {
+                  window.location.href = redirectParam;
+                } else if (data?.staff?.role === 'OWNER') {
+                  window.location.href = '/admin/owner/';
+                } else {
+                  window.location.href = '/admin/reception/';
+                }
+              }, 400);
+
+            } catch (err) {
+              if (alertBox) {
+                alertBox.className = 'login-alert login-alert-error';
+                alertBox.textContent = '⚠️ ' + (err.message || 'Authentication failed');
+                alertBox.style.display = 'block';
+              }
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Sign In to Console →';
+            }
+          });
+        }
+      })();
+    </script>
   </body>
 </html>

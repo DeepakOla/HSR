@@ -134,7 +134,7 @@ a:hover {
 }
 
 .section {
-  padding: 3.5rem 0;
+  padding: 2.25rem 0;
 }
 
 .card {
@@ -530,8 +530,103 @@ a:hover {
   background: #ffffff;
   border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  padding: 2.25rem 2rem;
+  box-shadow: 0 4px 16px rgba(10, 17, 40, 0.05);
+  padding: 1.25rem 1.5rem;
+}
+
+.checker-compact-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.checker-compact-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.checker-title-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.checker-title-compact {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-navy-900);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.checker-subtext-inline {
+  font-size: 0.82rem;
+  color: var(--color-slate-500);
+  font-weight: 500;
+}
+
+.checker-compact-form {
+  margin: 0;
+}
+
+.checker-compact-input-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: stretch;
+}
+
+.checker-input-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.checker-input-icon {
+  position: absolute;
+  left: 0.85rem;
+  font-size: 1rem;
+  color: var(--color-slate-400);
+  pointer-events: none;
+}
+
+.checker-input-compact {
+  width: 100%;
+  padding: 0.65rem 1rem 0.65rem 2.5rem;
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: var(--color-slate-50);
+  color: var(--color-navy-900);
+  transition: all 0.15s ease;
+}
+
+.checker-input-compact:focus {
+  background: #ffffff;
+  border-color: var(--color-blue-600);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+.checker-compact-btn {
+  padding: 0.65rem 1.25rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .checker-compact-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .checker-compact-input-row {
+    flex-direction: column;
+  }
 }
 
 .checker-header {
@@ -1023,6 +1118,7 @@ a:hover {
   margin-top: 0.2rem;
 }
 
+.cylinder-pills-selection,
 .cylinder-dropdown-row {
   display: flex;
   align-items: center;
@@ -1033,6 +1129,61 @@ a:hover {
   border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
   flex-wrap: wrap;
+}
+
+.cyl-pills-wrap {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.cylinder-pills-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.cyl-pill-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 44px;
+  background: #ffffff;
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0.2rem;
+}
+
+.cyl-pill-btn:hover {
+  border-color: var(--color-action);
+  background: #fff7ed;
+}
+
+.cyl-pill-btn.selected {
+  background: var(--color-action);
+  border-color: var(--color-action);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.25);
+}
+
+.cyl-pill-btn .cyl-num {
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.cyl-pill-btn .cyl-label {
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.9;
 }
 
 .cyl-dropdown-wrap {
