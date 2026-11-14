@@ -188,7 +188,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
   }, [hindi]);
 
   // Handle Single Vehicle Submission (Create Hold)
-  const handleCreateHold = async (e: React.FormEvent) => {
+  const handleCreateHold = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormError('');
 
@@ -247,7 +247,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
   };
 
   // Handle UTR Evidence Submission
-  const handleSubmitUtr = async (e: React.FormEvent) => {
+  const handleSubmitUtr = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setEvidenceError('');
     if (!holdResult?.bookingCode || !utrNumber.trim()) {
@@ -299,7 +299,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
     );
   };
 
-  const handleFleetSubmit = (e: React.FormEvent) => {
+  const handleFleetSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!fleetContactPhone.trim()) {
       setFormError(hindi ? 'कृपया संपर्क मोबाइल नंबर दर्ज करें।' : 'Please enter contact phone number.');

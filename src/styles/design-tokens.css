@@ -9,11 +9,11 @@
   --color-navy-950: #050b18;
   --color-navy-900: #0a1128; /* Primary Deep Navy */
   --color-navy-800: #0f172a; /* Secondary Dark Navy */
-  --color-navy-700: #1e293b;
-  --color-navy-600: #334155;
+  --color-navy-700: #1e3a8a; /* Industrial Core Navy */
+  --color-navy-600: #1d4ed8;
 
   /* Telemetry & Calibration — Precision Steel Blue & Cyan */
-  --color-steel-600: #0284c7; /* Precision Steel Blue */
+  --color-steel-600: #2563eb; /* Precision Steel Blue */
   --color-steel-500: #0ea5e9;
   --color-steel-400: #38bdf8; /* Cyan Metric Telemetry */
   --color-steel-100: #e0f2fe;
@@ -83,6 +83,7 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 80px;
+  overflow-x: clip;
 }
 
 body {
@@ -92,6 +93,7 @@ body {
   background-color: var(--bg-app);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
 }
 
 h1, h2, h3, h4, h5, h6 {
