@@ -417,6 +417,95 @@ export async function createHold(db: D1Database, input: CreateHoldInput) {
     [bookingCode]
   );
 
+  // Synchronize into Unified Monolith Tables (0008 Schema)
+  try {
+    const phoneId = `ph_${crypto.randomUUID()}`;
+    const partyId = `pty_${crypto.randomUUID()}`;
+    const bgId = `bg_${bookingCode}`;
+    const displayPhone = normalizedPhone.replace('+91', '');
+    const vehicleCategory = categoryRow.cylinderCount <= 1 ? 'CAR' : (categoryRow.cylinderCount <= 2 ? 'TEMPO_LCV' : 'TRUCK_BUS');
+
+    await db.batch([
+      // 1. Ensure contact phone exists
+      db.prepare(`
+        INSERT INTO contact_phones (id, phone_e164, display_phone)
+        VALUES (?, ?, ?)
+        ON CONFLICT(phone_e164) DO NOTHING
+      `).bind(phoneId, normalizedPhone, displayPhone),
+
+      // 2. Ensure party exists
+      db.prepare(`
+        INSERT INTO parties (id, full_name, party_type)
+        VALUES (?, ?, 'INDIVIDUAL')
+      `).bind(partyId, input.customerName.trim()),
+
+      // 3. Link party to phone
+      db.prepare(`
+        INSERT INTO party_phones (id, party_id, phone_id, relationship_label, is_primary)
+        SELECT ?, ?, id, 'SELF', 1 FROM contact_phones WHERE phone_e164 = ?
+        ON CONFLICT(party_id, phone_id) DO NOTHING
+      `).bind(`pp_${crypto.randomUUID()}`, partyId, normalizedPhone),
+
+      // 4. Link vehicle access
+      db.prepare(`
+        INSERT INTO party_vehicle_access (id, party_id, vehicle_id, access_role)
+        SELECT ?, ?, id, 'OWNER' FROM vehicles WHERE registration_normalized = ?
+        ON CONFLICT(party_id, vehicle_id) DO NOTHING
+      `).bind(`pva_${crypto.randomUUID()}`, partyId, normalizedReg),
+
+      // 5. Create booking group
+      db.prepare(`
+        INSERT INTO booking_groups (
+          id, group_reference, booker_party_id, booker_phone_id, source_channel,
+          total_vehicles, total_cylinders, subtotal_paise, gst_paise, total_payable_paise, payment_status
+        )
+        SELECT ?, ?, ?, id, ?, 1, ?, ?, ?, ?, 'UNPAID'
+        FROM contact_phones WHERE phone_e164 = ?
+      `).bind(
+        bgId, `HSR-${bookingCode}`, partyId,
+        input.source === 'WEB' ? 'WEB_PUBLIC' : 'RECEPTION_PHONE',
+        categoryRow.cylinderCount, categoryRow.basePricePaise, gstAmountPaise, totalPricePaise,
+        normalizedPhone
+      ),
+
+      // 6. Update vehicle and booking with unified columns
+      db.prepare(`
+        UPDATE vehicles
+        SET display_reg_no = ?,
+            normalized_reg_no = ?,
+            vehicle_category = ?
+        WHERE registration_normalized = ?
+      `).bind(
+        input.vehicleRegistration.trim().toUpperCase(),
+        normalizedReg,
+        vehicleCategory,
+        normalizedReg
+      ),
+
+      db.prepare(`
+        UPDATE bookings
+        SET booking_token = ?,
+            booking_group_id = ?,
+            rc_owner_party_id = ?,
+            rc_owner_name_snapshot = ?,
+            slot_date = ?,
+            slot_start_time = ?,
+            booked_cylinder_count = ?,
+            booking_status = ?,
+            testing_status = 'NOT_ARRIVED'
+        WHERE booking_code = ?
+      `).bind(
+        statusToken, bgId, partyId, input.customerName.trim(),
+        slot.serviceDate, slot.startTime, categoryRow.cylinderCount,
+        reservationState === 'CONFIRMED' ? 'CONFIRMED' : 'HOLD',
+        bookingCode
+      )
+    ]);
+  } catch (err) {
+    // Non-blocking sync error logging so legacy booking always succeeds
+    console.warn('[UnifiedSync] Non-blocking synchronization notice:', err);
+  }
+
   return { ...responseSnapshot, bookingId: row.id };
 }
 
@@ -458,6 +547,35 @@ export async function submitPaymentEvidence(
 
   if ((results[0]?.meta.changes ?? 0) !== 1) {
     throw new Error('Booking not found, expired, or no longer accepting payment evidence');
+  }
+
+  // Synchronize payment into Unified Monolith Tables (0008 Schema)
+  try {
+    const payId = `pay_${crypto.randomUUID()}`;
+    await db.batch([
+      db.prepare(`
+        UPDATE bookings
+        SET booking_status = 'CONFIRMED'
+        WHERE booking_code = ?
+      `).bind(bookingCode),
+
+      db.prepare(`
+        UPDATE booking_groups
+        SET payment_status = 'VERIFICATION_PENDING'
+        WHERE id = (SELECT booking_group_id FROM bookings WHERE booking_code = ?)
+      `).bind(bookingCode),
+
+      db.prepare(`
+        INSERT INTO payments (
+          id, booking_group_id, booking_id, amount_paise, payment_mode, utr_or_reference, payment_state, paid_at
+        )
+        SELECT ?, b.booking_group_id, b.id, COALESCE(b.advance_paise_snapshot, 50000), 'UPI_QR', ?, 'PENDING_VERIFICATION', ?
+        FROM bookings b WHERE b.booking_code = ? AND b.booking_group_id IS NOT NULL
+        ON CONFLICT(utr_or_reference) DO NOTHING
+      `).bind(payId, normalizedUtr, submittedAt, bookingCode)
+    ]);
+  } catch (err) {
+    console.warn('[UnifiedPaymentSync] Non-blocking payment sync notice:', err);
   }
 
   return { paymentState: 'EVIDENCE_SUBMITTED', reservationState: 'PENDING_VERIFICATION' };

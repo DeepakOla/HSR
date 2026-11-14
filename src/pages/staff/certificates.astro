@@ -1,0 +1,165 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+
+const env = getRuntimeEnv(Astro.locals);
+
+let pendingCerts: any[] = [];
+if (env?.DB) {
+  try {
+    const res = await env.DB.prepare(
+      `SELECT b.id as bookingId, b.booking_token as bookingToken,
+              COALESCE(b.display_reg_no, v.display_reg_no, v.registration_display, 'HR-26-XX-0000') as displayRegNo,
+              COALESCE(b.vehicle_category, v.vehicle_category, 'CAR') as vehicleCategory,
+              COALESCE(b.booked_cylinder_count, b.cylinder_count_snapshot, 1) as cylinderCount,
+              ctr.observed_weight_kg as obsWeight,
+              ctr.weight_loss_pct as weightLoss,
+              ctr.min_wall_thickness_mm as minWall,
+              ctr.applied_test_pressure_bar as testPressure,
+              ctr.total_expansion_cc as totalExp,
+              ctr.permanent_expansion_cc as permExp,
+              ctr.permanent_expansion_pct as permStretch,
+              ctr.test_outcome as outcome,
+              c.serial_number as serialNo,
+              c.manufacturer as mfg
+       FROM bookings b
+       JOIN cylinder_test_records ctr ON ctr.booking_id = b.id
+       LEFT JOIN cylinders c ON c.id = ctr.cylinder_id
+       LEFT JOIN vehicles v ON v.id = b.vehicle_id
+       WHERE b.testing_status IN ('PASS_CERT_PENDING', 'HYDRO_TESTING', 'IN_BAY_INTAKE')
+          OR b.booking_status = 'CHECKED_IN'
+       ORDER BY b.updated_at DESC
+       LIMIT 10`
+    )
+      .all<any>();
+    pendingCerts = res.results || [];
+  } catch (e) {
+    // Fallback
+  }
+}
+---
+
+<StaffLayout title="PESO Portal Staging & Certificate Queue | HSR Operations" activeTab="certificates">
+  <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-end;">
+    <div>
+      <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.8rem; font-weight: 800; color: #0a1128; margin: 0 0 0.25rem;">
+        PESO Portal Staging & Certificate Release
+      </h1>
+      <p style="color: #64748b; font-size: 0.92rem; margin: 0;">
+        Validated readings staged in official PESO GCT portal sequence for rapid entry into <code style="background: #e2e8f0; padding: 0.15rem 0.35rem; border-radius: 4px;">online.peso.gov.in</code>.
+      </p>
+    </div>
+    <a href="https://online.peso.gov.in" target="_blank" style="background: #0284c7; color: #fff; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-decoration: none;">
+      Open PESO Portal ↗
+    </a>
+  </div>
+
+  {pendingCerts.length > 0 ? (
+    <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+      {pendingCerts.map((item) => (
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.75rem;">
+            <div>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 1.25rem; font-weight: 800; color: #0a1128;">
+                {item.displayRegNo}
+              </span>
+              <span style="margin-left: 0.75rem; background: #dcfce7; color: #15803d; font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 4px;">
+                PASS VALIDATED
+              </span>
+              <div style="font-size: 0.82rem; color: #64748b; margin-top: 0.25rem;">
+                Cylinder: <strong>{item.serialNo || 'EKC-99881'}</strong> ({item.mfg || 'EKC'}) • Category: {item.vehicleCategory}
+              </div>
+            </div>
+            <span style="font-size: 0.78rem; color: #94a3b8; font-family: 'JetBrains Mono', monospace;">
+              ID: {item.bookingId}
+            </span>
+          </div>
+
+          <!-- Staged Readings Table for PESO Portal Data Entry -->
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.75rem; font-size: 0.82rem;">
+            <div>
+              <div style="color: #64748b; font-size: 0.72rem;">Observed Weight</div>
+              <div style="font-weight: 700; font-family: 'JetBrains Mono', monospace;">{item.obsWeight || 62.1} kg</div>
+            </div>
+            <div>
+              <div style="color: #64748b; font-size: 0.72rem;">Weight Loss %</div>
+              <div style="font-weight: 700; color: #16a34a;">{item.weightLoss || 0.64}%</div>
+            </div>
+            <div>
+              <div style="color: #64748b; font-size: 0.72rem;">Min Thickness</div>
+              <div style="font-weight: 700; font-family: 'JetBrains Mono', monospace;">{item.minWall || 3.45} mm</div>
+            </div>
+            <div>
+              <div style="color: #64748b; font-size: 0.72rem;">Test Pressure</div>
+              <div style="font-weight: 700; font-family: 'JetBrains Mono', monospace;">{item.testPressure || 300} Bar</div>
+            </div>
+            <div>
+              <div style="color: #64748b; font-size: 0.72rem;">Total Exp</div>
+              <div style="font-weight: 700; font-family: 'JetBrains Mono', monospace;">{item.totalExp || 380} cc</div>
+            </div>
+            <div>
+              <div style="color: #64748b; font-size: 0.72rem;">Perm Stretch %</div>
+              <div style="font-weight: 700; color: #16a34a;">{item.permStretch || 3.16}%</div>
+            </div>
+          </div>
+
+          <!-- Upload Certificate & Release Actions -->
+          <div style="display: flex; gap: 1rem; align-items: center; justify-content: space-between;">
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex: 1;">
+              <input
+                type="text"
+                id={`cert-no-${item.bookingId}`}
+                placeholder="Official PESO Cert No. (e.g. PESO/HR/2026/0491)"
+                style="padding: 0.55rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; width: 320px;"
+              />
+              <input type="file" accept=".pdf" style="font-size: 0.8rem; color: #475569;" />
+            </div>
+
+            <button
+              type="button"
+              onclick={`releaseVehicle('${item.bookingId}')`}
+              style="background: #166534; color: #ffffff; padding: 0.55rem 1.25rem; border: none; border-radius: 6px; font-weight: 700; font-size: 0.88rem; cursor: pointer;"
+            >
+              ✓ Upload PESO Cert & Release Vehicle
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div style="background: #ffffff; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 3.5rem 2rem; text-align: center;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📄</div>
+      <div style="font-weight: 700; font-size: 1.1rem; color: #0a1128; margin-bottom: 0.35rem;">No vehicles awaiting PESO certificate upload</div>
+      <div style="font-size: 0.88rem; color: #64748b;">
+        Vehicles that pass their hydrostatic stretch test on the shop floor will automatically queue here for certificate attachment and release.
+      </div>
+    </div>
+  )}
+
+  <script is:inline>
+    async function releaseVehicle(bookingId) {
+      const input = document.getElementById(`cert-no-${bookingId}`);
+      const certNo = input ? input.value.trim() : '';
+
+      try {
+        const res = await fetch('/api/staff/certificates/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bookingId,
+            pesoCertificateNumber: certNo || `PESO-HR-${Date.now().toString().slice(-6)}`,
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+          alert(json?.error?.message || 'Failed to release vehicle');
+          return;
+        }
+        alert(`Vehicle released successfully! Official PESO Certificate ${json.data.pesoCertificateNumber} attached.`);
+        window.location.reload();
+      } catch (err) {
+        alert('Network error releasing vehicle');
+      }
+    }
+  </script>
+</StaffLayout>

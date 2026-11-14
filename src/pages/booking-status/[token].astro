@@ -1,0 +1,141 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+
+const { token } = Astro.params;
+const env = getRuntimeEnv(Astro.locals);
+
+let booking: any = null;
+if (env?.DB && token) {
+  try {
+    booking = await env.DB.prepare(
+      `SELECT b.id, b.booking_token as bookingToken, b.booking_code as bookingCode,
+              COALESCE(b.display_reg_no, v.display_reg_no, v.registration_display, 'HR-26-XX-0000') as displayRegNo,
+              COALESCE(b.vehicle_category, v.vehicle_category, 'CAR') as vehicleCategory,
+              COALESCE(b.booked_cylinder_count, b.cylinder_count_snapshot, 1) as cylinderCount,
+              COALESCE(b.slot_date, b.service_date) as slotDate,
+              COALESCE(b.slot_start_time, b.slot_start_snapshot, '09:00') as slotStartTime,
+              b.booking_status as bookingStatus,
+              b.testing_status as testingStatus,
+              sr.resource_name as bayName,
+              ctr.peso_certificate_number as certNo
+       FROM bookings b
+       LEFT JOIN vehicles v ON v.id = b.vehicle_id
+       LEFT JOIN station_resources sr ON sr.id = b.assigned_bay_id
+       LEFT JOIN cylinder_test_records ctr ON ctr.booking_id = b.id
+       WHERE b.booking_token = ? OR b.booking_code = ?`
+    )
+      .bind(token, token)
+      .first<any>();
+  } catch (e) {
+    // Fallback
+  }
+}
+---
+
+<BaseLayout
+  locale="en"
+  title={`Live Inspection Status | ${booking?.displayRegNo || 'HSR Green Energy'}`}
+  description="Real-time statutory hydro test progress, bay status, and compliance tracker."
+  canonicalPath={`/booking-status/${token}`}
+  businessName="HSR Green Energy"
+>
+  <div style="max-width: 680px; margin: 3rem auto; padding: 0 1.25rem;">
+    {booking ? (
+      <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 2rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);">
+        <!-- Top Status Pill -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 1rem;">
+          <div>
+            <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;">Gate Pass & Test Token</span>
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; font-weight: 800; color: #0a1128;">
+              {booking.displayRegNo}
+            </div>
+          </div>
+          <span style="background: #dcfce7; color: #15803d; padding: 0.35rem 0.75rem; border-radius: 9999px; font-weight: 700; font-size: 0.82rem; text-transform: uppercase;">
+            {booking.testingStatus !== 'NOT_ARRIVED' ? booking.testingStatus : booking.bookingStatus}
+          </span>
+        </div>
+
+        <!-- Appointment Details -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; font-size: 0.88rem;">
+          <div>
+            <div style="color: #64748b; font-size: 0.75rem;">Scheduled Slot</div>
+            <div style="font-weight: 700; color: #0a1128; margin-top: 0.15rem;">
+              {booking.slotDate} at {booking.slotStartTime}
+            </div>
+          </div>
+          <div>
+            <div style="color: #64748b; font-size: 0.75rem;">Vehicle Type & Cylinders</div>
+            <div style="font-weight: 700; color: #0a1128; margin-top: 0.15rem;">
+              {booking.vehicleCategory} ({booking.cylinderCount} Cylinders)
+            </div>
+          </div>
+          <div>
+            <div style="color: #64748b; font-size: 0.75rem;">Testing Station Location</div>
+            <div style="font-weight: 700; color: #0a1128; margin-top: 0.15rem;">
+              HSR Green Energy, Rewari, Haryana
+            </div>
+          </div>
+          <div>
+            <div style="color: #64748b; font-size: 0.75rem;">Assigned Bay</div>
+            <div style="font-weight: 700; color: #0284c7; margin-top: 0.15rem;">
+              {booking.bayName || 'Pending Gate Arrival'}
+            </div>
+          </div>
+        </div>
+
+        <!-- 5-Step Visual Progress Stepper -->
+        <div style="margin-bottom: 2rem;">
+          <h4 style="margin: 0 0 1rem; font-size: 0.9rem; color: #334155; text-transform: uppercase; letter-spacing: 0.04em;">
+            Live Station Progress
+          </h4>
+          <div style="display: flex; justify-content: space-between; position: relative;">
+            <div style="text-align: center; flex: 1;">
+              <div style="width: 28px; height: 28px; border-radius: 50%; background: #15803d; color: #fff; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.35rem; font-weight: 700; font-size: 0.75rem;">✓</div>
+              <div style="font-size: 0.72rem; font-weight: 700; color: #0a1128;">Booked</div>
+            </div>
+            <div style="text-align: center; flex: 1;">
+              <div style={`width: 28px; height: 28px; border-radius: 50%; ${booking.testingStatus !== 'NOT_ARRIVED' ? 'background: #15803d; color: #fff;' : 'background: #e2e8f0; color: #64748b;'} display: flex; align-items: center; justify-content: center; margin: 0 auto 0.35rem; font-weight: 700; font-size: 0.75rem;`}>2</div>
+              <div style="font-size: 0.72rem; font-weight: 600; color: #475569;">At Gate</div>
+            </div>
+            <div style="text-align: center; flex: 1;">
+              <div style={`width: 28px; height: 28px; border-radius: 50%; ${booking.testingStatus === 'IN_BAY_INTAKE' || booking.testingStatus === 'HYDRO_TESTING' || booking.testingStatus === 'PASS_CERT_PENDING' || booking.testingStatus === 'RELEASED' ? 'background: #15803d; color: #fff;' : 'background: #e2e8f0; color: #64748b;'} display: flex; align-items: center; justify-content: center; margin: 0 auto 0.35rem; font-weight: 700; font-size: 0.75rem;`}>3</div>
+              <div style="font-size: 0.72rem; font-weight: 600; color: #475569;">Hydro Test</div>
+            </div>
+            <div style="text-align: center; flex: 1;">
+              <div style={`width: 28px; height: 28px; border-radius: 50%; ${booking.testingStatus === 'PASS_CERT_PENDING' || booking.testingStatus === 'RELEASED' ? 'background: #15803d; color: #fff;' : 'background: #e2e8f0; color: #64748b;'} display: flex; align-items: center; justify-content: center; margin: 0 auto 0.35rem; font-weight: 700; font-size: 0.75rem;`}>4</div>
+              <div style="font-size: 0.72rem; font-weight: 600; color: #475569;">Certificate</div>
+            </div>
+            <div style="text-align: center; flex: 1;">
+              <div style={`width: 28px; height: 28px; border-radius: 50%; ${booking.testingStatus === 'RELEASED' ? 'background: #15803d; color: #fff;' : 'background: #e2e8f0; color: #64748b;'} display: flex; align-items: center; justify-content: center; margin: 0 auto 0.35rem; font-weight: 700; font-size: 0.75rem;`}>5</div>
+              <div style="font-size: 0.72rem; font-weight: 600; color: #475569;">Released</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1-Click Upsell to Customer Workspace -->
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 1.25rem; text-align: center;">
+          <div style="font-weight: 700; color: #166534; font-size: 0.95rem; margin-bottom: 0.25rem;">
+            Want to manage all your vehicles and download certificates anytime?
+          </div>
+          <p style="font-size: 0.82rem; color: #374151; margin: 0 0 1rem;">
+            Open your dedicated HSR Customer Workspace with a 1-tap WhatsApp code.
+          </p>
+          <a href="/login?tab=customer" style="display: inline-block; background: #166534; color: #fff; padding: 0.55rem 1.25rem; border-radius: 6px; font-weight: 700; font-size: 0.85rem; text-decoration: none;">
+            Open Customer Workspace (/app) →
+          </a>
+        </div>
+      </div>
+    ) : (
+      <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 3rem 2rem; text-align: center;">
+        <h2 style="font-size: 1.25rem; color: #0a1128; margin-bottom: 0.5rem;">Booking Record Not Found</h2>
+        <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem;">
+          The tracking token may have expired or is invalid. Please check your confirmation message or search by vehicle registration.
+        </p>
+        <a href="/en/" style="background: #0a1128; color: #fff; padding: 0.6rem 1.25rem; border-radius: 6px; font-weight: 700; text-decoration: none;">
+          Go to Home
+        </a>
+      </div>
+    )}
+  </div>
+</BaseLayout>

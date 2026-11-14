@@ -1,0 +1,392 @@
+---
+import { getCustomerSessionFromCookie } from '../lib/customer-auth';
+import { getRuntimeEnv } from '../lib/runtime-env';
+
+interface Props {
+  title?: string;
+  activeNav?: 'overview' | 'vehicles' | 'history' | 'payments' | 'documents' | 'profile';
+  breadcrumb?: string;
+}
+
+const { title = 'Customer Workspace | HSR Technical Services', activeNav = 'overview', breadcrumb = 'Overview' } = Astro.props;
+const env = getRuntimeEnv(Astro.locals);
+const session = await getCustomerSessionFromCookie(Astro.request, env);
+const customerName = session?.fullName || 'Deepak Kumar';
+const userInitials = customerName
+  .split(' ')
+  .map((p) => p[0])
+  .join('')
+  .slice(0, 2)
+  .toUpperCase();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>{title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --color-primary: #15803d;
+        --color-primary-dark: #166534;
+        --color-primary-light: #f0fdf4;
+        --color-text-main: #0f172a;
+        --color-text-muted: #64748b;
+        --color-bg: #f8fafc;
+        --color-card: #ffffff;
+        --color-border: #e2e8f0;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: 'Inter', system-ui, sans-serif;
+        background: var(--color-bg);
+        color: var(--color-text-main);
+        min-height: 100vh;
+        display: flex;
+      }
+      /* Sidebar */
+      .sidebar {
+        width: 250px;
+        background: var(--color-card);
+        border-right: 1px solid var(--color-border);
+        display: flex;
+        flex-direction: column;
+        padding: 1.5rem 1rem;
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        z-index: 40;
+      }
+      .brand-box {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding-bottom: 1.5rem;
+        margin-bottom: 1rem;
+        border-bottom: 1px solid var(--color-border);
+      }
+      .brand-icon {
+        width: 38px;
+        height: 38px;
+        background: var(--color-primary-dark);
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+      }
+      .brand-title {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-weight: 800;
+        font-size: 1.1rem;
+        color: var(--color-text-main);
+        line-height: 1.1;
+      }
+      .brand-subtitle {
+        font-size: 0.65rem;
+        color: var(--color-text-muted);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-weight: 700;
+      }
+      .sidebar-group-title {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 0 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+      .sidebar-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        flex: 1;
+      }
+      .nav-link {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.65rem 0.75rem;
+        border-radius: 8px;
+        color: #475569;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: all 0.12s ease;
+      }
+      .nav-link:hover {
+        background: #f1f5f9;
+        color: var(--color-text-main);
+      }
+      .nav-link.active {
+        background: var(--color-primary-light);
+        color: var(--color-primary-dark);
+        font-weight: 700;
+      }
+      .nav-icon {
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+      }
+      .help-card {
+        background: #f8fafc;
+        border: 1px solid var(--color-border);
+        border-radius: 10px;
+        padding: 1rem;
+        font-size: 0.82rem;
+      }
+      .help-title {
+        font-weight: 700;
+        color: var(--color-text-main);
+        margin-bottom: 0.25rem;
+      }
+      .help-desc {
+        color: var(--color-text-muted);
+        line-height: 1.4;
+        margin-bottom: 0.5rem;
+      }
+      .help-link {
+        color: var(--color-primary-dark);
+        font-weight: 700;
+        text-decoration: none;
+      }
+      /* Main Content Area */
+      .main-wrapper {
+        margin-left: 250px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      .top-navbar {
+        height: 64px;
+        background: var(--color-card);
+        border-bottom: 1px solid var(--color-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 2rem;
+        position: sticky;
+        top: 0;
+        z-index: 30;
+      }
+      .breadcrumbs {
+        font-size: 0.85rem;
+        color: var(--color-text-muted);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .breadcrumbs span.current {
+        color: var(--color-text-main);
+        font-weight: 600;
+      }
+      .top-nav-right {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+      .user-pill {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.35rem 0.75rem;
+        background: #f8fafc;
+        border: 1px solid var(--color-border);
+        border-radius: 9999px;
+        font-size: 0.85rem;
+      }
+      .user-avatar {
+        width: 28px;
+        height: 28px;
+        background: #e2e8f0;
+        border-radius: 9999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.75rem;
+        color: #334155;
+      }
+      .user-meta {
+        line-height: 1.1;
+      }
+      .user-name {
+        font-weight: 700;
+        color: var(--color-text-main);
+      }
+      .user-role {
+        font-size: 0.7rem;
+        color: var(--color-text-muted);
+      }
+      .btn-primary-action {
+        background: var(--color-primary-dark);
+        color: #ffffff;
+        padding: 0.55rem 1.1rem;
+        border-radius: 8px;
+        font-size: 0.88rem;
+        font-weight: 700;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: background 0.12s ease;
+      }
+      .btn-primary-action:hover {
+        background: #14532d;
+      }
+      .page-content {
+        padding: 2.25rem 2rem 4rem;
+        flex: 1;
+        max-width: 1200px;
+        width: 100%;
+        margin: 0 auto;
+      }
+      /* Mobile Nav Bar */
+      .mobile-tab-bar {
+        display: none;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 56px;
+        background: #ffffff;
+        border-top: 1px solid var(--color-border);
+        z-index: 50;
+        justify-content: space-around;
+        align-items: center;
+      }
+      .mobile-tab-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-decoration: none;
+        color: #64748b;
+        font-size: 0.7rem;
+        font-weight: 600;
+      }
+      .mobile-tab-item.active {
+        color: var(--color-primary-dark);
+      }
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+        .main-wrapper {
+          margin-left: 0;
+        }
+        .top-navbar {
+          padding: 0 1rem;
+        }
+        .page-content {
+          padding: 1.25rem 1rem 5rem;
+        }
+        .mobile-tab-bar {
+          display: flex;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Desktop Sidebar -->
+    <aside class="sidebar">
+      <div class="brand-box">
+        <div class="brand-icon">H</div>
+        <div>
+          <div class="brand-title">HSR</div>
+          <div class="brand-subtitle">Technical Services</div>
+        </div>
+      </div>
+
+      <div class="sidebar-group-title">Workspace</div>
+      <nav class="sidebar-nav">
+        <a href="/app" class={`nav-link ${activeNav === 'overview' ? 'active' : ''}`}>
+          <span class="nav-icon">⌂</span> Overview
+        </a>
+        <a href="/app/vehicles" class={`nav-link ${activeNav === 'vehicles' ? 'active' : ''}`}>
+          <span class="nav-icon">🚗</span> My vehicles
+        </a>
+        <a href="/app/history" class={`nav-link ${activeNav === 'history' ? 'active' : ''}`}>
+          <span class="nav-icon">🕒</span> Test history
+        </a>
+        <a href="/app/payments" class={`nav-link ${activeNav === 'payments' ? 'active' : ''}`}>
+          <span class="nav-icon">💳</span> Payments
+        </a>
+        <a href="/app/documents" class={`nav-link ${activeNav === 'documents' ? 'active' : ''}`}>
+          <span class="nav-icon">📄</span> Documents
+        </a>
+        <a href="/app/profile" class={`nav-link ${activeNav === 'profile' ? 'active' : ''}`}>
+          <span class="nav-icon">⚙</span> Profile
+        </a>
+      </nav>
+
+      <div class="help-card">
+        <div class="help-title">Need a hand?</div>
+        <div class="help-desc">Our team is here to help with your cylinder testing.</div>
+        <a href="/en/contact" class="help-link">Contact support ↗</a>
+      </div>
+    </aside>
+
+    <!-- Main Content Shell -->
+    <div class="main-wrapper">
+      <header class="top-navbar">
+        <div class="breadcrumbs">
+          Workspace / <span class="current">{breadcrumb}</span>
+        </div>
+        <div class="top-nav-right">
+          <div class="user-pill">
+            <div class="user-avatar">{userInitials}</div>
+            <div class="user-meta">
+              <div class="user-name">{customerName}</div>
+              <div class="user-role">Customer</div>
+            </div>
+            <a href="/api/auth/logout" style="margin-left: 0.5rem; color: #94a3b8; text-decoration: none; font-size: 0.75rem;" title="Sign out">✕</a>
+          </div>
+          <a href="/app/book" class="btn-primary-action">
+            <span>+</span> Book a test
+          </a>
+        </div>
+      </header>
+
+      <main class="page-content">
+        <slot />
+      </main>
+
+      <!-- Mobile Tab Bar -->
+      <nav class="mobile-tab-bar">
+        <a href="/app" class={`mobile-tab-item ${activeNav === 'overview' ? 'active' : ''}`}>
+          <span>⌂</span> Overview
+        </a>
+        <a href="/app/vehicles" class={`mobile-tab-item ${activeNav === 'vehicles' ? 'active' : ''}`}>
+          <span>🚗</span> Vehicles
+        </a>
+        <a href="/app/history" class={`mobile-tab-item ${activeNav === 'history' ? 'active' : ''}`}>
+          <span>🕒</span> History
+        </a>
+        <a href="/app/payments" class={`mobile-tab-item ${activeNav === 'payments' ? 'active' : ''}`}>
+          <span>💳</span> Payments
+        </a>
+        <a href="/app/documents" class={`mobile-tab-item ${activeNav === 'documents' ? 'active' : ''}`}>
+          <span>📄</span> Docs
+        </a>
+      </nav>
+    </div>
+  </body>
+</html>

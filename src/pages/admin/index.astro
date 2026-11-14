@@ -1,0 +1,281 @@
+---
+import { requireRole } from '../../lib/auth';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+const env = getRuntimeEnv(Astro.locals);
+const auth = await requireRole(Astro.request, env, ['OWNER', 'RECEPTIONIST']);
+if (!auth.ok) return auth.response;
+
+const isOwner = auth.staff.role === 'OWNER';
+
+// Today's date in IST
+const today = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Kolkata',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+}).format(new Date());
+
+let metrics = {
+  todayBookings: 0,
+  webBookings: 0,
+  walkinBookings: 0,
+  inProgress: 0,
+  completed: 0,
+  passedCylinders: 0,
+  condemnedCylinders: 0,
+  totalRevenuePaise: 0,
+  pendingRevenuePaise: 0,
+};
+
+let resources: any[] = [];
+let recentBookings: any[] = [];
+
+if (env?.DB) {
+  try {
+    // 1. Booking counts for today
+    const bookingStats = await env.DB.prepare(`
+      SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN source = 'WEB' THEN 1 ELSE 0 END) as webCount,
+        SUM(CASE WHEN source != 'WEB' THEN 1 ELSE 0 END) as walkinCount,
+        SUM(CASE WHEN reservation_state IN ('CHECKED_IN', 'IN_PROGRESS') OR testing_status IN ('IN_BAY_INTAKE', 'HYDRO_TESTING') THEN 1 ELSE 0 END) as inProgressCount,
+        SUM(CASE WHEN reservation_state = 'CONFIRMED' AND (testing_status = 'RELEASED' OR booking_status = 'COMPLETED') THEN 1 ELSE 0 END) as completedCount,
+        SUM(COALESCE(amount_paid_paise, 0)) as totalRevenue,
+        SUM(COALESCE(balance_paise_snapshot, 0)) as pendingRevenue
+      FROM bookings
+      WHERE service_date = ? OR slot_date = ?
+    `).bind(today, today).first<any>();
+
+    if (bookingStats) {
+      metrics.todayBookings = bookingStats.total || 0;
+      metrics.webBookings = bookingStats.webCount || 0;
+      metrics.walkinBookings = bookingStats.walkinCount || 0;
+      metrics.inProgress = bookingStats.inProgressCount || 0;
+      metrics.completed = bookingStats.completedCount || 0;
+      metrics.totalRevenuePaise = bookingStats.totalRevenue || 0;
+      metrics.pendingRevenuePaise = bookingStats.pendingRevenue || 0;
+    }
+
+    // 2. Cylinder test outcomes
+    const cylinderStats = await env.DB.prepare(`
+      SELECT 
+        SUM(CASE WHEN test_outcome = 'PASS' THEN 1 ELSE 0 END) as passCount,
+        SUM(CASE WHEN test_outcome = 'FAIL_CONDEMNED' THEN 1 ELSE 0 END) as failCount
+      FROM cylinder_test_records
+      WHERE date(tested_at) = ?
+    `).bind(today).first<any>();
+
+    if (cylinderStats) {
+      metrics.passedCylinders = cylinderStats.passCount || 0;
+      metrics.condemnedCylinders = cylinderStats.failCount || 0;
+    }
+
+    // 3. Station resources status
+    const resourceRows = await env.DB.prepare(`
+      SELECT id, resource_code as resourceCode, resource_name as resourceName,
+             resource_type as resourceType, status, calibration_valid_until as validUntil
+      FROM station_resources
+      WHERE is_active = 1
+      ORDER BY resource_type ASC, resource_code ASC
+    `).all<any>();
+    resources = resourceRows.results || [];
+
+    // 4. Recent bookings list
+    const recentRows = await env.DB.prepare(`
+      SELECT b.id, b.booking_code as bookingCode,
+             COALESCE(b.display_reg_no, v.display_reg_no, v.registration_display, 'HR-26') as regNo,
+             COALESCE(b.slot_start_time, b.slot_start_snapshot, '09:00') as slotTime,
+             COALESCE(b.booked_cylinder_count, b.cylinder_count_snapshot, 1) as cylinderCount,
+             COALESCE(b.total_price_paise_snapshot, 0) as totalPricePaise,
+             b.reservation_state as reservationState,
+             b.payment_state as paymentState,
+             COALESCE(b.testing_status, 'NOT_ARRIVED') as testingStatus
+      FROM bookings b
+      LEFT JOIN vehicles v ON v.id = b.vehicle_id
+      ORDER BY b.created_at DESC
+      LIMIT 6
+    `).all<any>();
+    recentBookings = recentRows.results || [];
+  } catch (err) {
+    console.error('Failed to query admin dashboard:', err);
+  }
+}
+---
+
+<AdminLayout title="Executive Overview" owner={isOwner}>
+  <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <div style="font-size: 0.78rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">
+        HSR Green Energy • Operations & Management Console
+      </div>
+      <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.85rem; font-weight: 800; color: #0a1128; margin: 0;">
+        Station Executive Overview
+      </h1>
+      <p style="color: #64748b; font-size: 0.92rem; margin: 0.25rem 0 0;">
+        Live monitoring for Rewari Hydro Testing Facility • Date: <strong>{today}</strong>
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 0.75rem;">
+      <a href="/admin/reception" style="display: inline-flex; align-items: center; gap: 0.5rem; background: #0a1128; color: #ffffff; padding: 0.65rem 1.25rem; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 0.9rem;">
+        📋 Reception Queue →
+      </a>
+      {isOwner && (
+        <a href="/admin/owner" style="display: inline-flex; align-items: center; gap: 0.5rem; background: #ffffff; border: 1.5px solid #cbd5e1; color: #334155; padding: 0.65rem 1.25rem; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 0.9rem;">
+          ⚙️ Owner Settings
+        </a>
+      )}
+    </div>
+  </div>
+
+  <!-- KPI METRICS GRID -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+      <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Today's Bookings</span>
+      <div style="font-size: 2rem; font-weight: 800; color: #0a1128; margin-top: 0.25rem;">
+        {metrics.todayBookings}
+      </div>
+      <div style="font-size: 0.78rem; color: #64748b; margin-top: 0.25rem;">
+        🌐 Web: {metrics.webBookings} • 🚶 Desk: {metrics.walkinBookings}
+      </div>
+    </div>
+
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+      <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Active in Bays</span>
+      <div style="font-size: 2rem; font-weight: 800; color: #0284c7; margin-top: 0.25rem;">
+        {metrics.inProgress}
+      </div>
+      <div style="font-size: 0.78rem; color: #64748b; margin-top: 0.25rem;">
+        Under test or intake
+      </div>
+    </div>
+
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+      <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Completed Tests</span>
+      <div style="font-size: 2rem; font-weight: 800; color: #15803d; margin-top: 0.25rem;">
+        {metrics.completed}
+      </div>
+      <div style="font-size: 0.78rem; color: #15803d; margin-top: 0.25rem;">
+        Passed: {metrics.passedCylinders} {metrics.condemnedCylinders > 0 ? `• Condemned: ${metrics.condemnedCylinders}` : ''}
+      </div>
+    </div>
+
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+      <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Revenue Collected</span>
+      <div style="font-size: 2rem; font-weight: 800; color: #0a1128; margin-top: 0.25rem;">
+        ₹{(metrics.totalRevenuePaise / 100).toLocaleString('en-IN')}
+      </div>
+      <div style="font-size: 0.78rem; color: #ea580c; margin-top: 0.25rem;">
+        Pending counter: ₹{(metrics.pendingRevenuePaise / 100).toLocaleString('en-IN')}
+      </div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <!-- RECENT BOOKINGS & WORKFLOW TABLE -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h2 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.15rem; font-weight: 700; color: #0a1128; margin: 0;">
+          Recent Testing Appointments
+        </h2>
+        <a href="/admin/reception" style="font-size: 0.85rem; font-weight: 600; color: #0284c7; text-decoration: none;">
+          View Reception Desk →
+        </a>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+          <thead>
+            <tr style="border-bottom: 1.5px solid #e2e8f0; color: #64748b; font-size: 0.75rem; text-transform: uppercase;">
+              <th style="padding: 0.6rem 0.5rem;">Vehicle Reg</th>
+              <th style="padding: 0.6rem 0.5rem;">Time</th>
+              <th style="padding: 0.6rem 0.5rem;">Cylinders</th>
+              <th style="padding: 0.6rem 0.5rem;">Amount</th>
+              <th style="padding: 0.6rem 0.5rem;">Booking</th>
+              <th style="padding: 0.6rem 0.5rem;">Testing</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recentBookings.length === 0 ? (
+              <tr>
+                <td colspan="6" style="padding: 2rem 0; text-align: center; color: #94a3b8;">
+                  No bookings recorded yet for this session.
+                </td>
+              </tr>
+            ) : (
+              recentBookings.map((b) => (
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                  <td style="padding: 0.75rem 0.5rem; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #0a1128;">
+                    {b.regNo}
+                  </td>
+                  <td style="padding: 0.75rem 0.5rem; color: #475569;">
+                    {b.slotTime}
+                  </td>
+                  <td style="padding: 0.75rem 0.5rem; color: #475569;">
+                    {b.cylinderCount} Cyl
+                  </td>
+                  <td style="padding: 0.75rem 0.5rem; font-weight: 600; color: #0a1128;">
+                    ₹{(b.totalPricePaise / 100).toLocaleString('en-IN')}
+                  </td>
+                  <td style="padding: 0.75rem 0.5rem;">
+                    <span style={`display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; ${
+                      b.reservationState === 'CONFIRMED' ? 'background: #dcfce7; color: #15803d;' : 'background: #fef3c7; color: #b45309;'
+                    }`}>
+                      {b.reservationState}
+                    </span>
+                  </td>
+                  <td style="padding: 0.75rem 0.5rem;">
+                    <span style="font-size: 0.78rem; font-weight: 600; color: #0284c7;">
+                      {b.testingStatus}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PHYSICAL BAYS & HYDRO RIGS -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h2 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.15rem; font-weight: 700; color: #0a1128; margin: 0;">
+          Bays & Equipment
+        </h2>
+        {isOwner && (
+          <a href="/admin/bays-equipment" style="font-size: 0.85rem; font-weight: 600; color: #0284c7; text-decoration: none;">
+            Manage →
+          </a>
+        )}
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        {resources.length === 0 ? (
+          <p style="color: #94a3b8; font-size: 0.88rem; margin: 0;">No resources configured.</p>
+        ) : (
+          resources.map((res) => (
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <div>
+                <strong style="color: #0a1128; font-size: 0.9rem; display: block;">{res.resourceName}</strong>
+                <span style="font-size: 0.75rem; color: #64748b;">
+                  Code: <code>{res.resourceCode}</code> • {res.resourceType}
+                </span>
+              </div>
+              <span style={`padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; ${
+                res.status === 'ONLINE' ? 'background: #dcfce7; color: #15803d;' :
+                res.status === 'OCCUPIED' ? 'background: #e0f2fe; color: #0369a1;' :
+                res.status === 'MAINTENANCE' ? 'background: #fee2e2; color: #b91c1c;' :
+                'background: #fef3c7; color: #b45309;'
+              }`}>
+                {res.status}
+              </span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  </div>
+</AdminLayout>

@@ -1,8 +1,12 @@
 import type { MiddlewareHandler } from 'astro';
+import { getCustomerSessionFromCookie } from './lib/customer-auth';
+import { getStaffSessionFromCookie } from './lib/auth';
+import { getRuntimeEnv } from './lib/runtime-env';
 
 export const onRequest: MiddlewareHandler = async (context, next) => {
   const { pathname, hostname } = context.url;
 
+  // Language redirection for root /
   if (pathname === '/') {
     const saved = context.cookies.get('hsr_lang')?.value;
     const accept = context.request.headers.get('accept-language')?.toLowerCase() ?? '';
@@ -15,6 +19,36 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
   }
   if (pathname.startsWith('/hi/')) {
     context.cookies.set('hsr_lang', 'hi', { path: '/', maxAge: 60 * 60 * 24 * 365 });
+  }
+
+  // Authentication guards for workspace routes
+  const env = getRuntimeEnv(context.locals);
+
+  // 1. Customer Workspace Guard (/app/*)
+  if (pathname.startsWith('/app') && env) {
+    const customerSession = await getCustomerSessionFromCookie(context.request, env);
+    if (!customerSession) {
+      const redirectUrl = `/login/?tab=customer&redirect=${encodeURIComponent(pathname + context.url.search)}`;
+      return context.redirect(redirectUrl, 302);
+    }
+  }
+
+  // 2. Staff Workspace Guard (/staff/*)
+  if (pathname.startsWith('/staff') && env) {
+    const staffSession = await getStaffSessionFromCookie(context.request, env);
+    if (!staffSession) {
+      const redirectUrl = `/login/?tab=staff&redirect=${encodeURIComponent(pathname + context.url.search)}`;
+      return context.redirect(redirectUrl, 302);
+    }
+  }
+
+  // 3. Admin Workspace Guard (/admin/*, excluding /admin/login)
+  if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login') && env) {
+    const staffSession = await getStaffSessionFromCookie(context.request, env);
+    if (!staffSession) {
+      const redirectUrl = `/admin/login/?redirect=${encodeURIComponent(pathname + context.url.search)}`;
+      return context.redirect(redirectUrl, 302);
+    }
   }
 
   const response = await next();
@@ -33,8 +67,7 @@ export const onRequest: MiddlewareHandler = async (context, next) => {
     hostname.includes('preview') ||
     hostname.includes('localhost') ||
     hostname === '127.0.0.1' ||
-    (context.locals?.runtime?.env?.APP_BASE_URL &&
-      context.locals.runtime.env.APP_BASE_URL.includes('example'));
+    (env?.APP_BASE_URL && env.APP_BASE_URL.includes('example'));
 
   if (isPreview) {
     headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');

@@ -1,0 +1,331 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import { getStaffContext } from '../../lib/auth';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+
+const env = getRuntimeEnv(Astro.locals);
+const staff = await getStaffContext(Astro.request, env);
+
+let activeBayVehicles: any[] = [];
+if (env?.DB) {
+  try {
+    const res = await env.DB.prepare(
+      `SELECT b.id as bookingId, b.booking_token as bookingToken,
+              COALESCE(b.display_reg_no, v.display_reg_no, v.registration_display, 'HR-26-XX-0000') as displayRegNo,
+              COALESCE(b.vehicle_category, v.vehicle_category, 'CAR') as vehicleCategory,
+              COALESCE(b.booked_cylinder_count, b.cylinder_count_snapshot, 1) as cylinderCount,
+              b.testing_status as testingStatus,
+              b.assigned_bay_id as bayId,
+              sr.resource_name as bayName,
+              b.rc_owner_name_snapshot as rcOwner
+       FROM bookings b
+       LEFT JOIN vehicles v ON v.id = b.vehicle_id
+       LEFT JOIN station_resources sr ON sr.id = b.assigned_bay_id
+       WHERE b.booking_status IN ('CHECKED_IN', 'IN_PROGRESS', 'CONFIRMED')
+       ORDER BY b.slot_date ASC, b.slot_start_time ASC
+       LIMIT 10`
+    )
+      .all<any>();
+    activeBayVehicles = res.results || [];
+  } catch (e) {
+    // Fallback
+  }
+}
+---
+
+<StaffLayout title="Shop-Floor Hydro Testing Worksheet | HSR Operations" activeTab="testing">
+  <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-end;">
+    <div>
+      <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.8rem; font-weight: 800; color: #0a1128; margin: 0 0 0.25rem;">
+        Testing Team Shop-Floor Worksheet
+      </h1>
+      <p style="color: #64748b; font-size: 0.92rem; margin: 0;">
+        Statutory PESO Gas Cylinders Rules 2016 / IS 8451 Hydrostatic Stretch Testing Console.
+      </p>
+    </div>
+    <div style="background: #e0f2fe; color: #0284c7; padding: 0.35rem 0.75rem; border-radius: 6px; font-weight: 700; font-size: 0.8rem;">
+      Rig A & B Online (300 Bar Water-Jacket)
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 320px 1fr; gap: 1.5rem;">
+    <!-- Active Vehicles Queue -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+      <h3 style="margin-top: 0; font-size: 0.95rem; font-weight: 700; color: #0a1128; margin-bottom: 0.75rem;">
+        Vehicles in Bay Intake
+      </h3>
+
+      {activeBayVehicles.length > 0 ? (
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;" id="queue-container">
+          {activeBayVehicles.map((v, i) => (
+            <div
+              class={`vehicle-queue-card ${i === 0 ? 'selected' : ''}`}
+              onclick={`selectVehicle('${v.bookingId}', '${v.displayRegNo}', '${v.rcOwner}', ${v.cylinderCount})`}
+              style={`border: 1px solid ${i === 0 ? '#0284c7' : '#cbd5e1'}; background: ${i === 0 ? '#eff6ff' : '#f8fafc'}; padding: 0.75rem 1rem; border-radius: 8px; cursor: pointer; transition: all 0.15s ease;`}
+            >
+              <div style="font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 1rem; color: #0a1128;">
+                {v.displayRegNo}
+              </div>
+              <div style="font-size: 0.78rem; color: #64748b; margin-top: 0.2rem;">
+                {v.vehicleCategory} • {v.cylinderCount} Cyl • {v.rcOwner || 'Owner'}
+              </div>
+              <div style="margin-top: 0.35rem; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: #0284c7;">{v.bayName || 'BAY_1'}</span>
+                <span style="font-size: 0.72rem; background: #e2e8f0; padding: 0.15rem 0.4rem; border-radius: 4px;">{v.testingStatus || 'INTAKE'}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style="text-align: center; padding: 2rem 1rem; color: #64748b; font-size: 0.85rem;">
+          No vehicles in intake queue.<br />Check in a vehicle from the Reception Desk.
+        </div>
+      )}
+    </div>
+
+    <!-- Worksheet Form -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.75rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 1rem;">
+        <div>
+          <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Active Testing Worksheet</span>
+          <h2 id="active-reg-display" style="margin: 0.2rem 0 0; font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; color: #0a1128;">
+            {activeBayVehicles[0]?.displayRegNo || 'HR-26-AB-1234'}
+          </h2>
+          <div id="active-meta-display" style="font-size: 0.85rem; color: #64748b; margin-top: 0.2rem;">
+            Owner: {activeBayVehicles[0]?.rcOwner || 'Deepak Kumar'} • Cylinders: {activeBayVehicles[0]?.cylinderCount || 1}
+          </div>
+        </div>
+
+        <div id="outcome-pill" style="padding: 0.5rem 1rem; border-radius: 8px; font-weight: 800; font-size: 1.1rem; background: #dcfce7; color: #15803d; border: 2px solid #bbf7d0;">
+          PASS READY
+        </div>
+      </div>
+
+      <form id="form-test-readings" onsubmit="submitReadings(event)">
+        <input type="hidden" id="booking-id-val" value={activeBayVehicles[0]?.bookingId || 'mock-booking-01'} />
+
+        <!-- 1. Cylinder Identification -->
+        <h4 style="margin: 0 0 0.75rem; color: #334155; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.04em;">
+          1. Cylinder Technical Specifications
+        </h4>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 0.3rem;">Serial Number</label>
+            <input type="text" id="cyl-serial" required value="EKC-99881" style="width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-family: 'JetBrains Mono', monospace;" />
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 0.3rem;">Manufacturer</label>
+            <input type="text" id="cyl-mfg" required value="EKC" style="width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px;" />
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 0.3rem;">Original Tare Weight (kg)</label>
+            <input type="number" step="0.1" id="orig-tare" required value="62.5" oninput="recalc()" style="width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px;" />
+          </div>
+        </div>
+
+        <!-- 2. Pre-Test Inspection & Observed Measurements -->
+        <h4 style="margin: 0 0 0.75rem; color: #334155; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.04em;">
+          2. Pre-Test Physical Checks & Thickness
+        </h4>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1rem;">
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 0.3rem;">Visual Check</label>
+            <select id="check-visual" onchange="recalc()" style="width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px;">
+              <option value="SATISFACTORY">SATISFACTORY</option>
+              <option value="UNSATISFACTORY">UNSATISFACTORY</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 0.3rem;">Neck Thread</label>
+            <select id="check-thread" onchange="recalc()" style="width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px;">
+              <option value="SATISFACTORY">SATISFACTORY</option>
+              <option value="UNSATISFACTORY">UNSATISFACTORY</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 0.3rem;">Internal Endoscopy</label>
+            <select id="check-internal" onchange="recalc()" style="width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px;">
+              <option value="SATISFACTORY">SATISFACTORY</option>
+              <option value="UNSATISFACTORY">UNSATISFACTORY</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 0.3rem;">Valve Inspection</label>
+            <select id="check-valve" onchange="recalc()" style="width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px;">
+              <option value="SATISFACTORY">SATISFACTORY</option>
+              <option value="UNSATISFACTORY">UNSATISFACTORY</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 0.3rem;">Observed Weight (kg)</label>
+            <input type="number" step="0.1" id="obs-weight" required value="62.1" oninput="recalc()" style="width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px;" />
+            <div id="weight-loss-calc" style="font-size: 0.75rem; color: #16a34a; font-weight: 700; margin-top: 0.25rem;">Loss: 0.64% (Limit: 5.0%)</div>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 0.3rem;">Min Wall Thickness (mm)</label>
+            <input type="number" step="0.01" id="wall-thickness" required value="3.45" oninput="recalc()" style="width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px;" />
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 0.3rem;">Design Min Thickness (mm)</label>
+            <input type="number" step="0.01" id="design-min-thickness" value="3.20" oninput="recalc()" style="width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px;" />
+          </div>
+        </div>
+
+        <!-- 3. Hydrostatic Water Jacket Readings -->
+        <h4 style="margin: 0 0 0.75rem; color: #334155; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.04em;">
+          3. 300 Bar Hydrostatic Stretch Readings
+        </h4>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 0.3rem;">Hydraulic Test Pressure (Bar)</label>
+            <input type="number" id="test-pressure" value="300" required style="width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: 700;" />
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 0.3rem;">Total Volumetric Expansion (cc)</label>
+            <input type="number" step="0.1" id="total-exp" required value="380.0" oninput="recalc()" style="width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px;" />
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 0.3rem;">Permanent Expansion (cc)</label>
+            <input type="number" step="0.1" id="perm-exp" required value="12.0" oninput="recalc()" style="width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px;" />
+            <div id="perm-stretch-calc" style="font-size: 0.75rem; color: #16a34a; font-weight: 700; margin-top: 0.25rem;">Stretch: 3.16% (Limit: 10.0%)</div>
+          </div>
+        </div>
+
+        <!-- 4. Post-Test Checkboxes & Sign-Off -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; display: flex; gap: 2rem;">
+          <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.85rem; color: #334155; cursor: pointer;">
+            <input type="checkbox" id="check-dry" checked />
+            Internal Hot-Air Dry Complete (100% Moisture Free)
+          </label>
+          <label style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.85rem; color: #334155; cursor: pointer;">
+            <input type="checkbox" id="check-stamp" checked />
+            Official Brass Plate & Neck Stamping Complete
+          </label>
+        </div>
+
+        <button type="submit" id="btn-submit-readings" style="width: 100%; background: #166534; color: #ffffff; padding: 0.85rem; border: none; border-radius: 8px; font-weight: 800; font-size: 1rem; cursor: pointer; transition: background 0.15s ease;">
+          ✓ Validate Test & Submit Readings (Send to PESO Queue)
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script is:inline>
+    function selectVehicle(bookingId, reg, owner, cyl) {
+      document.getElementById('booking-id-val').value = bookingId;
+      document.getElementById('active-reg-display').textContent = reg;
+      document.getElementById('active-meta-display').textContent = `Owner: ${owner || 'Customer'} • Cylinders: ${cyl}`;
+      recalc();
+    }
+
+    function recalc() {
+      const origTare = parseFloat(document.getElementById('orig-tare').value) || 0;
+      const obsWeight = parseFloat(document.getElementById('obs-weight').value) || 0;
+      const wall = parseFloat(document.getElementById('wall-thickness').value) || 0;
+      const designMin = parseFloat(document.getElementById('design-min-thickness').value) || 0;
+      const totalExp = parseFloat(document.getElementById('total-exp').value) || 0;
+      const permExp = parseFloat(document.getElementById('perm-exp').value) || 0;
+
+      const visual = document.getElementById('check-visual').value;
+      const thread = document.getElementById('check-thread').value;
+      const internal = document.getElementById('check-internal').value;
+      const valve = document.getElementById('check-valve').value;
+
+      const weightLossKg = Math.max(0, origTare - obsWeight);
+      const weightLossPct = origTare > 0 ? (weightLossKg / origTare) * 100 : 0;
+      const permExpPct = totalExp > 0 ? (permExp / totalExp) * 100 : 100;
+
+      const weightDiv = document.getElementById('weight-loss-calc');
+      weightDiv.textContent = `Loss: ${weightLossPct.toFixed(2)}% (Limit: 5.0%)`;
+      weightDiv.style.color = weightLossPct <= 5.0 ? '#16a34a' : '#dc2626';
+
+      const stretchDiv = document.getElementById('perm-stretch-calc');
+      stretchDiv.textContent = `Stretch: ${permExpPct.toFixed(2)}% (Limit: 10.0%)`;
+      stretchDiv.style.color = permExpPct <= 10.0 ? '#16a34a' : '#dc2626';
+
+      const isPass =
+        visual === 'SATISFACTORY' &&
+        thread === 'SATISFACTORY' &&
+        internal === 'SATISFACTORY' &&
+        valve === 'SATISFACTORY' &&
+        weightLossPct <= 5.0 &&
+        permExpPct <= 10.0 &&
+        wall >= designMin;
+
+      const outcomePill = document.getElementById('outcome-pill');
+      if (isPass) {
+        outcomePill.textContent = 'PASS READY';
+        outcomePill.style.background = '#dcfce7';
+        outcomePill.style.color = '#15803d';
+        outcomePill.style.borderColor = '#bbf7d0';
+      } else {
+        outcomePill.textContent = 'FAIL / CONDEMNED';
+        outcomePill.style.background = '#fee2e2';
+        outcomePill.style.color = '#dc2626';
+        outcomePill.style.borderColor = '#fca5a5';
+      }
+    }
+
+    async function submitReadings(e) {
+      e.preventDefault();
+      const bookingId = document.getElementById('booking-id-val').value;
+      const serialNumber = document.getElementById('cyl-serial').value;
+      const manufacturer = document.getElementById('cyl-mfg').value;
+      const origTare = parseFloat(document.getElementById('orig-tare').value);
+      const obsWeight = parseFloat(document.getElementById('obs-weight').value);
+      const minWall = parseFloat(document.getElementById('wall-thickness').value);
+      const designMin = parseFloat(document.getElementById('design-min-thickness').value);
+      const totalExp = parseFloat(document.getElementById('total-exp').value);
+      const permExp = parseFloat(document.getElementById('perm-exp').value);
+
+      const btn = document.getElementById('btn-submit-readings');
+      btn.disabled = true;
+      btn.textContent = 'Recording readings...';
+
+      try {
+        const res = await fetch('/api/staff/testing/readings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bookingId,
+            serialNumber,
+            manufacturer,
+            countryOfOrigin: 'INDIA',
+            waterCapacityLiters: 60,
+            originalTareWeightKg: origTare,
+            observedWeightKg: obsWeight,
+            minWallThicknessMm: minWall,
+            maxWallThicknessMm: minWall + 0.3,
+            designMinWallThicknessMm: designMin,
+            totalExpansionCc: totalExp,
+            permanentExpansionCc: permExp,
+            visualCheck: document.getElementById('check-visual').value,
+            threadCheck: document.getElementById('check-thread').value,
+            internalCheck: document.getElementById('check-internal').value,
+            valveCheck: document.getElementById('check-valve').value,
+            internalDryingDone: document.getElementById('check-dry').checked,
+            neckStampingDone: document.getElementById('check-stamp').checked,
+            neckMarkingPhotoDocumentId: 'doc-neck-photo-01',
+          }),
+        });
+
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+          alert(json?.error?.message || 'Failed to submit readings');
+          return;
+        }
+
+        alert(`Readings validated successfully! Outcome: ${json.data.outcome}. Sent to PESO Certificate Queue.`);
+        window.location.href = '/staff/certificates';
+      } catch (err) {
+        alert('Network error submitting readings');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '✓ Validate Test & Submit Readings (Send to PESO Queue)';
+      }
+    }
+  </script>
+</StaffLayout>

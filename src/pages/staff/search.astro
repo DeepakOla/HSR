@@ -1,0 +1,119 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+---
+
+<StaffLayout title="Global Search | HSR Operations" activeTab="search">
+  <div style="margin-bottom: 1.5rem;">
+    <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.8rem; font-weight: 800; color: #0a1128; margin: 0 0 0.25rem;">
+      Universal Customer & Vehicle Search
+    </h1>
+    <p style="color: #64748b; font-size: 0.92rem; margin: 0;">
+      Instant lookup across customer names, 10-digit mobile numbers, vehicle registration plates, and cylinder serials.
+    </p>
+  </div>
+
+  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
+    <div style="display: flex; gap: 0.75rem;">
+      <input
+        type="text"
+        id="global-search-input"
+        placeholder="Type vehicle plate (e.g. HR26), customer name (e.g. Deepak), or mobile..."
+        oninput="performSearch(this.value)"
+        style="flex: 1; padding: 0.85rem 1rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem;"
+      />
+    </div>
+  </div>
+
+  <div id="search-results-area" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;">
+    <!-- Vehicles Results -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+      <h3 style="margin-top: 0; font-size: 1rem; color: #0a1128; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
+        🚗 Vehicles
+      </h3>
+      <div id="res-vehicles" style="color: #64748b; font-size: 0.85rem;">Type to search vehicles...</div>
+    </div>
+
+    <!-- Customers Results -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+      <h3 style="margin-top: 0; font-size: 1rem; color: #0a1128; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
+        👤 Customers & Profiles
+      </h3>
+      <div id="res-customers" style="color: #64748b; font-size: 0.85rem;">Type to search customers...</div>
+    </div>
+
+    <!-- Cylinders Results -->
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+      <h3 style="margin-top: 0; font-size: 1rem; color: #0a1128; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.5rem;">
+        🔧 Cylinders & Serials
+      </h3>
+      <div id="res-cylinders" style="color: #64748b; font-size: 0.85rem;">Type to search cylinders...</div>
+    </div>
+  </div>
+
+  <script is:inline>
+    let searchTimeout = null;
+
+    function performSearch(val) {
+      clearTimeout(searchTimeout);
+      const query = val.trim();
+      if (!query) {
+        document.getElementById('res-vehicles').innerHTML = 'Type to search vehicles...';
+        document.getElementById('res-customers').innerHTML = 'Type to search customers...';
+        document.getElementById('res-cylinders').innerHTML = 'Type to search cylinders...';
+        return;
+      }
+
+      searchTimeout = setTimeout(async () => {
+        try {
+          const res = await fetch(`/api/staff/search?q=${encodeURIComponent(query)}`);
+          const json = await res.json();
+          if (!res.ok || !json.success) return;
+
+          const data = json.data;
+
+          // Render vehicles
+          const vBox = document.getElementById('res-vehicles');
+          if (data.vehicles && data.vehicles.length > 0) {
+            vBox.innerHTML = data.vehicles.map((v) => `
+              <div style="padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9;">
+                <div style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #0a1128;">${v.display_reg_no || v.normalized_reg_no}</div>
+                <div style="font-size: 0.78rem; color: #64748b;">${v.vehicle_category} • Due: ${v.next_test_due_date || 'N/A'}</div>
+                <a href="/en/book/?reg=${v.display_reg_no}" style="font-size: 0.75rem; color: #0284c7; font-weight: 700; text-decoration: none;">Book Retest →</a>
+              </div>
+            `).join('');
+          } else {
+            vBox.innerHTML = '<div style="color: #94a3b8;">No matching vehicles</div>';
+          }
+
+          // Render customers
+          const cBox = document.getElementById('res-customers');
+          if (data.customers && data.customers.length > 0) {
+            cBox.innerHTML = data.customers.map((c) => `
+              <div style="padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9;">
+                <div style="font-weight: 700; color: #0a1128;">${c.full_name}</div>
+                <div style="font-size: 0.78rem; color: #64748b;">Phone: ${c.display_phone || c.phone_e164 || 'N/A'}</div>
+              </div>
+            `).join('');
+          } else {
+            cBox.innerHTML = '<div style="color: #94a3b8;">No matching customers</div>';
+          }
+
+          // Render cylinders
+          const cylBox = document.getElementById('res-cylinders');
+          if (data.cylinders && data.cylinders.length > 0) {
+            cylBox.innerHTML = data.cylinders.map((cyl) => `
+              <div style="padding: 0.5rem 0; border-bottom: 1px solid #f1f5f9;">
+                <div style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #0a1128;">${cyl.serial_number}</div>
+                <div style="font-size: 0.78rem; color: #64748b;">Mfg: ${cyl.manufacturer} • Status: ${cyl.current_status}</div>
+              </div>
+            `).join('');
+          } else {
+            cylBox.innerHTML = '<div style="color: #94a3b8;">No matching cylinders</div>';
+          }
+        } catch (err) {
+          // Ignore
+        }
+      }, 250);
+    }
+  </script>
+</StaffLayout>

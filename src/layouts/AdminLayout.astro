@@ -24,11 +24,15 @@ const { title, owner = false } = Astro.props;
         <span><strong>HSR CNG Testing</strong><small>Staff & Operations Portal</small></span>
       </a>
       <nav>
+        <a href="/admin/" class="nav-link">📊 Overview</a>
         <a href="/admin/reception" class="nav-link">📋 Reception Desk</a>
-        <a href="/admin/register" class="nav-link">🛢️ Cylinder Register</a>
-        {owner && <a href="/admin/owner" class="nav-link">⚙️ Owner Settings</a>}
-        <a href="/en/status/" class="nav-link">🔍 Customer Portal</a>
-        <a href="/en/" class="nav-link public-link">🌐 Public Site →</a>
+        <a href="/staff/testing" class="nav-link">🛢️ Testing Bay</a>
+        {owner && <a href="/admin/bays-equipment" class="nav-link">🔧 Bays & Rigs</a>}
+        {owner && <a href="/admin/records" class="nav-link">📁 Records</a>}
+        {owner && <a href="/admin/finance" class="nav-link">💰 Finance</a>}
+        {owner && <a href="/admin/owner" class="nav-link">⚙️ Settings</a>}
+        <a href="/api/auth/logout" class="nav-link" style="color:#dc2626;">🚪 Logout</a>
+        <a href="/en/" class="nav-link public-link" target="_blank">🌐 Public Site ↗</a>
       </nav>
     </header>
     <main class="staff-content"><slot /></main>

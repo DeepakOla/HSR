@@ -1,0 +1,87 @@
+---
+import CustomerLayout from '../../layouts/CustomerLayout.astro';
+import { getCustomerSessionFromCookie } from '../../lib/customer-auth';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+
+const env = getRuntimeEnv(Astro.locals);
+const session = await getCustomerSessionFromCookie(Astro.request, env);
+
+let payments: any[] = [];
+if (env?.DB && session) {
+  try {
+    const res = await env.DB.prepare(
+      `SELECT p.id, p.amount_paise as amountPaise, p.payment_mode as paymentMode,
+              p.utr_or_reference as utr, p.payment_state as paymentState,
+              p.paid_at as paidAt, bg.group_reference as groupRef
+       FROM payments p
+       JOIN booking_groups bg ON bg.id = p.booking_group_id
+       WHERE bg.booker_party_id = ? OR p.submitted_by_party_id = ?
+       ORDER BY p.paid_at DESC`
+    )
+      .bind(session.partyId, session.partyId)
+      .all<any>();
+    payments = res.results || [];
+  } catch (e) {
+    // Graceful fallback
+  }
+}
+---
+
+<CustomerLayout title="Payments | HSR Technical Services" activeNav="payments" breadcrumb="Payments">
+  <div style="margin-bottom: 1.5rem;">
+    <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.8rem; font-weight: 800; color: #0a1128; margin: 0 0 0.25rem;">
+      Payments & Receipts
+    </h1>
+    <p style="color: #64748b; font-size: 0.92rem; margin: 0;">
+      Advance bookings, counter settlements, and GST invoices.
+    </p>
+  </div>
+
+  {payments.length > 0 ? (
+    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+        <thead style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 0.78rem; text-transform: uppercase;">
+          <tr>
+            <th style="padding: 0.85rem 1.25rem;">Reference</th>
+            <th style="padding: 0.85rem 1rem;">Amount</th>
+            <th style="padding: 0.85rem 1rem;">Mode</th>
+            <th style="padding: 0.85rem 1rem;">Status</th>
+            <th style="padding: 0.85rem 1rem;">Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {payments.map((p) => (
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 1rem 1.25rem; font-family: 'JetBrains Mono', monospace; font-weight: 600;">
+                {p.groupRef || p.utr || 'HSR-PAY'}
+              </td>
+              <td style="padding: 1rem; font-weight: 700; color: #0a1128;">
+                ₹{(p.amountPaise / 100).toLocaleString('en-IN')}
+              </td>
+              <td style="padding: 1rem;">{p.paymentMode}</td>
+              <td style="padding: 1rem;">
+                <span style={`padding: 0.25rem 0.5rem; border-radius: 6px; font-weight: 700; font-size: 0.75rem; ${p.paymentState === 'VERIFIED' ? 'background: #dcfce7; color: #15803d;' : 'background: #fef3c7; color: #b45309;'}`}>
+                  {p.paymentState}
+                </span>
+              </td>
+              <td style="padding: 1rem; color: #64748b;">
+                {p.paidAt ? new Date(p.paidAt).toLocaleDateString('en-IN') : '—'}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ) : (
+    <div style="background: #ffffff; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 3.5rem 2rem; text-align: center;">
+      <div style="font-size: 2.5rem; margin-bottom: 1rem;">💳</div>
+      <div style="font-weight: 700; font-size: 1.1rem; color: #0a1128; margin-bottom: 0.35rem;">No payment transactions yet</div>
+      <div style="font-size: 0.88rem; color: #64748b; margin-bottom: 1.5rem;">
+        When you reserve a testing bay with ₹500 advance or pay counter settlement at the station, receipts will appear here.
+      </div>
+      <a href="/en/book" style="background: #166534; color: #fff; padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 700; font-size: 0.9rem; text-decoration: none;">
+        Book Inspection Bay
+      </a>
+    </div>
+  )}
+</CustomerLayout>

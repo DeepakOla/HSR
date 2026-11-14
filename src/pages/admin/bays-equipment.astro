@@ -1,0 +1,206 @@
+---
+import { requireRole } from '../../lib/auth';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+const env = getRuntimeEnv(Astro.locals);
+const auth = await requireRole(Astro.request, env, ['OWNER']);
+if (!auth.ok) return auth.response;
+
+let resources: any[] = [];
+if (env?.DB) {
+  try {
+    const rows = await env.DB.prepare(`
+      SELECT id, resource_code as resourceCode, resource_name as resourceName,
+             resource_type as resourceType, supported_categories_json as supportedCategoriesJson,
+             status, calibration_cert_no as calibrationCertNo, calibration_valid_until as calibrationValidUntil,
+             notes, updated_at as updatedAt
+      FROM station_resources
+      ORDER BY resource_type ASC, resource_code ASC
+    `).all<any>();
+    resources = rows.results || [];
+  } catch (e) {
+    console.error('Failed to query station resources:', e);
+  }
+}
+---
+
+<AdminLayout title="Bays & Equipment Management" owner={true}>
+  <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <div style="font-size: 0.78rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">
+        Station Infrastructure & Calibration
+      </div>
+      <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.85rem; font-weight: 800; color: #0a1128; margin: 0;">
+        Physical Bays & Hydro Rigs
+      </h1>
+      <p style="color: #64748b; font-size: 0.92rem; margin: 0.25rem 0 0;">
+        Zero hardcoded equipment counts. Manage vehicle bays, hydrostatic water-jacket rigs, and statutory calibration validity.
+      </p>
+    </div>
+
+    <button onclick="document.getElementById('modal-new-resource').style.display='flex'" style="background: #0a1128; color: #ffffff; padding: 0.65rem 1.25rem; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; font-size: 0.9rem;">
+      + Add Bay / Rig
+    </button>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem;">
+    {resources.map((res) => (
+      <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+            <div>
+              <span style="font-size: 0.75rem; font-weight: 700; color: #0284c7; text-transform: uppercase;">
+                {res.resourceType}
+              </span>
+              <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.15rem; font-weight: 800; color: #0a1128; margin: 0.15rem 0 0;">
+                {res.resourceName}
+              </h3>
+              <code style="font-size: 0.78rem; color: #64748b;">Code: {res.resourceCode}</code>
+            </div>
+
+            <span style={`padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; ${
+              res.status === 'ONLINE' ? 'background: #dcfce7; color: #15803d;' :
+              res.status === 'OCCUPIED' ? 'background: #e0f2fe; color: #0369a1;' :
+              res.status === 'MAINTENANCE' ? 'background: #fee2e2; color: #b91c1c;' :
+              'background: #fef3c7; color: #b45309;'
+            }`}>
+              {res.status}
+            </span>
+          </div>
+
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem; margin-bottom: 1rem; font-size: 0.82rem;">
+            <div style="color: #475569; margin-bottom: 0.25rem;">
+              <strong>Supported Categories:</strong> {res.supportedCategoriesJson}
+            </div>
+            <div style="color: #475569;">
+              <strong>Calibration Cert:</strong> {res.calibrationCertNo || 'Not recorded'}
+              {res.calibrationValidUntil && ` (Valid until: ${res.calibrationValidUntil})`}
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button onclick={`toggleStatus('${res.id}', 'ONLINE')`} style="padding: 0.4rem 0.75rem; font-size: 0.78rem; font-weight: 700; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; cursor: pointer; color: #15803d;">
+            Set Online
+          </button>
+          <button onclick={`toggleStatus('${res.id}', 'MAINTENANCE')`} style="padding: 0.4rem 0.75rem; font-size: 0.78rem; font-weight: 700; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; cursor: pointer; color: #b91c1c;">
+            Maintenance
+          </button>
+          <button onclick={`promptCalibration('${res.id}')`} style="padding: 0.4rem 0.75rem; font-size: 0.78rem; font-weight: 700; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; cursor: pointer; color: #0284c7;">
+            Update Cert
+          </button>
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <!-- ADD RESOURCE MODAL -->
+  <div id="modal-new-resource" style="display: none; position: fixed; inset: 0; background: rgba(10, 17, 40, 0.6); z-index: 1000; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: #ffffff; border-radius: 16px; padding: 2rem; max-width: 480px; width: 100%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
+      <h2 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.35rem; font-weight: 800; color: #0a1128; margin: 0 0 0.5rem;">
+        Add Physical Bay or Rig
+      </h2>
+      <p style="color: #64748b; font-size: 0.88rem; margin: 0 0 1.5rem;">
+        Create an additional capacity resource for the testing facility.
+      </p>
+
+      <form id="form-add-resource" onsubmit="createResource(event)">
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">Resource Code</label>
+          <input type="text" id="res-code" required placeholder="e.g. BAY_4 or RIG_C" style="width: 100%; padding: 0.6rem; border: 1.5px solid #cbd5e1; border-radius: 6px; text-transform: uppercase;" />
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">Resource Name</label>
+          <input type="text" id="res-name" required placeholder="e.g. Vehicle Bay 4 (Commercial)" style="width: 100%; padding: 0.6rem; border: 1.5px solid #cbd5e1; border-radius: 6px;" />
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">Resource Type</label>
+          <select id="res-type" style="width: 100%; padding: 0.6rem; border: 1.5px solid #cbd5e1; border-radius: 6px;">
+            <option value="VEHICLE_BAY">Vehicle Bay (Inspection & Intake)</option>
+            <option value="HYDRO_RIG">Hydro Rig (300 Bar Water-Jacket)</option>
+            <option value="INSPECTION_BENCH">Inspection Bench</option>
+          </select>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+          <button type="button" onclick="document.getElementById('modal-new-resource').style.display='none'" style="padding: 0.6rem 1rem; border: 1.5px solid #cbd5e1; border-radius: 6px; background: #ffffff; cursor: pointer; font-weight: 600;">
+            Cancel
+          </button>
+          <button type="submit" style="padding: 0.6rem 1.25rem; background: #0a1128; color: #ffffff; border: none; border-radius: 6px; cursor: pointer; font-weight: 700;">
+            Save Resource
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script is:inline>
+    async function toggleStatus(resourceId, newStatus) {
+      if (!confirm(`Are you sure you want to change this resource status to ${newStatus}?`)) return;
+      try {
+        const res = await fetch('/api/admin/resources', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'TOGGLE_STATUS', resourceId, status: newStatus })
+        });
+        const data = await res.json();
+        if (data.success) {
+          window.location.reload();
+        } else {
+          alert(data.error?.message || 'Failed to update status');
+        }
+      } catch (e) {
+        alert('Network error');
+      }
+    }
+
+    async function promptCalibration(resourceId) {
+      const certNo = prompt('Enter NABL / PESO Calibration Certificate Number:');
+      if (!certNo) return;
+      const validUntil = prompt('Enter Validity End Date (YYYY-MM-DD):', '2027-12-31');
+      if (!validUntil) return;
+
+      try {
+        const res = await fetch('/api/admin/resources', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'UPDATE_CALIBRATION', resourceId, calibrationCertNo: certNo, calibrationValidUntil: validUntil })
+        });
+        const data = await res.json();
+        if (data.success) {
+          window.location.reload();
+        } else {
+          alert(data.error?.message || 'Failed to update calibration');
+        }
+      } catch (e) {
+        alert('Network error');
+      }
+    }
+
+    async function createResource(event) {
+      event.preventDefault();
+      const code = document.getElementById('res-code').value;
+      const name = document.getElementById('res-name').value;
+      const type = document.getElementById('res-type').value;
+
+      try {
+        const res = await fetch('/api/admin/resources', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'CREATE', resourceCode: code, resourceName: name, resourceType: type })
+        });
+        const data = await res.json();
+        if (data.success) {
+          window.location.reload();
+        } else {
+          alert(data.error?.message || 'Failed to create resource');
+        }
+      } catch (e) {
+        alert('Network error');
+      }
+    }
+  </script>
+</AdminLayout>
