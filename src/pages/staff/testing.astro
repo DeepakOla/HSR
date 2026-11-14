@@ -284,7 +284,7 @@ if (env?.DB) {
       btn.textContent = 'Recording readings...';
 
       try {
-        const res = await fetch('/api/staff/testing/readings', {
+        const res = await fetch('/api/staff/testing/readings/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -317,7 +317,7 @@ if (env?.DB) {
         }
 
         alert(`Readings validated successfully! Outcome: ${json.data.outcome}. Sent to PESO Certificate Queue.`);
-        window.location.href = '/staff/certificates';
+        window.location.href = '/staff/certificates/';
       } catch (err) {
         alert('Network error submitting readings');
       } finally {

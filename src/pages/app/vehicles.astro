@@ -147,7 +147,7 @@ if (env?.DB && session) {
       btn.textContent = 'Saving...';
 
       try {
-        const res = await fetch('/api/customer/vehicles', {
+        const res = await fetch('/api/customer/vehicles/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ registration: reg, category, cylinderCount }),

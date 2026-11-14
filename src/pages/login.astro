@@ -514,7 +514,7 @@ const businessName = hindi ? (settings.business_name_hi || 'एचएसआर �
         btn.textContent = 'Sending...';
 
         try {
-          const res = await fetch('/api/auth/customer/request-challenge', {
+          const res = await fetch('/api/auth/customer/request-challenge/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ identifier }),
@@ -550,7 +550,7 @@ const businessName = hindi ? (settings.business_name_hi || 'एचएसआर �
         }
 
         try {
-          const res = await fetch('/api/auth/customer/verify-challenge', {
+          const res = await fetch('/api/auth/customer/verify-challenge/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -622,7 +622,7 @@ const businessName = hindi ? (settings.business_name_hi || 'एचएसआर �
         btn.textContent = 'Authenticating...';
 
         try {
-          const res = await fetch('/api/auth/staff/login', {
+          const res = await fetch('/api/auth/staff/login/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

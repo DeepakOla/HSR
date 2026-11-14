@@ -141,7 +141,7 @@ if (env?.DB) {
     async function toggleStatus(resourceId, newStatus) {
       if (!confirm(`Are you sure you want to change this resource status to ${newStatus}?`)) return;
       try {
-        const res = await fetch('/api/admin/resources', {
+        const res = await fetch('/api/admin/resources/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'TOGGLE_STATUS', resourceId, status: newStatus })
@@ -164,7 +164,7 @@ if (env?.DB) {
       if (!validUntil) return;
 
       try {
-        const res = await fetch('/api/admin/resources', {
+        const res = await fetch('/api/admin/resources/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'UPDATE_CALIBRATION', resourceId, calibrationCertNo: certNo, calibrationValidUntil: validUntil })
@@ -187,7 +187,7 @@ if (env?.DB) {
       const type = document.getElementById('res-type').value;
 
       try {
-        const res = await fetch('/api/admin/resources', {
+        const res = await fetch('/api/admin/resources/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'CREATE', resourceCode: code, resourceName: name, resourceType: type })

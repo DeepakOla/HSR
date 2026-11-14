@@ -142,7 +142,7 @@ if (env?.DB) {
       const certNo = input ? input.value.trim() : '';
 
       try {
-        const res = await fetch('/api/staff/certificates/upload', {
+        const res = await fetch('/api/staff/certificates/upload/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
