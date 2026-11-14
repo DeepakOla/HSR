@@ -22,21 +22,27 @@ const path = canonicalPath.endsWith('/') ? canonicalPath : `${canonicalPath}/`;
 const canonical = new URL(path, Astro.url.origin);
 const alternateHref = new URL(localizePath(path, alternate), Astro.url.origin);
 
+const currentPath = Astro.url.pathname;
+const isHome = currentPath === `/${locale}/` || currentPath === `/${locale}`;
+const getAnchor = (id: string) => isHome ? `#${id}` : `/${locale}/#${id}`;
+
+const effectiveSettings = settings ?? ({
+  business_name_en: businessName || 'HSR',
+  business_name_hi: businessName || 'HSR',
+  city: 'Rewari',
+  address_line: 'SETUP_REQUIRED',
+  contact_phone: '+919910055355',
+  whatsapp_number: '+919910055355',
+  contact_email: 'SETUP_REQUIRED',
+  map_url: 'SETUP_REQUIRED',
+  seo_title_en: title,
+  seo_title_hi: title,
+  seo_desc_en: description,
+  seo_desc_hi: description,
+} as any);
+
 const schema = buildLocalBusinessSchema({
-  settings: settings ?? ({
-    business_name_en: businessName,
-    business_name_hi: businessName,
-    city: 'Rewari',
-    address_line: 'SETUP_REQUIRED',
-    contact_phone: '+919910055355',
-    whatsapp_number: '+919910055355',
-    contact_email: 'SETUP_REQUIRED',
-    map_url: 'SETUP_REQUIRED',
-    seo_title_en: title,
-    seo_title_hi: title,
-    seo_desc_en: description,
-    seo_desc_hi: description,
-  } as any),
+  settings: effectiveSettings,
   locale,
   currentUrl: canonical.toString(),
 });
@@ -52,6 +58,11 @@ const schema = buildLocalBusinessSchema({
     <link rel="canonical" href={canonical.toString()} />
     <link rel="alternate" hreflang={alternate} href={alternateHref.toString()} />
     <link rel="alternate" hreflang={locale} href={canonical.toString()} />
+
+    <!-- Google Fonts for Plus Jakarta Sans & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
@@ -91,18 +102,19 @@ const schema = buildLocalBusinessSchema({
       <div class="container topbar">
         <a href={`/${locale}/`} class="brand-link">
           <span class="brand-logo-text">{businessName || 'HSR'}</span>
-          <span class="brand-subtext">{locale === 'en' ? 'Hydro Testing Station' : 'हाइड्रो टेस्टिंग केंद्र'}</span>
+          <span class="brand-subtext">{locale === 'en' ? 'CNG Hydro Testing Station' : 'सीएनजी हाइड्रो टेस्टिंग स्टेशन'}</span>
         </a>
 
+        <!-- Desktop Navigation -->
         <nav aria-label={locale === 'en' ? 'Primary navigation' : 'मुख्य नेविगेशन'} class="primary-nav">
           <ul class="nav-list">
-            <li><a href={`/${locale}/`}>{copy.nav.home}</a></li>
-            <li><a href={`/${locale}/services/`}>{copy.nav.services}</a></li>
-            <li><a href={`/${locale}/how-it-works/`}>{copy.nav.how}</a></li>
+            <li><a href={getAnchor('booking')}>{locale === 'en' ? 'Book Slot' : 'स्लॉट बुक करें'}</a></li>
+            <li><a href={getAnchor('refused-cng')}>{locale === 'en' ? 'Refused at Pump?' : 'पंप पर मना किया?'}</a></li>
+            <li><a href={getAnchor('pricing')}>{locale === 'en' ? 'Pricing' : 'कीमत'}</a></li>
+            <li><a href={getAnchor('process')}>{locale === 'en' ? 'Testing Process' : 'परीक्षण विधि'}</a></li>
             <li><a href={`/${locale}/check-expiry/`}>{copy.nav.expiry}</a></li>
             <li><a href={`/${locale}/blog/`}>{copy.nav.blog}</a></li>
-            <li><a href={`/${locale}/contact/`}>{copy.nav.contact}</a></li>
-            <li><a href={`/${locale}/about/`}>{copy.nav.about}</a></li>
+            <li><a href={getAnchor('location')}>{locale === 'en' ? 'Station & FAQs' : 'स्टेशन व प्रश्न'}</a></li>
           </ul>
         </nav>
 
@@ -110,9 +122,70 @@ const schema = buildLocalBusinessSchema({
           <a class="lang-pill" href={localizePath(Astro.url.pathname, alternate)} aria-label="Change language">
             {alternate === 'hi' ? 'हिंदी' : 'English'}
           </a>
-          <a href={`/${locale}/book/`} class="btn btn-primary nav-book-btn">
+          <a href={getAnchor('booking')} class="btn btn-primary nav-book-btn">
             {copy.actions.book}
           </a>
+        </div>
+
+        <!-- Mobile Navigation Toggle -->
+        <button
+          type="button"
+          class="mobile-nav-toggle"
+          id="mobile-nav-toggle"
+          aria-expanded="false"
+          aria-controls="mobile-nav-drawer"
+          aria-label={locale === 'en' ? 'Toggle navigation menu' : 'नेविगेशन मेनू खोलें/बंद करें'}
+        >
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+      </div>
+
+      <!-- Mobile Navigation Drawer Overlay -->
+      <div class="mobile-nav-drawer" id="mobile-nav-drawer" hidden>
+        <div class="mobile-nav-backdrop" id="mobile-nav-backdrop"></div>
+        <div class="mobile-nav-panel">
+          <div class="mobile-nav-header">
+            <div>
+              <strong class="mobile-brand-title">{businessName || 'HSR'}</strong>
+              <span class="mobile-brand-sub">{locale === 'en' ? 'Rewari Station' : 'रेवाड़ी केंद्र'}</span>
+            </div>
+            <button type="button" class="mobile-nav-close" id="mobile-nav-close" aria-label="Close navigation">✕</button>
+          </div>
+
+          <nav aria-label={locale === 'en' ? 'Mobile navigation' : 'मोबाइल नेविगेशन'} class="mobile-nav-links">
+            <a href={getAnchor('booking')} class="mobile-nav-item mobile-book-cta">
+              ⚡ {locale === 'en' ? 'Book Inspection Slot' : 'स्लॉट बुक करें'}
+            </a>
+            <a href={getAnchor('refused-cng')} class="mobile-nav-item">
+              🚨 {locale === 'en' ? 'Refused CNG at Pump?' : 'पंप पर गैस भरने से मना किया?'}
+            </a>
+            <a href={getAnchor('pricing')} class="mobile-nav-item">
+              💳 {locale === 'en' ? 'Pricing & ₹500 Flat Advance' : 'कीमत व ₹500 अग्रिम'}
+            </a>
+            <a href={getAnchor('process')} class="mobile-nav-item">
+              🔬 {locale === 'en' ? '5-Step Water Jacket Test' : '5-चरणीय वाटर जैकेट परीक्षण'}
+            </a>
+            <a href={`/${locale}/check-expiry/`} class="mobile-nav-item">
+              🔍 {copy.nav.expiry}
+            </a>
+            <a href={`/${locale}/blog/`} class="mobile-nav-item">
+              📖 {copy.nav.blog}
+            </a>
+            <a href={getAnchor('location')} class="mobile-nav-item">
+              📍 {locale === 'en' ? 'Facility Location & FAQs' : 'स्टेशन का पता व प्रश्न'}
+            </a>
+          </nav>
+
+          <div class="mobile-nav-footer">
+            <a class="lang-pill mobile-lang-pill" href={localizePath(Astro.url.pathname, alternate)}>
+              🌐 {alternate === 'hi' ? 'हिंदी में बदलें' : 'Switch to English'}
+            </a>
+            <a href="/admin/login/" class="staff-login-link mobile-staff-link">
+              🔒 {locale === 'en' ? 'Staff Login' : 'कर्मचारी लॉगिन'}
+            </a>
+          </div>
         </div>
       </div>
     </header>
@@ -126,28 +199,59 @@ const schema = buildLocalBusinessSchema({
         <div class="footer-top">
           <div class="footer-brand-col">
             <strong class="footer-brand-title">{businessName || 'HSR'}</strong>
+            <span class="footer-badge-tag">{locale === 'en' ? 'Precision Hydro Test Station' : 'प्रमाणित हाइड्रो टेस्टिंग स्टेशन'}</span>
             <p class="footer-brand-desc">
               {locale === 'en'
-                ? 'High-precision CNG cylinder hydrostatic stretch testing up to 300 bar. Certified testing for cars, taxis, commercial LCVs and heavy multi-cylinder transport trucks.'
-                : '300 बार दबाव तक उच्च-सटीक सीएनजी सिलेंडर हाइड्रोस्टेटिक स्ट्रेच टेस्टिंग। कार, टैक्सी, एलसीवी और भारी मल्टी-सिलेंडर ट्रकों के लिए प्रमाणित टेस्टिंग।'}
+                ? 'High-precision CNG cylinder hydrostatic stretch testing up to 300 bar pressure. Certified testing for cars, commercial LCVs, and multi-cylinder transport trucks under statutory Gas Cylinders Rules and MoRTH compliance.'
+                : '300 बार दबाव तक उच्च-सटीक सीएनजी सिलेंडर हाइड्रोस्टेटिक स्ट्रेच टेस्टिंग। वैधानिक गैस सिलेंडर नियमों और सड़क परिवहन मंत्रालय मानकों के तहत कार, कमर्शियल एलसीवी और ट्रकों के लिए प्रमाणित टेस्टिंग।'}
             </p>
             <div class="trust-badge-group">
               <span class="trust-badge">300 Bar Hydrostatic Test</span>
-              <span class="trust-badge">Ultrasonic Flaw Scan</span>
-              <span class="trust-badge">MoRTH Compliance</span>
+              <span class="trust-badge">Ultrasonic Scan</span>
+              <span class="trust-badge">MoRTH Compliant</span>
+              <span class="trust-badge">Gas Cylinders Rules 2016</span>
             </div>
           </div>
 
           <div class="footer-links-col">
-            <strong class="footer-heading">{locale === 'en' ? 'Quick Links' : 'त्वरित लिंक'}</strong>
+            <strong class="footer-heading">{locale === 'en' ? 'Customer Services' : 'ग्राहक सेवाएँ'}</strong>
             <ul class="footer-nav-list">
-              <li><a href={`/${locale}/book/`}>{copy.actions.book}</a></li>
-              <li><a href={`/${locale}/check-expiry/`}>{copy.nav.expiry}</a></li>
-              <li><a href={`/${locale}/services/`}>{copy.nav.services}</a></li>
-              <li><a href={`/${locale}/blog/`}>{copy.nav.blog}</a></li>
-              <li><a href={`/${locale}/how-it-works/`}>{copy.nav.how}</a></li>
-              <li><a href={`/${locale}/contact/`}>{copy.nav.contact}</a></li>
+              <li><a href={getAnchor('booking')}>{copy.actions.book}</a></li>
+              <li><a href={getAnchor('refused-cng')}>{locale === 'en' ? 'Refused at CNG Pump?' : 'पंप पर मना किया?'}</a></li>
+              <li><a href={getAnchor('pricing')}>{locale === 'en' ? 'Transparent Pricing (₹500 Adv)' : 'पारदर्शी शुल्क (₹500 अग्रिम)'}</a></li>
+              <li><a href={getAnchor('process')}>{locale === 'en' ? '5-Step Testing Methodology' : '5-चरणीय परीक्षण विधि'}</a></li>
+              <li><a href={getAnchor('standards')}>{locale === 'en' ? 'Statutory Standards' : 'वैधानिक सुरक्षा मानक'}</a></li>
             </ul>
+          </div>
+
+          <div class="footer-links-col">
+            <strong class="footer-heading">{locale === 'en' ? 'Quick Tools' : 'त्वरित साधन'}</strong>
+            <ul class="footer-nav-list">
+              <li><a href={`/${locale}/check-expiry/`}>{copy.nav.expiry}</a></li>
+              <li><a href={`/${locale}/blog/`}>{copy.nav.blog}</a></li>
+              <li><a href={getAnchor('location')}>{locale === 'en' ? 'Station Location & Map' : 'स्टेशन का पता व नक्शा'}</a></li>
+              <li><a href={getAnchor('faqs')}>{locale === 'en' ? 'Frequently Asked Questions' : 'अक्सर पूछे जाने वाले प्रश्न'}</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-links-col">
+            <strong class="footer-heading">{locale === 'en' ? 'Station Details' : 'स्टेशन विवरण'}</strong>
+            <p class="footer-contact-item">
+              <strong>{locale === 'en' ? 'Facility:' : 'स्थान:'}</strong> {effectiveSettings.city !== 'SETUP_REQUIRED' ? effectiveSettings.city : 'Rewari'}, Haryana
+            </p>
+            <p class="footer-contact-item">
+              <strong>{locale === 'en' ? 'Hours:' : 'कार्य समय:'}</strong> Mon–Sat 09:00–18:00
+            </p>
+            {effectiveSettings.contact_phone !== 'SETUP_REQUIRED' && (
+              <p class="footer-contact-item">
+                <strong>{locale === 'en' ? 'Phone:' : 'फ़ोन:'}</strong> <a href={`tel:${effectiveSettings.contact_phone}`}>{effectiveSettings.contact_phone}</a>
+              </p>
+            )}
+            {effectiveSettings.whatsapp_number !== 'SETUP_REQUIRED' && (
+              <p class="footer-contact-item">
+                <strong>WhatsApp:</strong> <a href={`https://wa.me/${effectiveSettings.whatsapp_number.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">{effectiveSettings.whatsapp_number}</a>
+              </p>
+            )}
           </div>
         </div>
 
@@ -168,17 +272,64 @@ const schema = buildLocalBusinessSchema({
 
     <!-- Interactive Feedback Component (React Island) -->
     <FeedbackModal client:load locale={locale} />
+
+    <!-- Accessible Mobile Navigation Toggle Script -->
+    <script is:inline>
+      (function() {
+        const toggle = document.getElementById('mobile-nav-toggle');
+        const drawer = document.getElementById('mobile-nav-drawer');
+        const backdrop = document.getElementById('mobile-nav-backdrop');
+        const closeBtn = document.getElementById('mobile-nav-close');
+
+        if (!toggle || !drawer) return;
+
+        function openDrawer() {
+          drawer.removeAttribute('hidden');
+          toggle.setAttribute('aria-expanded', 'true');
+          document.body.style.overflow = 'hidden';
+        }
+
+        function closeDrawer() {
+          drawer.setAttribute('hidden', '');
+          toggle.setAttribute('aria-expanded', 'false');
+          document.body.style.overflow = '';
+        }
+
+        toggle.addEventListener('click', function(e) {
+          e.preventDefault();
+          const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+          if (isExpanded) {
+            closeDrawer();
+          } else {
+            openDrawer();
+          }
+        });
+
+        if (backdrop) backdrop.addEventListener('click', closeDrawer);
+        if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+
+        drawer.querySelectorAll('a').forEach(function(link) {
+          link.addEventListener('click', closeDrawer);
+        });
+
+        window.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && !drawer.hasAttribute('hidden')) {
+            closeDrawer();
+          }
+        });
+      })();
+    </script>
   </body>
 </html>
 
 <style>
   /* Demo Preview Banner */
   .demo-banner {
-    background-color: var(--color-navy-950, #0B132B);
-    color: #F8FAFC;
+    background-color: var(--color-navy-950, #050b18);
+    color: #f8fafc;
     padding: 0.5rem 1rem;
     font-size: 0.85rem;
-    border-bottom: 2px solid var(--color-amber-500, #F59E0B);
+    border-bottom: 2px solid var(--color-action, #ea580c);
   }
   .demo-banner-inner {
     display: flex;
@@ -194,8 +345,8 @@ const schema = buildLocalBusinessSchema({
     flex-wrap: wrap;
   }
   .demo-tag {
-    background-color: var(--color-amber-500, #F59E0B);
-    color: #0F172A;
+    background-color: var(--color-action, #ea580c);
+    color: #ffffff;
     font-weight: 800;
     font-size: 0.72rem;
     padding: 0.15rem 0.5rem;
@@ -205,14 +356,14 @@ const schema = buildLocalBusinessSchema({
     white-space: nowrap;
   }
   .demo-text {
-    color: #E2E8F0;
+    color: #e2e8f0;
     font-size: 0.82rem;
     margin: 0;
   }
   .demo-feedback-btn {
     background: transparent;
-    border: 1px solid var(--color-amber-500, #F59E0B);
-    color: var(--color-amber-400, #FBBF24);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    color: #ffffff;
     font-size: 0.78rem;
     font-weight: 600;
     padding: 0.25rem 0.75rem;
@@ -222,10 +373,11 @@ const schema = buildLocalBusinessSchema({
     transition: all 0.15s ease;
   }
   .demo-feedback-btn:hover {
-    background: var(--color-amber-500, #F59E0B);
-    color: #0F172A;
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #ffffff;
   }
 
+  /* Header & Navigation Bar */
   .app-header {
     background: #ffffff;
     border-bottom: 1px solid var(--border-default);
@@ -235,72 +387,81 @@ const schema = buildLocalBusinessSchema({
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
   .topbar {
-    min-height: 72px;
+    height: 64px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1.5rem;
+    gap: 1.25rem;
   }
   .brand-link {
     text-decoration: none;
     display: flex;
     flex-direction: column;
+    flex-shrink: 0;
   }
   .brand-logo-text {
     font-family: var(--font-heading);
-    font-size: 1.6rem;
+    font-size: 1.35rem;
     font-weight: 800;
-    color: var(--color-navy-700);
+    color: var(--color-navy-900);
     line-height: 1.1;
     letter-spacing: -0.02em;
   }
   .brand-subtext {
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     color: var(--color-slate-600);
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.05em;
   }
+
+  /* Desktop Navigation */
   .primary-nav {
     display: flex;
     align-items: center;
+    flex: 1;
+    justify-content: center;
   }
   .nav-list {
     list-style: none;
     display: flex;
-    gap: 1.25rem;
+    align-items: center;
+    gap: 0.75rem;
     padding: 0;
     margin: 0;
-    flex-wrap: wrap;
   }
   .nav-list a {
     text-decoration: none;
     color: var(--color-slate-700);
     font-weight: 600;
-    font-size: 0.95rem;
-    padding: 0.25rem 0.5rem;
+    font-size: 0.88rem;
+    padding: 0.35rem 0.55rem;
     border-radius: var(--radius-sm);
     transition: all 0.15s ease;
+    white-space: nowrap;
   }
   .nav-list a:hover {
     color: var(--color-steel-600);
-    background-color: var(--color-slate-100);
+    background-color: var(--color-steel-50);
   }
+
   .header-actions {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    flex-shrink: 0;
   }
   .lang-pill {
     border: 1px solid var(--border-default);
     background: var(--color-slate-100);
     border-radius: var(--radius-full);
-    padding: 0.45rem 0.95rem;
+    padding: 0.35rem 0.75rem;
     text-decoration: none;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     font-weight: 600;
     color: var(--color-slate-700);
     transition: all 0.15s ease;
+    white-space: nowrap;
   }
   .lang-pill:hover {
     background: #ffffff;
@@ -308,59 +469,228 @@ const schema = buildLocalBusinessSchema({
     color: var(--color-steel-600);
   }
   .nav-book-btn {
-    min-height: 40px;
-    padding: 0.45rem 1rem;
-    font-size: 0.9rem;
+    min-height: 38px;
+    padding: 0.4rem 0.95rem;
+    font-size: 0.88rem;
+    white-space: nowrap;
   }
+
+  /* Mobile Hamburger Toggle */
+  .mobile-nav-toggle {
+    display: none;
+    background: transparent;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 0.45rem;
+    cursor: pointer;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    width: 42px;
+    height: 42px;
+  }
+  .hamburger-bar {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background-color: var(--color-navy-900);
+    border-radius: 1px;
+    transition: all 0.2s ease;
+  }
+
+  /* Mobile Drawer Overlay */
+  .mobile-nav-drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+  }
+  .mobile-nav-drawer[hidden] {
+    display: none;
+  }
+  .mobile-nav-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 17, 40, 0.6);
+    backdrop-filter: blur(3px);
+  }
+  .mobile-nav-panel {
+    position: relative;
+    width: min(340px, 85vw);
+    background: #ffffff;
+    height: 100%;
+    margin-left: auto;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.2);
+    overflow-y: auto;
+  }
+  .mobile-nav-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--color-slate-50);
+  }
+  .mobile-brand-title {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    color: var(--color-navy-900);
+    display: block;
+    line-height: 1.1;
+  }
+  .mobile-brand-sub {
+    font-size: 0.72rem;
+    color: var(--color-slate-600);
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .mobile-nav-close {
+    background: transparent;
+    border: none;
+    font-size: 1.35rem;
+    line-height: 1;
+    color: var(--color-slate-600);
+    cursor: pointer;
+    padding: 0.35rem 0.6rem;
+    border-radius: var(--radius-sm);
+  }
+  .mobile-nav-close:hover {
+    background-color: var(--color-slate-200);
+    color: var(--color-navy-900);
+  }
+  .mobile-nav-links {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+  }
+  .mobile-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-md);
+    color: var(--color-slate-800);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: background 0.15s ease;
+  }
+  .mobile-nav-item:hover {
+    background-color: var(--color-steel-50);
+    color: var(--color-steel-600);
+  }
+  .mobile-book-cta {
+    background-color: var(--color-action);
+    color: #ffffff !important;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  .mobile-book-cta:hover {
+    background-color: var(--color-action-hover);
+  }
+  .mobile-nav-footer {
+    padding: 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    background: var(--color-slate-50);
+  }
+  .mobile-lang-pill {
+    text-align: center;
+    padding: 0.6rem 1rem;
+    background: #ffffff;
+    border-color: var(--border-default);
+  }
+  .mobile-staff-link {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--color-slate-600);
+  }
+
+  /* Footer Styling */
   .app-footer {
     border-top: 1px solid var(--border-default);
     background: #ffffff;
-    margin-top: 5rem;
+    margin-top: 4rem;
     padding: 3.5rem 0 2rem;
   }
   .footer-top {
     display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 3rem;
+    grid-template-columns: 2fr 1fr 1fr 1.2fr;
+    gap: 2.5rem;
     margin-bottom: 2.5rem;
   }
   .footer-brand-title {
+    font-family: var(--font-heading);
     font-size: 1.3rem;
     color: var(--color-navy-900);
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+  .footer-badge-tag {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-action);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
   }
   .footer-brand-desc {
     color: var(--color-slate-600);
-    font-size: 0.95rem;
-    max-width: 55ch;
-    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    max-width: 52ch;
+    margin-bottom: 1.25rem;
   }
   .trust-badge-group {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.4rem;
     flex-wrap: wrap;
   }
   .footer-heading {
     display: block;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.85rem;
     color: var(--color-navy-900);
-    font-size: 1rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
   }
   .footer-nav-list {
     list-style: none;
     padding: 0;
     margin: 0;
     display: grid;
-    gap: 0.5rem;
+    gap: 0.55rem;
   }
   .footer-nav-list a {
     color: var(--color-slate-600);
     text-decoration: none;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
+    transition: color 0.15s ease;
   }
   .footer-nav-list a:hover {
     color: var(--color-steel-600);
+    text-decoration: underline;
+  }
+  .footer-contact-item {
+    font-size: 0.88rem;
+    color: var(--color-slate-600);
+    margin: 0 0 0.5rem 0;
+    line-height: 1.5;
+  }
+  .footer-contact-item a {
+    color: var(--color-steel-600);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .footer-contact-item a:hover {
     text-decoration: underline;
   }
   .footer-bottom {
@@ -373,7 +703,7 @@ const schema = buildLocalBusinessSchema({
     gap: 1rem;
   }
   .footer-disclaimer {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     color: var(--color-slate-600);
     margin: 0;
     max-width: 70ch;
@@ -382,20 +712,33 @@ const schema = buildLocalBusinessSchema({
     color: var(--color-slate-600);
     font-size: 0.85rem;
     text-decoration: none;
+    font-weight: 600;
   }
   .staff-login-link:hover {
     text-decoration: underline;
     color: var(--color-navy-900);
   }
-  @media (max-width: 840px) {
-    .topbar {
-      flex-direction: column;
-      align-items: flex-start;
-      padding: 1rem 0;
+
+  /* Responsive Rules */
+  @media (max-width: 960px) {
+    .primary-nav,
+    .header-actions {
+      display: none;
     }
+    .mobile-nav-toggle {
+      display: flex;
+    }
+    .footer-top {
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+  }
+
+  @media (max-width: 640px) {
     .demo-banner-inner {
       flex-direction: column;
       align-items: flex-start;
+      gap: 0.5rem;
     }
     .footer-top {
       grid-template-columns: 1fr;

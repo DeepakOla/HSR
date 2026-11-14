@@ -46,3 +46,11 @@
 - For the first stable main-branch baseline, keep the Workers Builds production command at `npx wrangler versions upload` (save a version without activating it). Only change to `npx wrangler deploy` after explicit Production release approval.
 - Keep the Preview D1 binding separate from Production D1. Never bind the Production R2 bucket to Preview.
 - Keep the Cloudflare API MCP connection in Ask/approval mode. Never paste API tokens, Access AUD values, JWTs, or secrets into chat or Git.
+
+## Frontend, Design & Content Invariants
+
+- **No Prototype Mockup Leakage**: Never import sample Karnataka/Bengaluru references (`KA-` plates, `BLR`, `PESO #941`), fake Vahan/Sarathi live-sync badges, fictional customer dossiers, or unverified operational stats from prototype HTML.
+- **Configurable Business Anchor**: Business name defaults to "HSR", location defaults to "Rewari" (editable via Owner Console / `business_settings`). Never hardcode permanent brand names or locations.
+- **Lean Customer Journey**: The public customer experience is anchored on the homepage with direct inline booking (`One Vehicle | Multiple Vehicles`), transparent ₹500 flat advance pricing, and anchor navigation. Do not force mandatory account registration or redirect to disconnected stubs.
+- **Precision Hydro Test Tokens**: Follow the certified industrial palette (Deep Navy `#0A1128`, Safety Orange `#EA580C` for conversion, Steel Blue `#0284C7` for telemetry, Plus Jakarta Sans for headings, Inter for body/tabular data).
+

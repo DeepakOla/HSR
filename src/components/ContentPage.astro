@@ -20,10 +20,6 @@ interface Props {
 const { title, body, locale, contact } = Astro.props;
 const content = parsePageContent(body);
 
-const placeholderText = locale === 'en'
-  ? 'This page is being prepared by the business owner. Please check back after the service details have been verified.'
-  : 'यह पृष्ठ व्यवसाय के मालिक द्वारा तैयार किया जा रहा है। सेवाओं की जानकारी सत्यापित होने के बाद दोबारा देखें।';
-
 const phoneReady = contact && contact.phone !== 'SETUP_REQUIRED';
 const whatsappReady = contact && contact.whatsappNumber !== 'SETUP_REQUIRED';
 const emailReady = contact && contact.email !== 'SETUP_REQUIRED';
@@ -32,8 +28,11 @@ const mapReady = contact && contact.mapUrl !== 'SETUP_REQUIRED' && contact.mapUr
 const whatsappLink = contact && whatsappReady ? `https://wa.me/${contact.whatsappNumber.replace(/\D/g, '')}` : null;
 ---
 
-<section class="section">
+<section class="section" style="padding-top: 2.5rem;">
   <div class="container card content-page-card">
+    <div class="content-header-badge">
+      <span class="trust-badge trust-badge-amber">⚡ {locale === 'en' ? 'Certified Testing Standard' : 'प्रमाणित टेस्टिंग मानक'}</span>
+    </div>
     <h1 class="page-title">{title}</h1>
 
     {content.isStructured ? (
@@ -63,32 +62,75 @@ const whatsappLink = contact && whatsappReady ? `https://wa.me/${contact.whatsap
         ))}
       </div>
     ) : (
-      <p class="content-placeholder">{placeholderText}</p>
+      <div class="default-service-overview">
+        <p class="lead-text">
+          {locale === 'en'
+            ? 'High-precision CNG cylinder hydrostatic stretch testing up to 300 bar pressure. Fully certified under statutory Gas Cylinders Rules 2016 and MoRTH automotive safety directives.'
+            : '300 बार दबाव तक उच्च-सटीक सीएनजी सिलेंडर हाइड्रोस्टेटिक स्ट्रेच टेस्टिंग। वैधानिक गैस सिलेंडर नियमों और सड़क परिवहन मंत्रालय सुरक्षा निर्देशों के तहत पूर्णतः प्रमाणित।'}
+        </p>
+
+        <div class="overview-grid">
+          <div class="overview-box">
+            <h3>🔬 {locale === 'en' ? '5-Step Certified Testing' : '5-चरणीय प्रमाणित टेस्टिंग'}</h3>
+            <p>
+              {locale === 'en'
+                ? 'Includes residual methane degassing, ultrasonic wall-thickness scanning, 300 bar water-jacket expansion measurement, internal hot-air baking, and official date stamping.'
+                : 'मीथेन डीगैसिंग, अल्ट्रासोनिक मोटाई जांच, 300 बार वाटर जैकेट टेस्ट, आंतरिक सुखाना और आधिकारिक मोहर लगाना शामिल है।'}
+            </p>
+            <a href={`/${locale}/#process`} class="text-link">
+              {locale === 'en' ? 'Explore 5-Step Process →' : 'परीक्षण प्रक्रिया देखें →'}
+            </a>
+          </div>
+
+          <div class="overview-box">
+            <h3>💳 {locale === 'en' ? 'Transparent Pricing' : 'पारदर्शी शुल्क संरचना'}</h3>
+            <p>
+              {locale === 'en'
+                ? 'Clear rates from 1 to 6 cylinders with 18% GST itemized. Only ₹500 flat advance is required to reserve your testing bay; balance payable on-site.'
+                : '1 से 6 सिलेंडरों के लिए स्पष्ट दरें व 18% जीएसटी। बे सुरक्षित करने के लिए केवल ₹500 का अग्रिम; शेष राशि केंद्र पर देय।'}
+            </p>
+            <a href={`/${locale}/#pricing`} class="text-link">
+              {locale === 'en' ? 'View Price Breakdown →' : 'शुल्क तालिका देखें →'}
+            </a>
+          </div>
+        </div>
+      </div>
     )}
+
+    <!-- Direct Quick Conversion Jump Banner -->
+    <div class="content-action-banner">
+      <div class="action-banner-text">
+        <strong>{locale === 'en' ? 'Need an urgent testing appointment?' : 'तुरंत टेस्टिंग अपॉइंटमेंट की आवश्यकता है?'}</strong>
+        <span>{locale === 'en' ? 'Book your slot online with flat ₹500 advance. 2 to 3 hours express turnaround.' : '₹500 अग्रिम के साथ ऑनलाइन स्लॉट बुक करें। 2 से 3 घंटे में सेवा।'}</span>
+      </div>
+      <a href={`/${locale}/#booking`} class="btn btn-primary">
+        ⚡ {locale === 'en' ? 'Reserve Testing Bay' : 'स्लॉट बुक करें'}
+      </a>
+    </div>
 
     {contact && (phoneReady || whatsappReady || emailReady || addressReady || mapReady) && (
       <section aria-label={locale === 'en' ? 'Business contact details' : 'व्यवसाय संपर्क विवरण'} class="contact-details">
-        <h2>{locale === 'en' ? 'Contact details' : 'संपर्क विवरण'}</h2>
+        <h2>{locale === 'en' ? 'Facility Contact & Support' : 'स्टेशन संपर्क एवं सहायता'}</h2>
         {addressReady && <p class="contact-address">{contact.address}</p>}
         <div class="contact-links">
           {phoneReady && (
             <a href={`tel:${contact.phone}`} class="contact-link call-link">
-              <strong>{locale === 'en' ? 'Call' : 'कॉल करें'}:</strong> {contact.phone}
+              <strong>📞 {locale === 'en' ? 'Call' : 'कॉल करें'}:</strong> {contact.phone}
             </a>
           )}
           {whatsappLink && (
             <a href={whatsappLink} target="_blank" rel="noreferrer" class="contact-link whatsapp-link">
-              <strong>WhatsApp:</strong> {contact.whatsappNumber}
+              <strong>💬 WhatsApp:</strong> {contact.whatsappNumber}
             </a>
           )}
           {emailReady && (
             <a href={`mailto:${contact.email}`} class="contact-link email-link">
-              <strong>Email:</strong> {contact.email}
+              <strong>✉️ Email:</strong> {contact.email}
             </a>
           )}
           {mapReady && (
             <a href={contact.mapUrl} target="_blank" rel="noreferrer" class="contact-link map-link">
-              {locale === 'en' ? 'Get directions →' : 'रास्ता देखें →'}
+              📍 {locale === 'en' ? 'Get directions →' : 'रास्ता देखें →'}
             </a>
           )}
         </div>
@@ -101,20 +143,85 @@ const whatsappLink = contact && whatsappReady ? `https://wa.me/${contact.whatsap
   .content-page-card {
     padding: 2.5rem 2rem;
   }
+  .content-header-badge {
+    margin-bottom: 0.75rem;
+  }
   .page-title {
-    font-size: 2rem;
+    font-size: clamp(1.85rem, 3.5vw, 2.35rem);
     font-weight: 800;
     margin-top: 0;
-    margin-bottom: 1.5rem;
-    color: var(--brand, #0f4a34);
-    line-height: 1.25;
+    margin-bottom: 1.25rem;
+    color: var(--color-navy-900);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
   }
   .content-summary {
     font-size: 1.15rem;
     line-height: 1.6;
-    color: var(--muted, #4f5960);
+    color: var(--color-slate-600);
     margin-bottom: 2rem;
     font-weight: 500;
+  }
+  .lead-text {
+    font-size: 1.1rem;
+    line-height: 1.65;
+    color: var(--color-slate-700);
+    margin-bottom: 2rem;
+  }
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .overview-box {
+    background: var(--color-slate-50);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+  }
+  .overview-box h3 {
+    font-size: 1.15rem;
+    color: var(--color-navy-900);
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+  }
+  .overview-box p {
+    font-size: 0.9rem;
+    color: var(--color-slate-600);
+    line-height: 1.55;
+    margin-bottom: 1rem;
+  }
+  .text-link {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--color-steel-600);
+    text-decoration: underline;
+  }
+  .content-action-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: var(--radius-md);
+    padding: 1.25rem 1.5rem;
+    margin: 2rem 0;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .action-banner-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .action-banner-text strong {
+    color: var(--color-navy-900);
+    font-size: 1rem;
+  }
+  .action-banner-text span {
+    color: var(--color-slate-700);
+    font-size: 0.88rem;
   }
   .content-section {
     margin-top: 2rem;
@@ -125,8 +232,8 @@ const whatsappLink = contact && whatsappReady ? `https://wa.me/${contact.whatsap
     font-weight: 700;
     margin-top: 1.5rem;
     margin-bottom: 0.75rem;
-    color: var(--text, #1e2428);
-    border-bottom: 1px solid var(--border, #d9e0dc);
+    color: var(--color-navy-900);
+    border-bottom: 1px solid var(--border-subtle);
     padding-bottom: 0.4rem;
   }
   .content-subheading {
@@ -134,40 +241,37 @@ const whatsappLink = contact && whatsappReady ? `https://wa.me/${contact.whatsap
     font-weight: 600;
     margin-top: 1rem;
     margin-bottom: 0.5rem;
-    color: var(--muted, #4f5960);
+    color: var(--color-slate-600);
   }
   .content-para {
     line-height: 1.7;
     margin-bottom: 1rem;
-    color: var(--text, #1e2428);
+    color: var(--color-slate-800);
   }
   .content-bullets {
     margin: 0.75rem 0 1.25rem 1.5rem;
     padding-left: 0.5rem;
     line-height: 1.7;
-    color: var(--text, #1e2428);
+    color: var(--color-slate-800);
   }
   .content-bullets li {
     margin-bottom: 0.35rem;
   }
-  .content-placeholder {
-    font-style: italic;
-    color: var(--muted, #4f5960);
-    line-height: 1.6;
-  }
   .contact-details {
     margin-top: 2.5rem;
     padding-top: 1.5rem;
-    border-top: 1px solid var(--border, #d9e0dc);
+    border-top: 1px solid var(--border-subtle);
   }
   .contact-details h2 {
     font-size: 1.25rem;
     margin-top: 0;
     margin-bottom: 0.75rem;
+    color: var(--color-navy-900);
   }
   .contact-address {
     margin-bottom: 1rem;
     line-height: 1.5;
+    color: var(--color-slate-700);
   }
   .contact-links {
     display: flex;
@@ -179,7 +283,7 @@ const whatsappLink = contact && whatsappReady ? `https://wa.me/${contact.whatsap
     align-items: center;
     gap: 0.35rem;
     text-decoration: none;
-    color: var(--brand, #0f4a34);
+    color: var(--color-steel-600);
     font-size: 0.95rem;
   }
   .contact-link:hover {

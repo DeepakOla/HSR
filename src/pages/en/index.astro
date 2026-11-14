@@ -8,6 +8,6 @@ const db = getDb(Astro);
 const [settings, seo] = await Promise.all([getBusinessSettings(db), getSeoMeta(db, 'en')]);
 ---
 
-<BaseLayout locale="en" title={seo.title} description={seo.description} canonicalPath="/en/" businessName={settings.business_name_en}>
+<BaseLayout locale="en" title={seo.title} description={seo.description} canonicalPath="/en/" businessName={settings.business_name_en} settings={settings}>
   <HomePage locale="en" settings={settings} />
 </BaseLayout>

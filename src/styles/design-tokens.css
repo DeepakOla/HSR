@@ -1,27 +1,30 @@
 /* ==========================================================================
    HSR CNG — DESIGN SYSTEM TOKENS
-   Direction A: Professional Industrial Trust
-   Aesthetic: Industrial Engineering, Rigorous Testing, High Contrast
+   Specification: Precision Hydro Test
+   Aesthetic: Industrial Engineering, Rigorous Testing, High Contrast Telemetry
    ========================================================================== */
 
 :root {
-  /* Industrial Palette */
-  --color-navy-950: #0a0f1d;
-  --color-navy-900: #0f172a;
-  --color-navy-800: #1e293b;
-  --color-navy-700: #1e3a8a; /* Industrial Core Navy */
-  --color-navy-600: #1d4ed8;
+  /* Industrial Palette — Precision Hydro Test */
+  --color-navy-950: #050b18;
+  --color-navy-900: #0a1128; /* Primary Deep Navy */
+  --color-navy-800: #0f172a; /* Secondary Dark Navy */
+  --color-navy-700: #1e293b;
+  --color-navy-600: #334155;
 
-  --color-steel-600: #2563eb; /* Precision Steel Blue */
-  --color-steel-500: #3b82f6;
-  --color-steel-100: #dbeafe;
-  --color-steel-50: #eff6ff;
+  /* Telemetry & Calibration — Precision Steel Blue & Cyan */
+  --color-steel-600: #0284c7; /* Precision Steel Blue */
+  --color-steel-500: #0ea5e9;
+  --color-steel-400: #38bdf8; /* Cyan Metric Telemetry */
+  --color-steel-100: #e0f2fe;
+  --color-steel-50: #f0f9ff;
 
-  /* Safety & Action Accent (Industrial Amber/Orange) */
-  --color-action: #ea580c; /* Action Amber/Orange */
+  /* Safety & Action Accent — High-Visibility Industrial Orange */
+  --color-action: #ea580c; /* Action Orange */
   --color-action-hover: #c2410c;
   --color-action-active: #9a3412;
   --color-action-focus: #f97316;
+  --color-action-glow: rgba(234, 88, 12, 0.28);
 
   /* Neutrals */
   --color-slate-900: #0f172a; /* Body Charcoal */
@@ -32,18 +35,18 @@
   --color-slate-300: #cbd5e1; /* Borders */
   --color-slate-200: #e2e8f0; /* Subtle Borders */
   --color-slate-100: #f1f5f9; /* Surface Neutral */
-  --color-slate-50: #f8fafc;  /* App Background */
+  --color-slate-50: #f8fafc;  /* App Background — Ice Slate */
 
   /* Semantic Variables */
   --bg-app: var(--color-slate-50);
   --bg-surface: #ffffff;
   --bg-surface-subtle: var(--color-slate-100);
-  --bg-hero: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+  --bg-hero: linear-gradient(145deg, #0a1128 0%, #0f172a 55%, #1e293b 100%);
 
   --text-main: var(--color-slate-900);
   --text-muted: var(--color-slate-600);
   --text-inverse: #ffffff;
-  --text-brand: var(--color-navy-700);
+  --text-brand: var(--color-navy-900);
 
   --border-subtle: var(--color-slate-200);
   --border-default: var(--color-slate-300);
@@ -56,9 +59,9 @@
   --color-danger: #b91c1c;
   --color-danger-bg: #fef2f2;
 
-  /* Typography Scale */
+  /* Typography Scale — Plus Jakarta Sans & Inter */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --font-heading: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', Menlo, Monaco, Consolas, monospace;
 
   /* Spacing & Radii */
@@ -75,6 +78,11 @@
 /* Global Reset & Base Typography */
 * {
   box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
 }
 
 body {
@@ -187,16 +195,16 @@ a:hover {
   text-decoration: none;
 }
 
-/* Industrial Trust Badges */
+/* Industrial Trust Badges & Telemetry Chips */
 .trust-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   background-color: var(--color-steel-50);
-  color: var(--color-navy-700);
+  color: var(--color-navy-800);
   border: 1px solid var(--color-steel-100);
   border-radius: var(--radius-sm);
-  padding: 0.25rem 0.6rem;
+  padding: 0.25rem 0.65rem;
   font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -206,6 +214,59 @@ a:hover {
   background-color: #fff7ed;
   color: #9a3412;
   border-color: #ffedd5;
+}
+
+.trust-badge-dark {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Precision Hydro Test Telemetry Utilities */
+.font-headline {
+  font-family: var(--font-heading);
+}
+
+.font-mono-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.metric-pass {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.metric-amber {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.metric-fail {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.metric-cyan {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
 }
 
 /* ==========================================================================
@@ -221,21 +282,31 @@ a:hover {
   gap: 0.5rem;
   background-color: var(--color-navy-900);
   color: #ffffff;
-  border: 1px solid var(--color-amber-500);
+  border: 1px solid var(--color-action);
   border-radius: var(--radius-full);
   padding: 0.65rem 1.15rem;
   font-family: var(--font-sans);
   font-size: 0.88rem;
   font-weight: 700;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
+  box-shadow: 0 4px 14px rgba(10, 17, 40, 0.28);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .feedback-floating-btn:hover {
-  background-color: var(--color-navy-700);
+  background-color: var(--color-navy-800);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.35);
+  box-shadow: 0 6px 20px rgba(10, 17, 40, 0.38);
+}
+
+@media (max-width: 768px) {
+  .feedback-floating-btn {
+    bottom: 1rem;
+    right: 1rem;
+    padding: 0.45rem 0.85rem;
+    font-size: 0.78rem;
+    box-shadow: 0 2px 8px rgba(10, 17, 40, 0.25);
+  }
 }
 
 .feedback-modal-backdrop {

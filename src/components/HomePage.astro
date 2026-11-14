@@ -2,6 +2,7 @@
 import type { Locale } from '../lib/constants';
 import type { BusinessSettings } from '../lib/types';
 import { t } from '../lib/i18n';
+import InlineBooking from './booking/InlineBooking';
 
 interface Props {
   locale: Locale;
@@ -21,24 +22,24 @@ const heading = locale === 'en'
   : `${cityName} में सीएनजी सिलेंडर हाइड्रो टेस्टिंग एवं सर्टिफिकेशन केंद्र`;
 ---
 
-<!-- Hero Section -->
-<section class="section hero-section">
+<!-- SECTION 1: HERO & IDENTITY -->
+<section class="section hero-section" id="hero">
   <div class="container hero-grid">
     <div class="hero-content">
-      <div class="trust-badge trust-badge-amber" style="margin-bottom: 1rem;">
-        ★ {locale === 'en' ? 'Certified High-Pressure Testing Facility' : 'प्रमाणित उच्च-दबाव टेस्टिंग सुविधा'}
+      <div class="trust-badge trust-badge-amber">
+        ⚡ {locale === 'en' ? 'Certified High-Pressure Hydrostatic Testing Bay' : 'प्रमाणित उच्च-दबाव हाइड्रोस्टेटिक टेस्टिंग बे'}
       </div>
       <p class="hero-brand">{businessName || 'HSR'}</p>
       <h1 class="hero-title">{heading}</h1>
       <p class="hero-description">
         {locale === 'en'
-          ? 'Mandatory 3-year hydrostatic stretch testing up to 300 bar pressure. Avoid CNG fuel pump refusal with certified testing for private cars, taxis, commercial LCVs and heavy transport trucks.'
-          : '300 बार दबाव तक अनिवार्य 3-वर्षीय हाइड्रोस्टेटिक स्ट्रेच टेस्टिंग। निजी कारों, टैक्सियों, वाणिज्यिक एलसीवी और भारी ट्रकों के प्रमाणित परीक्षण के साथ पंप पर गैस रिफिल रुकावट से बचें।'}
+          ? 'Statutory 3-year hydrostatic stretch testing up to 300 bar hydraulic pressure. Avoid fuel pump refusal with certified testing for private cars, commercial taxis, delivery LCVs and heavy transport trucks.'
+          : '300 बार हाइड्रोलिक दबाव तक वैधानिक 3-वर्षीय हाइड्रोस्टेटिक स्ट्रेच टेस्टिंग। निजी कारों, टैक्सियों, कमर्शियल एलसीवी और भारी ट्रकों के प्रमाणित परीक्षण के साथ पंप पर गैस रिफिल रुकावट से बचें।'}
       </p>
 
       <div class="hero-actions">
-        <a class="btn btn-primary hero-btn-main" href={`/${locale}/book/`}>
-          {copy.actions.book} →
+        <a class="btn btn-primary hero-btn-main" href="#booking">
+          ⚡ {locale === 'en' ? 'Book Testing Bay (₹500 Adv)' : 'स्लॉट बुक करें (₹500 अग्रिम)'} ↓
         </a>
         {phoneReady && (
           <a class="btn btn-secondary" href={`tel:${settings.contact_phone}`}>
@@ -54,51 +55,246 @@ const heading = locale === 'en'
 
       <div class="hero-specs-row">
         <div class="spec-item">
-          <strong>300 BAR</strong>
+          <strong class="font-mono-num">300 BAR</strong>
           <span>{locale === 'en' ? 'Test Pressure' : 'परीक्षण दबाव'}</span>
         </div>
         <div class="spec-divider"></div>
         <div class="spec-item">
-          <strong>3 YEARS</strong>
-          <span>{locale === 'en' ? 'Validity Period' : 'प्रमाणपत्र वैधता'}</span>
+          <strong class="font-mono-num">3 YEARS</strong>
+          <span>{locale === 'en' ? 'Statutory Validity' : 'प्रमाणपत्र वैधता'}</span>
         </div>
         <div class="spec-divider"></div>
         <div class="spec-item">
-          <strong>1–12 CYL</strong>
-          <span>{locale === 'en' ? 'Fleet Capacity' : 'फ्लीट क्षमता'}</span>
+          <strong class="font-mono-num">1–6 CYL</strong>
+          <span>{locale === 'en' ? 'Bay Capacity' : 'बे क्षमता'}</span>
+        </div>
+        <div class="spec-divider"></div>
+        <div class="spec-item">
+          <strong class="font-mono-num">₹500</strong>
+          <span>{locale === 'en' ? 'Flat Advance' : 'फ्लैट अग्रिम'}</span>
         </div>
       </div>
     </div>
 
     <div class="hero-media">
-      <figure class="card media-card">
+      <div class="hero-visual-card">
         <img
-          src="https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1200&q=70"
-          alt={locale === 'en' ? 'Placeholder image: HSR CNG testing facility' : 'प्लेसहोल्डर इमेज: एचएसआर सीएनजी टेस्टिंग सुविधा'}
+          src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1200&q=75"
+          alt={locale === 'en' ? 'High-pressure cylinder hydrostatic testing bay' : 'हाई-प्रेशर सिलेंडर हाइड्रोस्टेटिक टेस्टिंग सुविधा'}
           class="hero-img"
+          loading="eager"
         />
-        <figcaption class="media-caption">
-          {locale === 'en'
-            ? 'Placeholder photo: Genuine facility photos will be updated by station management.'
-            : 'प्लेसहोल्डर फोटो: वास्तविक सुविधा तस्वीरें स्टेशन प्रबंधन द्वारा अपडेट की जाएंगी।'}
-        </figcaption>
-      </figure>
+        <div class="hero-overlay-badge">
+          <span class="telemetry-dot"></span>
+          <span class="telemetry-text">{locale === 'en' ? 'Water Jacket Calibration: Active' : 'वाटर जैकेट कैलिब्रेशन: सक्रिय'}</span>
+        </div>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- Core Engineering & Testing Standards -->
-<section class="section" style="padding-top: 1rem;">
+<!-- SECTION 2: URGENT PUMP REFUSAL GUIDANCE -->
+<section class="section pump-refusal-section" id="refused-cng">
   <div class="container">
-    <div style="text-align: center; margin-bottom: 2.5rem;">
-      <span class="trust-badge">{locale === 'en' ? 'Testing Methodology' : 'परीक्षण कार्यप्रणाली'}</span>
-      <h2 style="font-size: 2rem; margin-top: 0.5rem; margin-bottom: 0.75rem;">
-        {locale === 'en' ? 'Rigorous 5-Step Hydro Testing Standard' : 'कठोर 5-चरणीय हाइड्रो टेस्टिंग मानक'}
+    <div class="refusal-card">
+      <div class="refusal-header">
+        <span class="metric-chip metric-amber">🚨 {locale === 'en' ? 'Urgent Driver Advisory' : 'चालक सूचना'}</span>
+        <h2 class="refusal-title">
+          {locale === 'en'
+            ? 'Refused CNG at the Pump? What to do immediately'
+            : 'पंप पर सीएनजी भरने से मना कर दिया? तुरंत क्या करें'}
+        </h2>
+        <p class="refusal-sub">
+          {locale === 'en'
+            ? 'City Gas stations in Haryana and NCR strictly deny refilling if your vehicle cylinder testing compliance plate is past its 3-year date or missing.'
+            : 'हरियाणा व एनसीआर के सीएनजी पंपों पर 3 साल से पुरानी अथवा गायब टेस्टिंग प्लेट वाले वाहनों में गैस भरना सख्त वर्जित है।'}
+        </p>
+      </div>
+
+      <div class="refusal-steps-grid">
+        <div class="refusal-step-box">
+          <div class="refusal-step-num">01</div>
+          <h3>{locale === 'en' ? 'Check Your Plate' : 'प्लेट की तारीख देखें'}</h3>
+          <p>
+            {locale === 'en'
+              ? 'Locate the brass compliance plate stamped near your CNG refilling valve or on the cylinder collar. Note the due date.'
+              : 'अपने वाहन के फिलिंग वाल्व या सिलेंडर के पास लगी पीतल की प्लेट पर लिखी एक्सपायरी तारीख जाँचें।'}
+          </p>
+        </div>
+
+        <div class="refusal-step-box">
+          <div class="refusal-step-num">02</div>
+          <h3>{locale === 'en' ? 'Book Express Slot' : 'एक्सप्रेस स्लॉट बुक करें'}</h3>
+          <p>
+            {locale === 'en'
+              ? 'Reserve an appointment below with ₹500 flat advance. Choose your vehicle type and time slot for dedicated bay allocation.'
+              : 'नीचे दिए गए फॉर्म से ₹500 का अग्रिम भुगतान करके अपनी सुविधानुसार समय का स्लॉट आरक्षित करें।'}
+          </p>
+        </div>
+
+        <div class="refusal-step-box">
+          <div class="refusal-step-num">03</div>
+          <h3>{locale === 'en' ? '2–3 Hr Turnaround' : '2–3 घंटे में प्लेट प्राप्त करें'}</h3>
+          <p>
+            {locale === 'en'
+              ? 'Complete certified hydrostatic testing, receive a new stamped compliance plate and digital certificate, and resume normal refueling.'
+              : 'हाइड्रोस्टेटिक टेस्टिंग पूर्ण करवाकर नई मोहरबंद प्लेट व प्रमाणपत्र लें और तुरंत बिना किसी रुकावट के गैस भरवाएँ।'}
+          </p>
+        </div>
+      </div>
+
+      <div class="refusal-cta-row">
+        <a href="#booking" class="btn btn-primary">
+          ⚡ {locale === 'en' ? 'Reserve Emergency Testing Slot' : 'आपातकालीन टेस्टिंग स्लॉट बुक करें'}
+        </a>
+        {phoneReady && (
+          <a href={`tel:${settings.contact_phone}`} class="btn btn-outline" style={{ background: '#ffffff' }}>
+            📞 {locale === 'en' ? 'Speak with Reception' : 'रिसेप्शन से बात करें'} ({settings.contact_phone})
+          </a>
+        )}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3: INLINE BOOKING CONTAINER -->
+<section class="section booking-section">
+  <div class="container">
+    <div class="section-title-wrap">
+      <span class="trust-badge">{locale === 'en' ? 'Direct Bay Reservation' : 'सीधी बे बुकिंग'}</span>
+      <h2 class="section-heading">
+        {locale === 'en' ? 'Reserve Your CNG Cylinder Testing Appointment' : 'सीएनजी सिलेंडर टेस्टिंग अपॉइंटमेंट बुक करें'}
       </h2>
-      <p style="color: var(--color-slate-600); max-width: 65ch; margin-inline: auto;">
+      <p class="section-subtext">
         {locale === 'en'
-          ? 'Every cylinder is tested to 1.5 times working pressure in accordance with statutory Gas Cylinders Rules and MoRTH safety guidelines.'
-          : 'प्रत्येक सिलेंडर को वैधानिक गैस सिलेंडर नियमों और सुरक्षा दिशानिर्देशों के अनुसार 1.5 गुना कार्यशील दबाव पर परखा जाता है।'}
+          ? 'Fast, transparent booking for single vehicles or commercial fleets. Flat ₹500 advance hold; balance payable upon completion at station.'
+          : 'एकल वाहनों अथवा वाणिज्यिक फ्लीट के लिए तेज और पारदर्शी बुकिंग। मात्र ₹500 का फ्लैट अग्रिम; शेष राशि टेस्टिंग के बाद केंद्र पर देय।'}
+      </p>
+    </div>
+
+    <!-- Embedded React Island -->
+    <InlineBooking
+      client:load
+      locale={locale}
+      stationPhone={settings.contact_phone !== 'SETUP_REQUIRED' ? settings.contact_phone : undefined}
+      stationCity={cityName}
+    />
+  </div>
+</section>
+
+<!-- SECTION 4: TRANSPARENT PRICING TABLE -->
+<section class="section pricing-section" id="pricing">
+  <div class="container">
+    <div class="section-title-wrap">
+      <span class="trust-badge trust-badge-amber">{locale === 'en' ? 'Standardized Rates' : 'मानकीकृत दरें'}</span>
+      <h2 class="section-heading">
+        {locale === 'en' ? 'Transparent Pricing & Flat Advance Policy' : 'पारदर्शी शुल्क संरचना एवं अग्रिम नीति'}
+      </h2>
+      <p class="section-subtext">
+        {locale === 'en'
+          ? 'Every test includes degassing, ultrasonic flaw scan, 300 bar water jacket expansion test, internal hot-air baking, brass compliance plate, and digital test certificate.'
+          : 'प्रत्येक परीक्षण में डीगैसिंग, अल्ट्रासोनिक जांच, 300 बार वाटर जैकेट टेस्ट, आंतरिक सुखाना, पीतल की प्लेट और डिजिटल प्रमाणपत्र सम्मिलित है।'}
+      </p>
+    </div>
+
+    <div class="pricing-table-wrap">
+      <table class="industrial-pricing-table">
+        <thead>
+          <tr>
+            <th>{locale === 'en' ? 'Cylinder Count' : 'सिलेंडर संख्या'}</th>
+            <th>{locale === 'en' ? 'Vehicle Classes' : 'वाहन प्रकार'}</th>
+            <th>{locale === 'en' ? 'Base Fee' : 'मूल शुल्क'}</th>
+            <th>{locale === 'en' ? 'GST (18%)' : 'जीएसटी (18%)'}</th>
+            <th>{locale === 'en' ? 'Total Statutory Rate' : 'कुल वैधानिक शुल्क'}</th>
+            <th>{locale === 'en' ? 'Advance Required' : 'आवश्यक अग्रिम'}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong class="font-mono-num">1 Cylinder</strong></td>
+            <td>Private Cars, Sedans, Cabs (WagonR, Dzire, Aura)</td>
+            <td class="font-mono-num">₹1,695</td>
+            <td class="font-mono-num">₹305</td>
+            <td><strong class="font-mono-num highlight-cost">₹2,000</strong></td>
+            <td><span class="metric-chip metric-pass">₹500 Flat</span></td>
+          </tr>
+          <tr>
+            <td><strong class="font-mono-num">2 Cylinders</strong></td>
+            <td>Dual-Tank Taxis, Small Tempos, Compact LCVs</td>
+            <td class="font-mono-num">₹2,966</td>
+            <td class="font-mono-num">₹534</td>
+            <td><strong class="font-mono-num highlight-cost">₹3,500</strong></td>
+            <td><span class="metric-chip metric-pass">₹500 Flat</span></td>
+          </tr>
+          <tr>
+            <td><strong class="font-mono-num">3 Cylinders</strong></td>
+            <td>Commercial Vans, Tempos, Mid-size LCVs</td>
+            <td class="font-mono-num">₹4,237</td>
+            <td class="font-mono-num">₹763</td>
+            <td><strong class="font-mono-num highlight-cost">₹5,000</strong></td>
+            <td><span class="metric-chip metric-pass">₹500 Flat</span></td>
+          </tr>
+          <tr>
+            <td><strong class="font-mono-num">4 Cylinders</strong></td>
+            <td>Heavy Delivery LCVs, Mini-Trucks (Tata 407, Bolero Maxi)</td>
+            <td class="font-mono-num">₹5,508</td>
+            <td class="font-mono-num">₹992</td>
+            <td><strong class="font-mono-num highlight-cost">₹6,500</strong></td>
+            <td><span class="metric-chip metric-pass">₹500 Flat</span></td>
+          </tr>
+          <tr>
+            <td><strong class="font-mono-num">5 Cylinders</strong></td>
+            <td>Commercial Transport Trucks & City Buses</td>
+            <td class="font-mono-num">₹6,780</td>
+            <td class="font-mono-num">₹1,220</td>
+            <td><strong class="font-mono-num highlight-cost">₹8,000</strong></td>
+            <td><span class="metric-chip metric-pass">₹500 Flat</span></td>
+          </tr>
+          <tr>
+            <td><strong class="font-mono-num">6 Cylinders</strong></td>
+            <td>Heavy Cascade Haulage Trucks (6-tank chassis)</td>
+            <td class="font-mono-num">₹8,051</td>
+            <td class="font-mono-num">₹1,449</td>
+            <td><strong class="font-mono-num highlight-cost">₹9,500</strong></td>
+            <td><span class="metric-chip metric-pass">₹500 Flat</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pricing-disclaimer-card">
+      <div class="disclaimer-item">
+        <strong>💡 {locale === 'en' ? 'Flat ₹500 Advance Policy:' : 'फ्लैट ₹500 अग्रिम नीति:'}</strong>
+        <p>
+          {locale === 'en'
+            ? 'Regardless of cylinder count, only ₹500 is collected online to reserve your testing bay and technician time. The remaining balance is payable upon successful test completion at our facility.'
+            : 'सिलेंडर की संख्या चाहे जो भी हो, ऑनलाइन केवल ₹500 अग्रिम लिया जाता है ताकि आपकी टेस्टिंग बे सुरक्षित रहे। शेष राशि का भुगतान परीक्षण के पश्चात केंद्र पर किया जाता है।'}
+        </p>
+      </div>
+      <div class="disclaimer-item">
+        <strong>🛡️ {locale === 'en' ? 'Condemnation Safety Rule:' : 'कंडमनेशन सुरक्षा नियम:'}</strong>
+        <p>
+          {locale === 'en'
+            ? 'Under statutory Gas Cylinders Rules, cylinders that fail the hydrostatic expansion test (exceeding 10% permanent stretch) are condemned and defaced to protect motorists from catastrophic burst hazards.'
+            : 'वैधानिक नियमों के अनुसार यदि कोई सिलेंडर परीक्षण में विफल (10% से अधिक स्थाई खिंचाव) होता है, तो सुरक्षा कारणों से उसे नष्ट/कंडम किया जाता है ताकि भविष्य में विस्फोट का खतरा न रहे।'}
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 5: 5-STEP TESTING STANDARDS -->
+<section class="section process-section" id="process">
+  <div class="container">
+    <div class="section-title-wrap">
+      <span class="trust-badge">{locale === 'en' ? 'Testing Methodology' : 'परीक्षण कार्यप्रणाली'}</span>
+      <h2 class="section-heading">
+        {locale === 'en' ? 'Certified 5-Step Hydrostatic Testing Standard' : 'प्रमाणित 5-चरणीय हाइड्रोस्टेटिक टेस्टिंग मानक'}
+      </h2>
+      <p class="section-subtext">
+        {locale === 'en'
+          ? 'Every automotive CNG cylinder is tested to 1.5 times working pressure in accordance with statutory Gas Cylinders Rules and MoRTH safety guidelines.'
+          : 'प्रत्येक सीएनजी सिलेंडर को वैधानिक गैस सिलेंडर नियमों और सुरक्षा दिशानिर्देशों के अनुसार 1.5 गुना कार्यशील दबाव पर परखा जाता है।'}
       </p>
     </div>
 
@@ -106,130 +302,296 @@ const heading = locale === 'en'
       <article class="card standard-card">
         <span class="step-num">01</span>
         <h3>{locale === 'en' ? 'Degassing & Purging' : 'डीगैसिंग और सफाई'}</h3>
-        <p>{locale === 'en' ? 'Complete evacuation of volatile residual methane under controlled explosion-proof conditions.' : 'नियंत्रित और सुरक्षित वातावरण में बची हुई वाष्पशील मीथेन गैस को पूरी तरह निकालना।'}</p>
+        <p>{locale === 'en' ? 'Complete evacuation of volatile residual methane under controlled explosion-proof conditions before water filling.' : 'पानी भरने से पूर्व नियंत्रित और सुरक्षित वातावरण में बची हुई वाष्पशील मीथेन गैस को पूरी तरह निकालना।'}</p>
       </article>
 
       <article class="card standard-card">
         <span class="step-num">02</span>
         <h3>{locale === 'en' ? 'Ultrasonic Inspection' : 'अल्ट्रासोनिक जांच'}</h3>
-        <p>{locale === 'en' ? 'Internal optical endoscopy and thickness testing to detect corrosion pitting and micro-cracks.' : 'आंतरिक एंडोस्कोपी और दीवार मोटाई जांच जिससे जंग और सूक्ष्म दरारों का पता लगाया जा सके।'}</p>
+        <p>{locale === 'en' ? 'Internal optical endoscopy and ultrasonic wall-thickness measurement to detect corrosion pitting and micro-cracks.' : 'आंतरिक एंडोस्कोपी और दीवार मोटाई जांच जिससे आंतरिक जंग और सूक्ष्म दरारों का तुरंत पता लगाया जा सके।'}</p>
       </article>
 
       <article class="card standard-card">
         <span class="step-num">03</span>
         <h3>{locale === 'en' ? '300 Bar Water Jacket' : '300 बार वाटर जैकेट टेस्ट'}</h3>
-        <p>{locale === 'en' ? 'Hydrostatic expansion stretch measurement in a sealed water chamber at 300 bar hydraulic pressure.' : 'सील किए गए वाटर चैंबर में 300 बार हाइड्रोलिक दबाव पर सिलेंडर के खिंचाव का सटीक मापन।'}</p>
+        <p>{locale === 'en' ? 'Hydrostatic expansion stretch measurement in a sealed water chamber at 300 bar hydraulic pressure to measure permanent stretch.' : 'सील किए गए वाटर चैंबर में 300 बार हाइड्रोलिक दबाव पर सिलेंडर के खिंचाव का सटीक मापन।'}</p>
       </article>
 
       <article class="card standard-card">
         <span class="step-num">04</span>
         <h3>{locale === 'en' ? 'Internal Baking' : 'आंतरिक डिहाइड्रेशन'}</h3>
-        <p>{locale === 'en' ? 'Hot dry air circulation ensuring 100% moisture removal to prevent internal rust formation.' : 'गर्म सूखी हवा का प्रवाह जिससे 100% नमी बाहर निकल जाए और अंदर जंग न लगे।'}</p>
+        <p>{locale === 'en' ? 'Heated dry air circulation ensuring 100% moisture removal from internal steel surfaces to prevent internal rust formation.' : 'गर्म सूखी हवा का प्रवाह जिससे 100% नमी बाहर निकल जाए और सिलेंडर के अंदर जंग न लगे।'}</p>
       </article>
 
       <article class="card standard-card">
         <span class="step-num">05</span>
-        <h3>{locale === 'en' ? 'Certificate & Plate' : 'प्रमाणपत्र और प्लेट'}</h3>
-        <p>{locale === 'en' ? 'Stamping of hydrostatic test dates, official brass plate installation, and digital certification.' : 'हाइड्रोस्टेटिक टेस्ट तारीख की मोहर, आधिकारिक प्लेट की फिटिंग और डिजिटल सर्टिफिकेट।'}</p>
+        <h3>{locale === 'en' ? 'Plate & Certificate' : 'प्रमाणपत्र और प्लेट'}</h3>
+        <p>{locale === 'en' ? 'Stamping of hydrostatic test dates, official brass plate installation near filler valve, and digital test certificate issuance.' : 'टेस्ट तारीख की मोहर, फिलर वाल्व के पास आधिकारिक पीतल की प्लेट की फिटिंग और डिजिटल सर्टिफिकेट जारी करना।'}</p>
       </article>
     </div>
   </div>
 </section>
 
-<!-- Fleet & Vehicle Coverage -->
-<section class="section" style="background: var(--color-slate-100);">
+<!-- SECTION 6: STATUTORY COMPLIANCE & TRUST -->
+<section class="section compliance-section" id="standards">
   <div class="container">
-    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
-      <div>
-        <span class="trust-badge trust-badge-amber">{locale === 'en' ? 'Vehicle Coverage' : 'वाहन कवरेज'}</span>
-        <h2 style="font-size: 1.85rem; margin-top: 0.5rem; margin-bottom: 0.25rem;">
-          {locale === 'en' ? 'Hydro Testing for All CNG Vehicle Classes' : 'सभी प्रकार के सीएनजी वाहनों के लिए टेस्टिंग'}
+    <div class="compliance-box">
+      <div class="compliance-content">
+        <span class="metric-chip metric-cyan">{locale === 'en' ? 'Statutory Regulations' : 'वैधानिक सुरक्षा नियम'}</span>
+        <h2 style="font-size: 1.85rem; margin-top: 0.5rem; margin-bottom: 0.75rem; color: var(--color-navy-900);">
+          {locale === 'en' ? 'Mandatory Testing Every 3 Years Under Gas Cylinders Rules' : 'गैस सिलेंडर नियमों के तहत हर 3 साल में अनिवार्य टेस्टिंग'}
         </h2>
-        <p style="color: var(--color-slate-600); margin-bottom: 0;">
-          {locale === 'en' ? 'From private passenger hatchbacks to multi-cylinder heavy commercial transport.' : 'निजी कारों से लेकर मल्टी-सिलेंडर भारी वाणिज्यिक ट्रकों तक।'}
+        <p style="color: var(--color-slate-600); line-height: 1.6; margin-bottom: 1.25rem;">
+          {locale === 'en'
+            ? 'Under Rule 35 of the Gas Cylinders Rules 2016 and Ministry of Road Transport and Highways (MoRTH) automotive safety directives, all on-board CNG fuel containers must undergo comprehensive hydrostatic stretch testing every three years. Operating without a valid test plate violates Motor Vehicles Act Section 190(2).'
+            : 'गैस सिलेंडर नियम 2016 के नियम 35 और सड़क परिवहन मंत्रालय (MoRTH) के सुरक्षा निर्देशों के अनुसार प्रत्येक वाहन में लगे सीएनजी सिलेंडर की हर 3 साल में हाइड्रोस्टेटिक स्ट्रेच टेस्टिंग अनिवार्य है। वैध प्लेट के बिना वाहन चलाना मोटर वाहन अधिनियम की धारा 190(2) का उल्लंघन है।'}
         </p>
+
+        <div class="compliance-bullets">
+          <div class="bullet-item">
+            <span class="check-mark">✓</span>
+            <div>
+              <strong>IS 15490 / ISO 11439 Standard:</strong>
+              <span>{locale === 'en' ? 'Rigorous water-jacket volumetric expansion testing standard.' : 'सख्त वाटर-जैकेट वॉल्यूमेट्रिक विस्तार परीक्षण मानक।'}</span>
+            </div>
+          </div>
+          <div class="bullet-item">
+            <span class="check-mark">✓</span>
+            <div>
+              <strong>All CGD Stations Acceptance:</strong>
+              <span>{locale === 'en' ? 'Official brass compliance plate recognized at all pumps across India.' : 'पूरे भारत के सभी सीएनजी पंपों पर आधिकारिक पीतल की प्लेट मान्य।'}</span>
+            </div>
+          </div>
+          <div class="bullet-item">
+            <span class="check-mark">✓</span>
+            <div>
+              <strong>Digital Compliance Certificate:</strong>
+              <span>{locale === 'en' ? 'Downloadable PDF certificate showing hydrostatic expansion logs.' : 'विस्तार परीक्षण लॉग विवरण सहित डिजिटल पीडीएफ प्रमाणपत्र।'}</span>
+            </div>
+          </div>
+        </div>
       </div>
-      <a href={`/${locale}/book/`} class="btn btn-primary">
-        {copy.actions.book}
-      </a>
+
+      <div class="compliance-sidebar">
+        <div class="plate-spec-card">
+          <div class="plate-header">
+            <strong>{locale === 'en' ? 'Official Compliance Plate Details' : 'आधिकारिक कंप्लायंस प्लेट विवरण'}</strong>
+          </div>
+          <div class="plate-body">
+            <div class="plate-line"><span>Plate Material:</span> <strong>Stamped Solid Brass</strong></div>
+            <div class="plate-line"><span>Mounting Location:</span> <strong>Near CNG Filling Valve</strong></div>
+            <div class="plate-line"><span>Test Pressure:</span> <strong>300 Bar (Hydraulic)</strong></div>
+            <div class="plate-line"><span>Testing Interval:</span> <strong>36 Months (3 Years)</strong></div>
+            <div class="plate-line"><span>Permissible Stretch:</span> <strong>&le; 10% Permanent Expansion</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 7: LOCATION, HOURS & ESSENTIAL FAQS -->
+<section class="section location-faq-section" id="location">
+  <div class="container">
+    <div class="section-title-wrap">
+      <span class="trust-badge">{locale === 'en' ? 'Facility Information' : 'सुविधा एवं केंद्र विवरण'}</span>
+      <h2 class="section-heading">
+        {locale === 'en' ? 'Station Location, Operating Hours & FAQs' : 'स्टेशन का पता, कार्य समय और अक्सर पूछे जाने वाले प्रश्न'}
+      </h2>
+      <p class="section-subtext">
+        {locale === 'en'
+          ? 'Located conveniently in Rewari, Haryana to serve passenger cars, regional taxis, transport fleets, and commercial haulers.'
+          : 'रेवाड़ी, हरियाणा में स्थित केंद्र; यात्री कारों, टैक्सियों और वाणिज्यिक फ्लीट के लिए सुविधाजनक।'}
+      </p>
     </div>
 
-    <div class="vehicle-grid">
-      <div class="card vehicle-card">
-        <h4>{locale === 'en' ? 'Private Cars & Sedans' : 'प्राइवेट कारें और सेडान'}</h4>
-        <p>{locale === 'en' ? '1 cylinder capacity (typically 60L). Quick turnaround appointment slots.' : '1 सिलेंडर क्षमता (साधारणतः 60 लीटर)। तुरंत अपॉइंटमेंट स्लॉट।'}</p>
+    <div class="location-grid">
+      <!-- Facility Info Card -->
+      <div class="facility-info-card">
+        <h3 class="facility-card-title">📍 {businessName || 'HSR'} {locale === 'en' ? 'Testing Station' : 'टेस्टिंग केंद्र'}</h3>
+        <p class="facility-address">
+          <strong>{locale === 'en' ? 'Facility Location:' : 'स्थान:'}</strong> {cityName}, Haryana, India
+        </p>
+
+        <div class="facility-meta-list">
+          <div class="facility-meta-item">
+            <span>🕒 {locale === 'en' ? 'Working Hours:' : 'कार्य समय:'}</span>
+            <strong>Monday – Saturday, 09:00 AM – 06:00 PM</strong>
+          </div>
+          <div class="facility-meta-item">
+            <span>⏱️ {locale === 'en' ? 'Turnaround Time:' : 'समय अवधि:'}</span>
+            <strong>2 to 3 Hours per Vehicle</strong>
+          </div>
+          {phoneReady && (
+            <div class="facility-meta-item">
+              <span>📞 {locale === 'en' ? 'Phone Desk:' : 'फ़ोन डेस्क:'}</span>
+              <a href={`tel:${settings.contact_phone}`} style={{ color: 'var(--color-steel-600)', fontWeight: 700 }}>
+                {settings.contact_phone}
+              </a>
+            </div>
+          )}
+          {settings.whatsapp_number !== 'SETUP_REQUIRED' && (
+            <div class="facility-meta-item">
+              <span>💬 WhatsApp:</span>
+              <a
+                href={`https://wa.me/${settings.whatsapp_number.replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: '#16a34a', fontWeight: 700 }}
+              >
+                {settings.whatsapp_number}
+              </a>
+            </div>
+          )}
+        </div>
+
+        {mapReady && (
+          <a href={settings.map_url} target="_blank" rel="noreferrer" class="btn btn-outline" style={{ width: '100%', marginTop: '1.25rem' }}>
+            🗺️ {locale === 'en' ? 'Open in Google Maps' : 'गूगल मैप्स में रास्ता देखें'}
+          </a>
+        )}
       </div>
 
-      <div class="card vehicle-card">
-        <h4>{locale === 'en' ? 'Commercial Taxis & Cabs' : 'वाणिज्यिक टैक्सी व कैब'}</h4>
-        <p>{locale === 'en' ? '1 to 2 cylinders. Fast certification to minimize operational off-road downtime.' : '1 से 2 सिलेंडर। कम से कम समय में वैध प्रमाणपत्र ताकि गाड़ी सड़क पर रहे।'}</p>
-      </div>
+      <!-- FAQs Column -->
+      <div class="faqs-list" id="faqs">
+        <details class="faq-item" open>
+          <summary class="faq-question">
+            {locale === 'en'
+              ? 'Why is CNG cylinder hydro-testing mandatory every 3 years?'
+              : 'सीएनजी सिलेंडर की हाइड्रो टेस्टिंग हर 3 साल में क्यों अनिवार्य है?'}
+          </summary>
+          <p class="faq-answer">
+            {locale === 'en'
+              ? 'CNG cylinders operate under 200 bar working pressure. Over time, repeated filling cycles, road vibration, and moisture induce metal fatigue. Testing at 300 bar (1.5x working pressure) verifies that cylinder wall expansion remains within safe elastic limits.'
+              : 'सीएनजी सिलेंडर 200 बार के भारी दबाव पर कार्य करते हैं। लगातार गैस भरने, झटकों और नमी से सिलेंडर की धातु में खिंचाव आ सकता है। 300 बार पर परीक्षण यह सुनिश्चित करता है कि सिलेंडर सुरक्षित है और फटने का कोई खतरा नहीं है।'}
+          </p>
+        </details>
 
-      <div class="card vehicle-card">
-        <h4>{locale === 'en' ? 'Delivery Tempos & LCVs' : 'डिलीवरी टेम्पो और एलसीवी'}</h4>
-        <p>{locale === 'en' ? '2 to 4 cylinders. Robust testing for high-mileage urban delivery fleets.' : '2 से 4 सिलेंडर। भारी उपयोग वाले शहरी फ्लीट वाहनों के लिए विशेष जांच।'}</p>
-      </div>
+        <details class="faq-item">
+          <summary class="faq-question">
+            {locale === 'en'
+              ? 'Can I refill CNG immediately after the test is completed?'
+              : 'क्या टेस्टिंग के तुरंत बाद सीएनजी भरवाई जा सकती है?'}
+          </summary>
+          <p class="faq-answer">
+            {locale === 'en'
+              ? 'Yes. Upon passing the hydrostatic test, our technicians mount an official stamped brass compliance plate near your filling valve and issue a digital certificate. Pump operators will verify this plate and refill immediately.'
+              : 'हाँ, परीक्षण सफल होने पर फिलर वाल्व के पास आधिकारिक पीतल की प्लेट लगा दी जाती है और प्रमाणपत्र जारी होता है। पंप कर्मी इस प्लेट को देखकर तुरंत गैस भर देंगे।'}
+          </p>
+        </details>
 
-      <div class="card vehicle-card">
-        <h4>{locale === 'en' ? 'Heavy Commercial Trucks' : 'भारी वाणिज्यिक ट्रक'}</h4>
-        <p>{locale === 'en' ? '4 to 12 cylinders cascade systems. Pre-configured slots with consecutive work units.' : '4 से 12 सिलेंडर कैस्केड सिस्टम। मल्टी-यूनिट समकालिक परीक्षण सुविधा।'}</p>
+        <details class="faq-item">
+          <summary class="faq-question">
+            {locale === 'en'
+              ? 'Why do you charge a ₹500 flat advance for online booking?'
+              : 'ऑनलाइन बुकिंग पर ₹500 का अग्रिम क्यों लिया जाता है?'}
+          </summary>
+          <p class="faq-answer">
+            {locale === 'en'
+              ? 'Because hydrostatic water-jacket testing requires reserving dedicated hydraulic bays and skilled degassing technicians, the flat ₹500 deposit holds your bay and prevents no-shows. The entire ₹500 is deducted from your final bill at the facility.'
+              : 'क्योंकि हाइड्रोस्टेटिक टेस्टिंग के लिए विशेष टेस्टिंग बे और कुशल तकनीशियन तैयार रखने होते हैं। ₹500 का अग्रिम आपकी बे आरक्षित करता है और यह पूरी राशि केंद्र पर आपके अंतिम बिल में घटा दी जाती है।'}
+          </p>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-question">
+            {locale === 'en'
+              ? 'What happens if my vehicle cylinder fails the hydro test?'
+              : 'यदि सिलेंडर हाइड्रो टेस्ट में फेल हो जाए तो क्या होता है?'}
+          </summary>
+          <p class="faq-answer">
+            {locale === 'en'
+              ? 'Under statutory Gas Cylinders Rules, if permanent volumetric stretch exceeds 10%, the cylinder cannot safely hold high pressure and must be safely decommissioned to prevent catastrophic ruptures.'
+              : 'यदि सिलेंडर में 10% से अधिक स्थाई खिंचाव पाया जाता है, तो वैधानिक नियमों के अनुसार उसे असुरक्षित घोषित कर नष्ट किया जाता है ताकि जान-माल का नुकसान न हो।'}
+          </p>
+        </details>
       </div>
     </div>
   </div>
 </section>
 
 <style>
+  /* Common Section Title Utilities */
+  .section-title-wrap {
+    text-align: center;
+    max-width: 720px;
+    margin: 0 auto 2.5rem;
+  }
+  .section-heading {
+    font-size: clamp(1.75rem, 3.5vw, 2.35rem);
+    color: var(--color-navy-900);
+    margin-top: 0.65rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+  .section-subtext {
+    font-size: 1rem;
+    color: var(--color-slate-600);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* Section 1: Hero Styles */
   .hero-section {
     padding-top: 3.5rem;
     padding-bottom: 3.5rem;
   }
   .hero-grid {
     display: grid;
-    grid-template-columns: 1.2fr 1fr;
+    grid-template-columns: 1.25fr 1fr;
     gap: 3rem;
     align-items: center;
   }
   .hero-brand {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     font-weight: 700;
     color: var(--color-steel-600);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
+    margin-top: 1rem;
     margin-bottom: 0.5rem;
   }
   .hero-title {
-    font-size: clamp(2rem, 4.5vw, 3rem);
+    font-size: clamp(2rem, 4vw, 2.85rem);
     line-height: 1.15;
     margin-bottom: 1.25rem;
     letter-spacing: -0.02em;
+    color: var(--color-navy-900);
   }
   .hero-description {
-    font-size: 1.15rem;
-    line-height: 1.6;
+    font-size: 1.1rem;
+    line-height: 1.65;
     color: var(--color-slate-600);
     margin-bottom: 2rem;
   }
   .hero-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 2.5rem;
+    gap: 0.85rem;
+    margin-bottom: 2.25rem;
+  }
+  .hero-btn-main {
+    min-height: 48px;
+    padding: 0.65rem 1.5rem;
+    font-size: 1rem;
   }
   .hero-specs-row {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
+    gap: 1.25rem;
     padding-top: 1.5rem;
     border-top: 1px solid var(--border-default);
+    flex-wrap: wrap;
   }
   .spec-item strong {
     display: block;
-    font-size: 1.4rem;
-    font-family: var(--font-heading);
+    font-size: 1.35rem;
     color: var(--color-navy-900);
+    line-height: 1.1;
   }
   .spec-item span {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--color-slate-600);
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -237,29 +599,181 @@ const heading = locale === 'en'
   }
   .spec-divider {
     width: 1px;
-    height: 36px;
+    height: 32px;
     background-color: var(--border-default);
   }
-  .media-card {
-    padding: 0;
+  .hero-visual-card {
+    position: relative;
+    border-radius: var(--radius-lg);
     overflow: hidden;
     box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-default);
   }
   .hero-img {
     display: block;
     width: 100%;
     height: 100%;
+    min-height: 380px;
+    max-height: 440px;
     object-fit: cover;
-    min-height: 360px;
     background-color: var(--color-slate-200);
   }
-  .media-caption {
-    padding: 0.75rem 1.25rem;
-    color: var(--color-slate-600);
-    font-size: 0.85rem;
-    background: #ffffff;
-    border-top: 1px solid var(--border-subtle);
+  .hero-overlay-badge {
+    position: absolute;
+    bottom: 1rem;
+    left: 1rem;
+    background: rgba(10, 17, 40, 0.85);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-full);
+    padding: 0.4rem 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
+  .telemetry-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #22c55e;
+    box-shadow: 0 0 8px #22c55e;
+  }
+  .telemetry-text {
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-family: var(--font-mono);
+  }
+
+  /* Section 2: Pump Refusal Styles */
+  .pump-refusal-section {
+    padding-top: 1rem;
+    padding-bottom: 2rem;
+  }
+  .refusal-card {
+    background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%);
+    border: 2px solid #fed7aa;
+    border-radius: var(--radius-lg);
+    padding: 2.25rem;
+    box-shadow: var(--shadow-sm);
+  }
+  .refusal-title {
+    font-size: clamp(1.4rem, 2.5vw, 1.85rem);
+    color: #9a3412;
+    margin: 0.5rem 0 0.5rem;
+    line-height: 1.25;
+  }
+  .refusal-sub {
+    color: var(--color-slate-700);
+    font-size: 0.95rem;
+    margin: 0 0 1.5rem;
+    max-width: 70ch;
+  }
+  .refusal-steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.75rem;
+  }
+  .refusal-step-box {
+    background: #ffffff;
+    border: 1px solid #fed7aa;
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+  }
+  .refusal-step-num {
+    font-family: var(--font-mono);
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--color-action);
+    margin-bottom: 0.35rem;
+  }
+  .refusal-step-box h3 {
+    font-size: 1.05rem;
+    color: var(--color-navy-900);
+    margin-bottom: 0.35rem;
+  }
+  .refusal-step-box p {
+    font-size: 0.88rem;
+    color: var(--color-slate-600);
+    margin: 0;
+    line-height: 1.5;
+  }
+  .refusal-cta-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  /* Section 4: Pricing Table */
+  .pricing-section {
+    background: var(--color-slate-50);
+    padding: 4rem 0;
+  }
+  .pricing-table-wrap {
+    overflow-x: auto;
+    background: #ffffff;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-default);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 1.75rem;
+  }
+  .industrial-pricing-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.92rem;
+  }
+  .industrial-pricing-table th {
+    background: var(--color-navy-900);
+    color: #ffffff;
+    padding: 1rem 1.25rem;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .industrial-pricing-table td {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--color-slate-800);
+  }
+  .industrial-pricing-table tr:last-child td {
+    border-bottom: none;
+  }
+  .industrial-pricing-table tr:hover td {
+    background-color: var(--color-steel-50);
+  }
+  .highlight-cost {
+    color: var(--color-steel-600);
+    font-size: 1.05rem;
+  }
+  .pricing-disclaimer-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+  .disclaimer-item {
+    background: #ffffff;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+  }
+  .disclaimer-item strong {
+    display: block;
+    margin-bottom: 0.4rem;
+    color: var(--color-navy-900);
+    font-size: 0.95rem;
+  }
+  .disclaimer-item p {
+    font-size: 0.88rem;
+    color: var(--color-slate-600);
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  /* Section 5: Standards Grid */
   .standards-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -268,11 +782,16 @@ const heading = locale === 'en'
   .standard-card {
     position: relative;
     padding: 1.75rem 1.25rem;
-    border-top: 3px solid var(--color-navy-700);
+    border-top: 4px solid var(--color-navy-800);
+    transition: transform 0.15s ease;
+  }
+  .standard-card:hover {
+    transform: translateY(-2px);
+    border-top-color: var(--color-action);
   }
   .step-num {
     display: inline-block;
-    font-family: var(--font-heading);
+    font-family: var(--font-mono);
     font-size: 1.25rem;
     font-weight: 800;
     color: var(--color-steel-600);
@@ -281,35 +800,208 @@ const heading = locale === 'en'
   .standard-card h3 {
     font-size: 1.15rem;
     margin-bottom: 0.5rem;
+    color: var(--color-navy-900);
   }
   .standard-card p {
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     color: var(--color-slate-600);
     line-height: 1.5;
-    margin-bottom: 0;
+    margin: 0;
   }
-  .vehicle-grid {
+
+  /* Section 6: Compliance Box */
+  .compliance-section {
+    padding-top: 1rem;
+    padding-bottom: 3.5rem;
+  }
+  .compliance-box {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1.25rem;
+    grid-template-columns: 1.35fr 1fr;
+    gap: 2.5rem;
+    background: #ffffff;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem;
+    box-shadow: var(--shadow-sm);
   }
-  .vehicle-card {
-    border-left: 4px solid var(--color-action);
+  .compliance-bullets {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
   }
-  .vehicle-card h4 {
+  .bullet-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .check-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #dcfce7;
+    color: #166534;
+    font-weight: 800;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .bullet-item div strong {
+    display: block;
+    font-size: 0.92rem;
+    color: var(--color-navy-900);
+  }
+  .bullet-item div span {
+    font-size: 0.85rem;
+    color: var(--color-slate-600);
+  }
+  .plate-spec-card {
+    background: var(--color-slate-50);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .plate-header {
+    background: var(--color-navy-900);
+    color: #ffffff;
+    padding: 0.85rem 1.25rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+  .plate-body {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+  .plate-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    border-bottom: 1px dashed var(--border-subtle);
+    padding-bottom: 0.4rem;
+  }
+  .plate-line:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  .plate-line span {
+    color: var(--color-slate-600);
+  }
+  .plate-line strong {
+    color: var(--color-navy-900);
+  }
+
+  /* Section 7: Location & FAQ */
+  .location-faq-section {
+    background: var(--color-slate-50);
+    padding: 4rem 0;
+  }
+  .location-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.35fr;
+    gap: 2.5rem;
+    align-items: flex-start;
+  }
+  .facility-info-card {
+    background: #ffffff;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    box-shadow: var(--shadow-sm);
+  }
+  .facility-card-title {
+    font-size: 1.25rem;
+    color: var(--color-navy-900);
     margin-top: 0;
-    margin-bottom: 0.5rem;
-    font-size: 1.15rem;
+    margin-bottom: 0.75rem;
   }
-  .vehicle-card p {
+  .facility-address {
+    font-size: 0.95rem;
+    color: var(--color-slate-700);
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .facility-meta-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .facility-meta-item {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.85rem;
+    color: var(--color-slate-600);
+  }
+  .facility-meta-item strong {
+    font-size: 0.95rem;
+    color: var(--color-navy-900);
+    margin-top: 0.15rem;
+  }
+  .faqs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+  .faq-item {
+    background: #ffffff;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 1.15rem 1.35rem;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.15s ease;
+  }
+  .faq-item[open] {
+    border-color: var(--color-steel-600);
+  }
+  .faq-question {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--color-navy-900);
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .faq-question::-webkit-details-marker {
+    display: none;
+  }
+  .faq-question::after {
+    content: '+';
+    font-size: 1.25rem;
+    color: var(--color-action);
+    font-weight: 800;
+  }
+  .faq-item[open] .faq-question::after {
+    content: '−';
+  }
+  .faq-answer {
+    margin-top: 0.75rem;
     margin-bottom: 0;
     font-size: 0.9rem;
     color: var(--color-slate-600);
+    line-height: 1.6;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 0.75rem;
   }
-  @media (max-width: 900px) {
+
+  @media (max-width: 960px) {
     .hero-grid {
       grid-template-columns: 1fr;
       gap: 2rem;
+    }
+    .compliance-box {
+      grid-template-columns: 1fr;
+    }
+    .location-grid {
+      grid-template-columns: 1fr;
+    }
+    .pricing-disclaimer-card {
+      grid-template-columns: 1fr;
     }
   }
 </style>

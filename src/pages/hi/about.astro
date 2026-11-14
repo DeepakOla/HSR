@@ -12,6 +12,6 @@ const [settings, seo, page] = await Promise.all([
 ]);
 ---
 
-<BaseLayout locale="hi" title={page.title} description={seo.description} canonicalPath="/hi/about/" businessName={settings.business_name_hi}>
+<BaseLayout locale="hi" title={page.title} description={seo.description} canonicalPath="/hi/about/" businessName={settings.business_name_hi} settings={settings}>
   <ContentPage title={page.title} body={page.body} locale="hi" />
 </BaseLayout>
