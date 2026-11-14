@@ -1,9 +1,45 @@
 ---
 import { requireRole } from '../../lib/auth';
 import { getRuntimeEnv } from '../../lib/runtime-env';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 
-const auth = await requireRole(Astro.request, getRuntimeEnv(Astro.locals), ['OWNER', 'RECEPTIONIST']);
+const env = getRuntimeEnv(Astro.locals);
+const auth = await requireRole(Astro.request, env, ['OWNER', 'RECEPTIONIST']);
 if (!auth.ok) return auth.response;
 ---
 
-<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>Reports</title></head><body><main style="max-width:900px;margin:2rem auto;font-family:system-ui,sans-serif"><h1>Booking reports</h1><p>CSV exports are available through <code>/api/admin/exports/bookings.csv</code>.</p></main></body></html>
+<AdminLayout title="Operational & Financial Reports" owner={auth.staff.role === 'OWNER'} activeNav="records">
+  <div class="admin-app">
+    <div class="admin-heading">
+      <div>
+        <p class="admin-eyebrow">STATUTORY AUDIT & DATA EXPORT</p>
+        <h1>Operational & Financial Reports</h1>
+        <p class="admin-subtitle">
+          Export full ledger data, vehicle registration histories, and daily settlement CSV files for statutory audits.
+        </p>
+      </div>
+    </div>
+
+    <div class="admin-metrics">
+      <div class="admin-card">
+        <h3 class="admin-section-title">📥 Bookings Ledger CSV</h3>
+        <p class="admin-subtitle">Full transaction log of web, phone, WhatsApp, and walk-in testing jobs.</p>
+        <div style="margin-top: 1rem;">
+          <a href="/api/admin/exports/bookings.csv" class="admin-button">
+            Download Bookings CSV
+          </a>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <h3 class="admin-section-title">🛢️ Cylinder Retest Register</h3>
+        <p class="admin-subtitle">Inspect completed cylinder hydro tests with water capacity and tare weights.</p>
+        <div style="margin-top: 1rem;">
+          <a href="/admin/cylinder-register/" class="admin-button secondary">
+            Open Cylinder Register
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</AdminLayout>

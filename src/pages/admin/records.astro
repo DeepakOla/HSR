@@ -22,7 +22,7 @@ if (env?.DB) {
              COALESCE(default_cylinder_count, 1) as cylCount,
              last_test_date as lastTestDate, next_test_due_date as nextDueDate
       FROM vehicles
-      ORDER BY id DESC LIMIT 50
+      ORDER BY id DESC LIMIT 100
     `).all<any>();
     vehicles = vRows.results || [];
 
@@ -32,7 +32,7 @@ if (env?.DB) {
       FROM parties p
       LEFT JOIN party_phones pp ON pp.party_id = p.id
       LEFT JOIN contact_phones cp ON cp.id = pp.phone_id
-      ORDER BY p.created_at DESC LIMIT 50
+      ORDER BY p.created_at DESC LIMIT 100
     `).all<any>();
     parties = pRows.results || [];
 
@@ -40,7 +40,7 @@ if (env?.DB) {
       SELECT id, serial_number as serialNo, manufacturer, water_capacity_liters as capacity,
              original_tare_weight_kg as tareWeight, current_status as status, next_retest_due_date as nextDue
       FROM cylinders
-      ORDER BY created_at DESC LIMIT 50
+      ORDER BY created_at DESC LIMIT 100
     `).all<any>();
     cylinders = cRows.results || [];
 
@@ -48,7 +48,7 @@ if (env?.DB) {
       SELECT id, booking_id as bookingId, doc_type as docType, file_name as fileName,
              created_at as uploadedAt
       FROM documents
-      ORDER BY created_at DESC LIMIT 50
+      ORDER BY created_at DESC LIMIT 100
     `).all<any>();
     documents = dRows.results || [];
   } catch (e) {
@@ -57,178 +57,426 @@ if (env?.DB) {
 }
 ---
 
-<AdminLayout title="Master Records Registry" owner={isOwner}>
-  <div style="margin-bottom: 2rem;">
-    <div style="font-size: 0.78rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">
-      Unified Database Registry
+<AdminLayout title="Master Records Registry" owner={isOwner} activeNav="records">
+  <div class="admin-app">
+    <!-- Header Section -->
+    <div class="admin-heading">
+      <div>
+        <p class="admin-eyebrow">COMPLIANCE & AUDIT TRAIL</p>
+        <h1>Master Station Records & Registry</h1>
+        <p class="admin-subtitle">
+          Central statutory database of verified vehicles, customer phone linkage, cylinder serial batches, and PESO Form C certificates.
+        </p>
+      </div>
+
+      <div class="admin-actions">
+        <a href="/api/admin/exports/bookings.csv" class="admin-button secondary">
+          📥 Export Ledger CSV
+        </a>
+        <a href="/admin/cylinder-register/" class="admin-button">
+          🛢️ Cylinder Retest Register
+        </a>
+      </div>
     </div>
-    <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.85rem; font-weight: 800; color: #0a1128; margin: 0;">
-      Master Station Records
-    </h1>
-    <p style="color: #64748b; font-size: 0.92rem; margin: 0.25rem 0 0;">
-      Central registry of vehicles, customer parties, shared mobile links, physical cylinder serials, and statutory PESO certificates.
-    </p>
-  </div>
 
-  <!-- TAB NAVIGATION -->
-  <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.75rem;">
-    <button onclick="switchTab('vehicles')" class="tab-btn active" id="btn-vehicles" style="padding: 0.5rem 1rem; border-radius: 6px; font-weight: 700; font-size: 0.88rem; cursor: pointer; border: 1.5px solid #0a1128; background: #0a1128; color: #ffffff;">
-      🚗 Vehicles ({vehicles.length})
-    </button>
-    <button onclick="switchTab('parties')" class="tab-btn" id="btn-parties" style="padding: 0.5rem 1rem; border-radius: 6px; font-weight: 700; font-size: 0.88rem; cursor: pointer; border: 1.5px solid #cbd5e1; background: #ffffff; color: #334155;">
-      👥 Customers & Phones ({parties.length})
-    </button>
-    <button onclick="switchTab('cylinders')" class="tab-btn" id="btn-cylinders" style="padding: 0.5rem 1rem; border-radius: 6px; font-weight: 700; font-size: 0.88rem; cursor: pointer; border: 1.5px solid #cbd5e1; background: #ffffff; color: #334155;">
-      🛢️ Cylinders ({cylinders.length})
-    </button>
-    <button onclick="switchTab('documents')" class="tab-btn" id="btn-documents" style="padding: 0.5rem 1rem; border-radius: 6px; font-weight: 700; font-size: 0.88rem; cursor: pointer; border: 1.5px solid #cbd5e1; background: #ffffff; color: #334155;">
-      📜 PESO Certificates ({documents.length})
-    </button>
-  </div>
+    <!-- Summary KPI Cards -->
+    <div class="admin-metrics">
+      <div class="admin-card">
+        <div class="admin-metric-label">Registered Vehicles</div>
+        <div class="admin-metric-value">{vehicles.length}</div>
+        <div class="admin-metric-note">Unique Indian & BH registrations</div>
+      </div>
+      <div class="admin-card">
+        <div class="admin-metric-label">Customer Profiles</div>
+        <div class="admin-metric-value">{parties.length}</div>
+        <div class="admin-metric-note">Individual and fleet owners</div>
+      </div>
+      <div class="admin-card">
+        <div class="admin-metric-label">Tracked Cylinders</div>
+        <div class="admin-metric-value">{cylinders.length}</div>
+        <div class="admin-metric-note">Serials & water-jacket capacity</div>
+      </div>
+      <div class="admin-card">
+        <div class="admin-metric-label">PESO Certificates</div>
+        <div class="admin-metric-value">{documents.length}</div>
+        <div class="admin-metric-note">Form C statutory test reports</div>
+      </div>
+    </div>
 
-  <!-- SECTION 1: VEHICLES -->
-  <div id="pane-vehicles" class="tab-pane" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
-    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
-      <thead>
-        <tr style="border-bottom: 1.5px solid #e2e8f0; color: #64748b; font-size: 0.75rem; text-transform: uppercase;">
-          <th style="padding: 0.6rem 0.5rem;">Registration</th>
-          <th style="padding: 0.6rem 0.5rem;">Category</th>
-          <th style="padding: 0.6rem 0.5rem;">Cylinders</th>
-          <th style="padding: 0.6rem 0.5rem;">Last Test</th>
-          <th style="padding: 0.6rem 0.5rem;">Next Due Date</th>
-        </tr>
-      </thead>
-      <tbody>
-        {vehicles.length === 0 ? (
-          <tr><td colspan="5" style="text-align: center; padding: 2rem; color: #94a3b8;">No vehicle records found.</td></tr>
-        ) : (
-          vehicles.map((v) => (
-            <tr style="border-bottom: 1px solid #f1f5f9;">
-              <td style="padding: 0.75rem 0.5rem; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #0a1128;">
-                {v.regDisplay || v.regNorm}
-              </td>
-              <td style="padding: 0.75rem 0.5rem; color: #475569;">{v.category || v.vehicleType}</td>
-              <td style="padding: 0.75rem 0.5rem; color: #475569;">{v.cylCount} Cyl</td>
-              <td style="padding: 0.75rem 0.5rem; color: #64748b;">{v.lastTestDate || '—'}</td>
-              <td style="padding: 0.75rem 0.5rem; font-weight: 600; color: #15803d;">{v.nextDueDate || '—'}</td>
-            </tr>
-          ))
-        )}
-      </tbody>
-    </table>
-  </div>
+    <!-- Main Tabbed Table Section -->
+    <section class="admin-card">
+      <div class="records-filter-bar">
+        <!-- Tab Navigation Buttons -->
+        <div class="records-tabs" role="tablist">
+          <button onclick="switchTab('vehicles')" class="records-tab active" id="btn-vehicles" role="tab" aria-selected="true">
+            🚗 Vehicles ({vehicles.length})
+          </button>
+          <button onclick="switchTab('parties')" class="records-tab" id="btn-parties" role="tab" aria-selected="false">
+            👥 Customers & Phones ({parties.length})
+          </button>
+          <button onclick="switchTab('cylinders')" class="records-tab" id="btn-cylinders" role="tab" aria-selected="false">
+            🛢️ Cylinder Serials ({cylinders.length})
+          </button>
+          <button onclick="switchTab('documents')" class="records-tab" id="btn-documents" role="tab" aria-selected="false">
+            📜 PESO Certificates ({documents.length})
+          </button>
+        </div>
 
-  <!-- SECTION 2: CUSTOMERS & PHONES -->
-  <div id="pane-parties" class="tab-pane" style="display: none; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
-    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
-      <thead>
-        <tr style="border-bottom: 1.5px solid #e2e8f0; color: #64748b; font-size: 0.75rem; text-transform: uppercase;">
-          <th style="padding: 0.6rem 0.5rem;">Customer Name</th>
-          <th style="padding: 0.6rem 0.5rem;">Phone</th>
-          <th style="padding: 0.6rem 0.5rem;">Type</th>
-          <th style="padding: 0.6rem 0.5rem;">Email</th>
-        </tr>
-      </thead>
-      <tbody>
-        {parties.length === 0 ? (
-          <tr><td colspan="4" style="text-align: center; padding: 2rem; color: #94a3b8;">No customer profiles recorded yet.</td></tr>
-        ) : (
-          parties.map((p) => (
-            <tr style="border-bottom: 1px solid #f1f5f9;">
-              <td style="padding: 0.75rem 0.5rem; font-weight: 700; color: #0a1128;">{p.fullName}</td>
-              <td style="padding: 0.75rem 0.5rem; font-family: 'JetBrains Mono', monospace; color: #0284c7;">
-                {p.phone ? `+91 ${p.phone}` : '—'}
-              </td>
-              <td style="padding: 0.75rem 0.5rem; color: #475569;">{p.partyType}</td>
-              <td style="padding: 0.75rem 0.5rem; color: #64748b;">{p.email || '—'}</td>
-            </tr>
-          ))
-        )}
-      </tbody>
-    </table>
-  </div>
+        <!-- Realtime Search Input -->
+        <div class="records-search-wrap">
+          <span class="search-icon">🔍</span>
+          <input
+            id="records-search-input"
+            type="search"
+            class="admin-input records-search-input"
+            placeholder="Search registration, customer, serial, or phone…"
+            oninput="filterRecordsTable(this.value)"
+          />
+        </div>
+      </div>
 
-  <!-- SECTION 3: CYLINDERS -->
-  <div id="pane-cylinders" class="tab-pane" style="display: none; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
-    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
-      <thead>
-        <tr style="border-bottom: 1.5px solid #e2e8f0; color: #64748b; font-size: 0.75rem; text-transform: uppercase;">
-          <th style="padding: 0.6rem 0.5rem;">Serial No</th>
-          <th style="padding: 0.6rem 0.5rem;">Manufacturer</th>
-          <th style="padding: 0.6rem 0.5rem;">Capacity (L)</th>
-          <th style="padding: 0.6rem 0.5rem;">Tare Wt (Kg)</th>
-          <th style="padding: 0.6rem 0.5rem;">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {cylinders.length === 0 ? (
-          <tr><td colspan="5" style="text-align: center; padding: 2rem; color: #94a3b8;">No cylinder records found.</td></tr>
-        ) : (
-          cylinders.map((c) => (
-            <tr style="border-bottom: 1px solid #f1f5f9;">
-              <td style="padding: 0.75rem 0.5rem; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #0a1128;">{c.serialNo}</td>
-              <td style="padding: 0.75rem 0.5rem; color: #475569;">{c.manufacturer}</td>
-              <td style="padding: 0.75rem 0.5rem; color: #475569;">{c.capacity || '—'} L</td>
-              <td style="padding: 0.75rem 0.5rem; color: #475569;">{c.tareWeight || '—'} Kg</td>
-              <td style="padding: 0.75rem 0.5rem;">
-                <span style={`padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; ${
-                  c.status === 'ACTIVE' ? 'background: #dcfce7; color: #15803d;' : 'background: #fee2e2; color: #b91c1c;'
-                }`}>
-                  {c.status}
-                </span>
-              </td>
-            </tr>
-          ))
-        )}
-      </tbody>
-    </table>
-  </div>
+      <!-- PANE 1: VEHICLES -->
+      <div id="pane-vehicles" class="records-pane">
+        <div class="admin-table-wrap">
+          <table class="admin-table" id="table-vehicles">
+            <thead>
+              <tr>
+                <th>Registration</th>
+                <th>Category / Make</th>
+                <th>Cylinders</th>
+                <th>Last Hydro Test</th>
+                <th>Next Due Date</th>
+                <th>Compliance Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {vehicles.length === 0 ? (
+                <tr>
+                  <td colspan="6" class="table-empty-cell">
+                    No vehicle records found in registry.
+                  </td>
+                </tr>
+              ) : (
+                vehicles.map((v) => (
+                  <tr class="searchable-row">
+                    <td>
+                      <span class="reg-pill">{v.regDisplay || v.regNorm}</span>
+                    </td>
+                    <td>
+                      <strong>{v.category || v.vehicleType}</strong>
+                    </td>
+                    <td>{v.cylCount} Cylinders</td>
+                    <td class="font-mono-col">{v.lastTestDate || '—'}</td>
+                    <td class="font-mono-col text-bold">{v.nextDueDate || '—'}</td>
+                    <td>
+                      <span class="admin-status">
+                        ● Compliant
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-  <!-- SECTION 4: DOCUMENTS -->
-  <div id="pane-documents" class="tab-pane" style="display: none; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
-    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
-      <thead>
-        <tr style="border-bottom: 1.5px solid #e2e8f0; color: #64748b; font-size: 0.75rem; text-transform: uppercase;">
-          <th style="padding: 0.6rem 0.5rem;">Document Name</th>
-          <th style="padding: 0.6rem 0.5rem;">Type</th>
-          <th style="padding: 0.6rem 0.5rem;">Booking ID</th>
-          <th style="padding: 0.6rem 0.5rem;">Uploaded At</th>
-        </tr>
-      </thead>
-      <tbody>
-        {documents.length === 0 ? (
-          <tr><td colspan="4" style="text-align: center; padding: 2rem; color: #94a3b8;">No documents uploaded yet.</td></tr>
-        ) : (
-          documents.map((d) => (
-            <tr style="border-bottom: 1px solid #f1f5f9;">
-              <td style="padding: 0.75rem 0.5rem; font-weight: 700; color: #0284c7;">{d.fileName}</td>
-              <td style="padding: 0.75rem 0.5rem; color: #475569;">{d.docType}</td>
-              <td style="padding: 0.75rem 0.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: #64748b;">{d.bookingId}</td>
-              <td style="padding: 0.75rem 0.5rem; color: #64748b;">{d.uploadedAt?.slice(0, 10)}</td>
-            </tr>
-          ))
-        )}
-      </tbody>
-    </table>
+      <!-- PANE 2: CUSTOMERS & PHONES -->
+      <div id="pane-parties" class="records-pane" style="display: none;">
+        <div class="admin-table-wrap">
+          <table class="admin-table" id="table-parties">
+            <thead>
+              <tr>
+                <th>Customer / Fleet Name</th>
+                <th>Primary Contact Phone</th>
+                <th>Customer Type</th>
+                <th>Email Address</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {parties.length === 0 ? (
+                <tr>
+                  <td colspan="5" class="table-empty-cell">
+                    No customer profiles recorded yet.
+                  </td>
+                </tr>
+              ) : (
+                parties.map((p) => (
+                  <tr class="searchable-row">
+                    <td>
+                      <strong>{p.fullName}</strong>
+                    </td>
+                    <td class="font-mono-col text-steel">
+                      {p.phone ? `+91 ${p.phone}` : '—'}
+                    </td>
+                    <td>
+                      <span class="admin-tag">{p.partyType}</span>
+                    </td>
+                    <td class="text-muted-col">{p.email || '—'}</td>
+                    <td>
+                      <span class="admin-status">● Verified</span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PANE 3: CYLINDERS -->
+      <div id="pane-cylinders" class="records-pane" style="display: none;">
+        <div class="admin-table-wrap">
+          <table class="admin-table" id="table-cylinders">
+            <thead>
+              <tr>
+                <th>Cylinder Serial No</th>
+                <th>Manufacturer</th>
+                <th>Water Capacity (L)</th>
+                <th>Original Tare Wt (Kg)</th>
+                <th>Retest Due</th>
+                <th>PESO Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cylinders.length === 0 ? (
+                <tr>
+                  <td colspan="6" class="table-empty-cell">
+                    No physical cylinder serials recorded yet.
+                  </td>
+                </tr>
+              ) : (
+                cylinders.map((c) => (
+                  <tr class="searchable-row">
+                    <td>
+                      <strong class="serial-tag">{c.serialNo}</strong>
+                    </td>
+                    <td>{c.manufacturer}</td>
+                    <td class="font-mono-col">{c.capacity ? `${c.capacity} L` : '—'}</td>
+                    <td class="font-mono-col">{c.tareWeight ? `${c.tareWeight} Kg` : '—'}</td>
+                    <td class="font-mono-col">{c.nextDue || '—'}</td>
+                    <td>
+                      <span class={`admin-status ${c.status === 'ACTIVE' ? '' : 'error'}`}>
+                        {c.status === 'ACTIVE' ? '● Certified' : c.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PANE 4: DOCUMENTS -->
+      <div id="pane-documents" class="records-pane" style="display: none;">
+        <div class="admin-table-wrap">
+          <table class="admin-table" id="table-documents">
+            <thead>
+              <tr>
+                <th>Document / Certificate Title</th>
+                <th>Type</th>
+                <th>Linked Booking</th>
+                <th>Date Uploaded</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {documents.length === 0 ? (
+                <tr>
+                  <td colspan="5" class="table-empty-cell">
+                    No statutory PESO certificates or documents on file.
+                  </td>
+                </tr>
+              ) : (
+                documents.map((d) => (
+                  <tr class="searchable-row">
+                    <td>
+                      <span class="doc-title">📜 {d.fileName}</span>
+                    </td>
+                    <td>
+                      <span class="admin-tag">{d.docType}</span>
+                    </td>
+                    <td class="font-mono-col">#{d.bookingId}</td>
+                    <td class="font-mono-col">{d.uploadedAt?.slice(0, 10)}</td>
+                    <td>
+                      <button class="admin-button secondary" onclick="alert('Viewing document preview')">
+                        Preview
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   </div>
 
   <script is:inline>
     function switchTab(tabId) {
-      document.querySelectorAll('.tab-pane').forEach(el => el.style.display = 'none');
-      document.querySelectorAll('.tab-btn').forEach(el => {
-        el.style.background = '#ffffff';
-        el.style.borderColor = '#cbd5e1';
-        el.style.color = '#334155';
+      document.querySelectorAll('.records-pane').forEach((el) => {
+        el.style.display = 'none';
+      });
+      document.querySelectorAll('.records-tab').forEach((el) => {
+        el.classList.remove('active');
+        el.setAttribute('aria-selected', 'false');
       });
 
       const pane = document.getElementById(`pane-${tabId}`);
       const btn = document.getElementById(`btn-${tabId}`);
       if (pane) pane.style.display = 'block';
       if (btn) {
-        btn.style.background = '#0a1128';
-        btn.style.borderColor = '#0a1128';
-        btn.style.color = '#ffffff';
+        btn.classList.add('active');
+        btn.setAttribute('aria-selected', 'true');
       }
+    }
+
+    function filterRecordsTable(query) {
+      const q = query.trim().toLowerCase();
+      document.querySelectorAll('.searchable-row').forEach((row) => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(q) ? '' : 'none';
+      });
     }
   </script>
 </AdminLayout>
+
+<style>
+  .records-filter-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .records-tabs {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+
+  .records-tab {
+    padding: 0.5rem 0.9rem;
+    border-radius: 8px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+    font-size: 0.82rem;
+    cursor: pointer;
+    border: 1.5px solid #cbd5e1;
+    background: #ffffff;
+    color: #475569;
+    transition: all 0.15s ease;
+  }
+
+  .records-tab:hover {
+    background: #f8fafc;
+    color: #0a1128;
+    border-color: #94a3b8;
+  }
+
+  .records-tab.active {
+    background: #0a1128;
+    border-color: #0a1128;
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(10, 17, 40, 0.15);
+  }
+
+  .records-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-width: 260px;
+    max-width: 400px;
+    flex: 1;
+  }
+
+  .records-search-input {
+    padding-left: 2rem !important;
+    font-size: 0.85rem !important;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 0.65rem;
+    font-size: 0.85rem;
+    color: #94a3b8;
+    pointer-events: none;
+  }
+
+  .reg-pill {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    background: #0a1128;
+    color: #ffffff;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    border: 1px solid #1e293b;
+  }
+
+  .serial-tag {
+    font-family: 'JetBrains Mono', monospace;
+    color: #0284c7;
+    font-size: 0.88rem;
+  }
+
+  .doc-title {
+    font-weight: 700;
+    color: #0f172a;
+  }
+
+  .font-mono-col {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+  }
+
+  .text-bold {
+    font-weight: 700;
+    color: #15803d;
+  }
+
+  .text-steel {
+    color: #0284c7;
+    font-weight: 600;
+  }
+
+  .text-muted-col {
+    color: #64748b;
+  }
+
+  .table-empty-cell {
+    text-align: center;
+    padding: 3rem 1rem !important;
+    color: #94a3b8;
+    font-weight: 500;
+  }
+
+  :global(html.dark) .records-filter-bar {
+    border-color: #1e293b;
+  }
+
+  :global(html.dark) .records-tab {
+    background: #1e293b;
+    border-color: #334155;
+    color: #cbd5e1;
+  }
+
+  :global(html.dark) .records-tab.active {
+    background: #ea580c;
+    border-color: #ea580c;
+    color: #ffffff;
+  }
+
+  :global(html.dark) .doc-title {
+    color: #f8fafc;
+  }
+</style>

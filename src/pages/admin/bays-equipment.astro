@@ -25,120 +25,122 @@ if (env?.DB) {
 }
 ---
 
-<AdminLayout title="Bays & Equipment Management" owner={true}>
-  <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-    <div>
-      <div style="font-size: 0.78rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">
-        Station Infrastructure & Calibration
+<AdminLayout title="Physical Bays & Hydro Rigs" owner={true} activeNav="bays">
+  <div class="admin-app">
+    <!-- Header -->
+    <div class="admin-heading">
+      <div>
+        <p class="admin-eyebrow">STATION INFRASTRUCTURE & CALIBRATION</p>
+        <h1>Physical Bays & Hydro Rigs</h1>
+        <p class="admin-subtitle">
+          Dynamic station resource management. Vehicle inspection bays, 300-bar hydrostatic water-jacket rigs, and statutory calibration logs.
+        </p>
       </div>
-      <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.85rem; font-weight: 800; color: #0a1128; margin: 0;">
-        Physical Bays & Hydro Rigs
-      </h1>
-      <p style="color: #64748b; font-size: 0.92rem; margin: 0.25rem 0 0;">
-        Zero hardcoded equipment counts. Manage vehicle bays, hydrostatic water-jacket rigs, and statutory calibration validity.
-      </p>
+
+      <div class="admin-actions">
+        <button onclick="document.getElementById('modal-new-resource').style.display='flex'" class="admin-button">
+          + Add Bay / Rig
+        </button>
+      </div>
     </div>
 
-    <button onclick="document.getElementById('modal-new-resource').style.display='flex'" style="background: #0a1128; color: #ffffff; padding: 0.65rem 1.25rem; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; font-size: 0.9rem;">
-      + Add Bay / Rig
-    </button>
-  </div>
+    <!-- Resource Cards Grid -->
+    <div class="bays-grid">
+      {resources.length === 0 ? (
+        <div class="admin-card text-center">
+          <p class="admin-empty">No station resources or bays configured yet.</p>
+        </div>
+      ) : (
+        resources.map((res) => (
+          <div class="admin-card bay-card">
+            <div class="bay-card-top">
+              <div class="bay-card-title-group">
+                <span class="bay-type-tag">{res.resourceType}</span>
+                <h3 class="bay-title">{res.resourceName}</h3>
+                <code class="bay-code">Code: {res.resourceCode}</code>
+              </div>
 
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem;">
-    {resources.map((res) => (
-      <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
-        <div>
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
-            <div>
-              <span style="font-size: 0.75rem; font-weight: 700; color: #0284c7; text-transform: uppercase;">
-                {res.resourceType}
+              <span class={`admin-status ${
+                res.status === 'ONLINE' ? '' :
+                res.status === 'OCCUPIED' ? 'pending' :
+                res.status === 'MAINTENANCE' ? 'error' : 'pending'
+              }`}>
+                {res.status}
               </span>
-              <h3 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.15rem; font-weight: 800; color: #0a1128; margin: 0.15rem 0 0;">
-                {res.resourceName}
-              </h3>
-              <code style="font-size: 0.78rem; color: #64748b;">Code: {res.resourceCode}</code>
             </div>
 
-            <span style={`padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; ${
-              res.status === 'ONLINE' ? 'background: #dcfce7; color: #15803d;' :
-              res.status === 'OCCUPIED' ? 'background: #e0f2fe; color: #0369a1;' :
-              res.status === 'MAINTENANCE' ? 'background: #fee2e2; color: #b91c1c;' :
-              'background: #fef3c7; color: #b45309;'
-            }`}>
-              {res.status}
-            </span>
+            <div class="bay-meta-box">
+              <div class="bay-meta-row">
+                <strong>Categories:</strong> <span>{res.supportedCategoriesJson || 'All standard CNG'}</span>
+              </div>
+              <div class="bay-meta-row">
+                <strong>Calibration Cert:</strong> <span>{res.calibrationCertNo || 'Not recorded'}</span>
+                {res.calibrationValidUntil && <span class="bay-valid-date"> (Valid: {res.calibrationValidUntil})</span>}
+              </div>
+            </div>
+
+            <div class="bay-actions">
+              <button onclick={`window.toggleStatus('${res.id}', 'ONLINE')`} class="admin-button secondary btn-sm btn-green">
+                Set Online
+              </button>
+              <button onclick={`window.toggleStatus('${res.id}', 'MAINTENANCE')`} class="admin-button secondary btn-sm btn-red">
+                Maintenance
+              </button>
+              <button onclick={`window.promptCalibration('${res.id}')`} class="admin-button secondary btn-sm btn-blue">
+                Update Cert
+              </button>
+            </div>
           </div>
+        ))
+      )}
+    </div>
 
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem; margin-bottom: 1rem; font-size: 0.82rem;">
-            <div style="color: #475569; margin-bottom: 0.25rem;">
-              <strong>Supported Categories:</strong> {res.supportedCategoriesJson}
-            </div>
-            <div style="color: #475569;">
-              <strong>Calibration Cert:</strong> {res.calibrationCertNo || 'Not recorded'}
-              {res.calibrationValidUntil && ` (Valid until: ${res.calibrationValidUntil})`}
-            </div>
+    <!-- ADD RESOURCE MODAL -->
+    <div id="modal-new-resource" class="mgmt-modal" style="display: none;">
+      <div class="mgmt-modal-card">
+        <div class="mgmt-modal-head">
+          <h2 class="admin-section-title">Add Physical Bay or Rig</h2>
+          <button type="button" class="mgmt-modal-close" onclick="document.getElementById('modal-new-resource').style.display='none'">✕</button>
+        </div>
+        <p class="admin-subtitle">
+          Create an additional capacity resource for the testing facility.
+        </p>
+
+        <form id="form-add-resource" onsubmit="window.createResource(event)" class="admin-form">
+          <label class="admin-field">
+            Resource Code
+            <input type="text" id="res-code" required placeholder="e.g. BAY_4 or RIG_C" class="admin-input uppercase-input" />
+          </label>
+
+          <label class="admin-field">
+            Resource Name
+            <input type="text" id="res-name" required placeholder="e.g. Commercial Bay 4 (Heavy)" class="admin-input" />
+          </label>
+
+          <label class="admin-field">
+            Resource Type
+            <select id="res-type" class="admin-select">
+              <option value="VEHICLE_BAY">Vehicle Bay (Inspection & Intake)</option>
+              <option value="HYDRO_RIG">Hydro Rig (300 Bar Water-Jacket)</option>
+              <option value="INSPECTION_BENCH">Inspection Bench</option>
+            </select>
+          </label>
+
+          <div class="modal-footer-actions">
+            <button type="button" onclick="document.getElementById('modal-new-resource').style.display='none'" class="admin-button secondary">
+              Cancel
+            </button>
+            <button type="submit" class="admin-button">
+              Save Resource
+            </button>
           </div>
-        </div>
-
-        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <button onclick={`toggleStatus('${res.id}', 'ONLINE')`} style="padding: 0.4rem 0.75rem; font-size: 0.78rem; font-weight: 700; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; cursor: pointer; color: #15803d;">
-            Set Online
-          </button>
-          <button onclick={`toggleStatus('${res.id}', 'MAINTENANCE')`} style="padding: 0.4rem 0.75rem; font-size: 0.78rem; font-weight: 700; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; cursor: pointer; color: #b91c1c;">
-            Maintenance
-          </button>
-          <button onclick={`promptCalibration('${res.id}')`} style="padding: 0.4rem 0.75rem; font-size: 0.78rem; font-weight: 700; border-radius: 6px; border: 1px solid #cbd5e1; background: #ffffff; cursor: pointer; color: #0284c7;">
-            Update Cert
-          </button>
-        </div>
+        </form>
       </div>
-    ))}
-  </div>
-
-  <!-- ADD RESOURCE MODAL -->
-  <div id="modal-new-resource" style="display: none; position: fixed; inset: 0; background: rgba(10, 17, 40, 0.6); z-index: 1000; align-items: center; justify-content: center; padding: 1rem;">
-    <div style="background: #ffffff; border-radius: 16px; padding: 2rem; max-width: 480px; width: 100%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);">
-      <h2 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.35rem; font-weight: 800; color: #0a1128; margin: 0 0 0.5rem;">
-        Add Physical Bay or Rig
-      </h2>
-      <p style="color: #64748b; font-size: 0.88rem; margin: 0 0 1.5rem;">
-        Create an additional capacity resource for the testing facility.
-      </p>
-
-      <form id="form-add-resource" onsubmit="createResource(event)">
-        <div style="margin-bottom: 1rem;">
-          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">Resource Code</label>
-          <input type="text" id="res-code" required placeholder="e.g. BAY_4 or RIG_C" style="width: 100%; padding: 0.6rem; border: 1.5px solid #cbd5e1; border-radius: 6px; text-transform: uppercase;" />
-        </div>
-
-        <div style="margin-bottom: 1rem;">
-          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">Resource Name</label>
-          <input type="text" id="res-name" required placeholder="e.g. Vehicle Bay 4 (Commercial)" style="width: 100%; padding: 0.6rem; border: 1.5px solid #cbd5e1; border-radius: 6px;" />
-        </div>
-
-        <div style="margin-bottom: 1.5rem;">
-          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 0.25rem;">Resource Type</label>
-          <select id="res-type" style="width: 100%; padding: 0.6rem; border: 1.5px solid #cbd5e1; border-radius: 6px;">
-            <option value="VEHICLE_BAY">Vehicle Bay (Inspection & Intake)</option>
-            <option value="HYDRO_RIG">Hydro Rig (300 Bar Water-Jacket)</option>
-            <option value="INSPECTION_BENCH">Inspection Bench</option>
-          </select>
-        </div>
-
-        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
-          <button type="button" onclick="document.getElementById('modal-new-resource').style.display='none'" style="padding: 0.6rem 1rem; border: 1.5px solid #cbd5e1; border-radius: 6px; background: #ffffff; cursor: pointer; font-weight: 600;">
-            Cancel
-          </button>
-          <button type="submit" style="padding: 0.6rem 1.25rem; background: #0a1128; color: #ffffff; border: none; border-radius: 6px; cursor: pointer; font-weight: 700;">
-            Save Resource
-          </button>
-        </div>
-      </form>
     </div>
   </div>
 
   <script is:inline>
-    async function toggleStatus(resourceId, newStatus) {
+    window.toggleStatus = async function (resourceId, newStatus) {
       if (!confirm(`Are you sure you want to change this resource status to ${newStatus}?`)) return;
       try {
         const res = await fetch('/api/admin/resources/', {
@@ -155,9 +157,9 @@ if (env?.DB) {
       } catch (e) {
         alert('Network error');
       }
-    }
+    };
 
-    async function promptCalibration(resourceId) {
+    window.promptCalibration = async function (resourceId) {
       const certNo = prompt('Enter NABL / PESO Calibration Certificate Number:');
       if (!certNo) return;
       const validUntil = prompt('Enter Validity End Date (YYYY-MM-DD):', '2027-12-31');
@@ -178,10 +180,10 @@ if (env?.DB) {
       } catch (e) {
         alert('Network error');
       }
-    }
+    };
 
-    async function createResource(event) {
-      event.preventDefault();
+    window.createResource = async function (e) {
+      e.preventDefault();
       const code = document.getElementById('res-code').value;
       const name = document.getElementById('res-name').value;
       const type = document.getElementById('res-type').value;
@@ -201,6 +203,144 @@ if (env?.DB) {
       } catch (e) {
         alert('Network error');
       }
-    }
+    };
   </script>
 </AdminLayout>
+
+<style>
+  .bays-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .bay-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .bay-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .bay-type-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #0284c7;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .bay-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #0a1128;
+    margin: 0.2rem 0 0.15rem;
+  }
+
+  .bay-code {
+    font-size: 0.78rem;
+    color: #64748b;
+  }
+
+  .bay-meta-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.85rem;
+    margin-bottom: 1.15rem;
+    font-size: 0.82rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .bay-meta-row {
+    color: #475569;
+  }
+
+  .bay-valid-date {
+    color: #059669;
+    font-weight: 600;
+  }
+
+  .bay-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-sm {
+    padding: 0.35rem 0.65rem !important;
+    font-size: 0.78rem !important;
+  }
+
+  .btn-green {
+    color: #15803d !important;
+  }
+
+  .btn-red {
+    color: #b91c1c !important;
+  }
+
+  .btn-blue {
+    color: #0284c7 !important;
+  }
+
+  .uppercase-input {
+    text-transform: uppercase;
+  }
+
+  .mgmt-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 17, 40, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  .mgmt-modal-card {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 1.75rem;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+    border: 1px solid #e2e8f0;
+  }
+
+  .mgmt-modal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .mgmt-modal-close {
+    background: transparent;
+    border: none;
+    font-size: 1.25rem;
+    color: #64748b;
+    cursor: pointer;
+  }
+
+  .modal-footer-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+  }
+
+  :global(html.dark) .bay-title { color: #f8fafc; }
+  :global(html.dark) .bay-meta-box { background: #1e293b; border-color: #334155; }
+  :global(html.dark) .mgmt-modal-card { background: #131b2e; border-color: #1e293b; }
+</style>
