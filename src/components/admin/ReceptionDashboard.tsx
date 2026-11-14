@@ -274,7 +274,7 @@ export default function ReceptionDashboard() {
       <div className="admin-heading">
         <div><p className="admin-eyebrow">{t.eyebrow}</p><h1>{t.title}</h1><p className="admin-subtitle">{t.sub}</p></div>
         <div className="admin-actions">
-          <a href="/admin/register/" className="admin-button secondary" style={{ textDecoration: 'none' }}>
+          <a href="/admin/cylinder-register/" className="admin-button secondary" style={{ textDecoration: 'none' }}>
             🛢️ {locale === 'hi' ? 'सिलेंडर रजिस्टर' : 'Cylinder Register'}
           </a>
           <button className="admin-lang" onClick={() => setLocale(locale === 'en' ? 'hi' : 'en')}>{t.language}</button>

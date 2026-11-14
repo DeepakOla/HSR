@@ -1,6 +1,8 @@
 ---
 import { getStaffContext } from '../lib/auth';
 import { getRuntimeEnv } from '../lib/runtime-env';
+import '../styles/design-tokens.css';
+import '../styles/admin.css';
 
 interface Props {
   title: string;
@@ -54,8 +56,8 @@ const derivedBreadcrumb = breadcrumb || (
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/src/styles/design-tokens.css" />
-    <link rel="stylesheet" href="/src/styles/admin.css" />
+    <link rel="stylesheet" href="/styles/design-tokens.css" />
+    <link rel="stylesheet" href="/styles/admin.css" />
     <script is:inline>
       if (localStorage.getItem('hsr_theme') === 'dark' || (!('hsr_theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
         document.documentElement.classList.add('dark');
@@ -86,7 +88,7 @@ const derivedBreadcrumb = breadcrumb || (
 
       <!-- Quick public link -->
       <div class="sidebar-quick-link">
-        <a href="/en/" target="_blank" class="public-site-btn">
+        <a href="/en/" target="_blank" rel="noopener noreferrer" class="public-site-btn">
           <span>🌐 Public Website</span>
           <span class="ext-arrow">↗</span>
         </a>
@@ -146,7 +148,7 @@ const derivedBreadcrumb = breadcrumb || (
       <div class="sidebar-telemetry">
         <div class="telemetry-head">
           <span class="stat-indicator"></span>
-          <span>Station Lab #941</span>
+          <span>Testing Station Lab</span>
           <span class="telemetry-badge">PESO OK</span>
         </div>
         <div class="telemetry-row">
@@ -213,7 +215,7 @@ const derivedBreadcrumb = breadcrumb || (
             </a>
           )}
 
-          <a href="/en/" target="_blank" class="quick-nav-icon-btn" title="View Public Website">
+          <a href="/en/" target="_blank" rel="noopener noreferrer" class="quick-nav-icon-btn" title="View Public Website">
             <span>🌐</span>
           </a>
         </div>

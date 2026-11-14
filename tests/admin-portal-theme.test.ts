@@ -26,7 +26,11 @@ describe('⚡ HSR Management Portal Unified Theme & Responsive Navigation', () =
     // Dark mode and telemetry
     expect(layout).toContain('toggleTheme');
     expect(layout).toContain('300 BAR READY');
-    expect(layout).toContain('Station Lab #941');
+    expect(layout).toContain('Testing Station Lab');
+
+    // Bundled CSS frontmatter imports
+    expect(layout).toContain("import '../styles/design-tokens.css';");
+    expect(layout).toContain("import '../styles/admin.css';");
   });
 
   it('verifies admin.css contains complete Precision Hydro Test design tokens', async () => {
@@ -46,7 +50,9 @@ describe('⚡ HSR Management Portal Unified Theme & Responsive Navigation', () =
     expect(css).toContain('.admin-input');
     expect(css).toContain('.admin-status');
 
-    // Owner CMS classes
+    // Owner CMS & anchor classes
+    expect(css).toContain('.owner-anchor-nav');
+    expect(css).toContain('.owner-anchor-link');
     expect(css).toContain('.owner-section');
     expect(css).toContain('.owner-grid');
     expect(css).toContain('.owner-category');
@@ -61,6 +67,19 @@ describe('⚡ HSR Management Portal Unified Theme & Responsive Navigation', () =
     expect(page).toContain('RegisterConsole');
     expect(page).toContain('AdminLayout');
     expect(page).toContain('activeNav="register"');
+
+    const reception = await fs.readFile('src/components/admin/ReceptionDashboard.tsx', 'utf-8');
+    expect(reception).toContain('/admin/cylinder-register/');
+  });
+
+  it('verifies OwnerSettings.tsx provides module anchor navigation and section anchors', async () => {
+    const owner = await fs.readFile('src/components/admin/OwnerSettings.tsx', 'utf-8');
+    expect(owner).toContain('owner-anchor-nav');
+    expect(owner).toContain('id="profile"');
+    expect(owner).toContain('id="commercials"');
+    expect(owner).toContain('id="schedule"');
+    expect(owner).toContain('id="cms-content"');
+    expect(owner).toContain('id="retest-reminders"');
   });
 
   it('verifies StaffLayout delegates to AdminLayout for 100% unified management experience', async () => {

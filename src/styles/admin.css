@@ -510,6 +510,55 @@
 /* ==========================================================================
    Owner Console CMS & Category Pricing Extensions
    ========================================================================== */
+.owner-anchor-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 0.5rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.owner-anchor-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.85rem;
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+  text-decoration: none;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.owner-anchor-link:hover {
+  background: #0a1128;
+  color: #ffffff;
+  border-color: #0a1128;
+}
+
+html.dark .owner-anchor-nav {
+  border-color: #334155;
+}
+
+html.dark .owner-anchor-link {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+html.dark .owner-anchor-link:hover {
+  background: #ea580c;
+  color: #ffffff;
+  border-color: #ea580c;
+}
+
 .owner-section {
   display: grid;
   gap: 1.25rem;

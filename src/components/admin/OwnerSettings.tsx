@@ -396,10 +396,19 @@ export default function OwnerSettings(){
       <div><p className="admin-eyebrow">OWNER / CONFIGURATION</p><h1>{t.title}</h1><p className="admin-subtitle">{t.intro}</p></div>
       <button className="admin-lang" onClick={()=>setLocale(locale==='en'?'hi':'en')}>{t.lang}</button>
     </div>
+
+    <div className="owner-anchor-nav">
+      <a href="#profile" className="owner-anchor-link">01 / PROFILE</a>
+      <a href="#commercials" className="owner-anchor-link">02 / COMMERCIALS</a>
+      <a href="#schedule" className="owner-anchor-link">03 / OPERATIONS</a>
+      <a href="#cms-content" className="owner-anchor-link">04 / CONTENT (CMS)</a>
+      <a href="#retest-reminders" className="owner-anchor-link">05 / RETEST REMINDERS</a>
+    </div>
+
     {error&&<div className="admin-alert error" role="alert">{error}</div>}
     {message&&<div className="admin-alert" role="status">{message} {effectiveFrom&&<strong>{t.effective}: {effectiveFrom}</strong>}</div>}
 
-    {profile&&<section className="admin-card owner-section">
+    {profile&&<section id="profile" className="admin-card owner-section">
       <div className="owner-section-head"><div><p className="admin-eyebrow">01 / PROFILE</p><h2 className="admin-section-title">{t.profile}</h2></div><button className="admin-button" disabled={busy} onClick={saveProfile}>{t.saveProfile}</button></div>
       <div className="owner-grid">
         <label className="admin-field">{t.nameEn}<input className="admin-input" value={profile.business_name_en} onChange={e=>setField('business_name_en',e.target.value)}/></label>
@@ -423,7 +432,7 @@ export default function OwnerSettings(){
       <p className="admin-note">{t.r2}</p>
     </section>}
 
-    <section className="admin-card owner-section">
+    <section id="commercials" className="admin-card owner-section">
       <div className="owner-section-head"><div><p className="admin-eyebrow">02 / COMMERCIALS</p><h2 className="admin-section-title">{t.vehicles}</h2></div><button className="admin-button" disabled={busy} onClick={saveCategories}>{t.saveCategories}</button></div>
       <div className="owner-category-list">{categories.map((item,index)=><div className="owner-category" key={item.code}>
         <div className="owner-category-head"><strong>{item.nameEn||item.code}</strong><label className="admin-check"><input type="checkbox" checked={item.isActive} onChange={e=>editCategory(index,{isActive:e.target.checked})}/>{t.active}</label></div>
@@ -440,7 +449,7 @@ export default function OwnerSettings(){
       <p className="admin-note">Initial base price: ₹2,500 × cylinder count. Each of the 12 cylinder-count prices can be edited independently. GST is fixed at 18%. Confirm the applicable SAC and tax treatment before using this setting for live billing. Configure an advance for online UPI booking; a blank advance keeps that count unavailable online.</p>
     </section>
 
-    {schedule&&<section className="admin-card owner-section">
+    {schedule&&<section id="schedule" className="admin-card owner-section">
       <div className="owner-section-head"><div><p className="admin-eyebrow">03 / OPERATIONS</p><h2 className="admin-section-title">{t.schedule}</h2></div><button className="admin-button" disabled={busy} onClick={saveSchedule}>{t.saveSchedule}</button></div>
       <div className="owner-grid owner-schedule-grid">
         <label className="admin-field">{t.open}<input className="admin-input" type="time" value={schedule.openTime} onChange={e=>changeSchedule({openTime:e.target.value})}/></label>
@@ -464,7 +473,7 @@ export default function OwnerSettings(){
       <p className="admin-note">{t.note}</p>
     </section>}
 
-    <section className="admin-card owner-section">
+    <section id="cms-content" className="admin-card owner-section">
       <div className="owner-section-head">
         <div>
           <p className="admin-eyebrow">04 / CONTENT (CMS)</p>
@@ -560,7 +569,7 @@ export default function OwnerSettings(){
       </div>
     </section>
 
-    <section className="admin-card owner-section">
+    <section id="retest-reminders" className="admin-card owner-section">
       <div className="owner-section-head">
         <div>
           <p className="admin-eyebrow">05 / RETEST REMINDERS</p>
