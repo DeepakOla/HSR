@@ -61,7 +61,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const makeModel = body.makeModel || null;
 
     // Check if vehicle exists
-    let vehicle = await env.DB.prepare(
+    const vehicle = await env.DB.prepare(
       'SELECT id FROM vehicles WHERE normalized_reg_no = ? OR registration_normalized = ?'
     )
       .bind(normalized, normalized)

@@ -50,7 +50,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       : null;
 
     // Find or create cylinder record
-    let cylinder = await env.DB.prepare(
+    const cylinder = await env.DB.prepare(
       'SELECT id FROM cylinders WHERE manufacturer = ? AND serial_number = ?'
     )
       .bind(manufacturer, serialNumber)
