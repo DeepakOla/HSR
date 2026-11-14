@@ -3,7 +3,6 @@ import type { Locale } from '../../lib/constants';
 import { readApiJson } from '../../lib/client-api';
 import { validateVehicleRegistration } from '../../lib/vehicle-registration';
 import {
-  VEHICLE_OPTIONS,
   DEFAULT_CONTACT_PHONE,
   DEFAULT_CONTACT_WHATSAPP,
   formatHourOption,
@@ -40,6 +39,50 @@ export interface Props {
   stationCity?: string;
 }
 
+export interface VehicleTier {
+  id: string;
+  labelEn: string;
+  labelHi: string;
+  descEn: string;
+  descHi: string;
+  allowedCylinders: number[];
+  defaultCylinders: number;
+  icon: string;
+}
+
+export const VEHICLE_TIERS: VehicleTier[] = [
+  {
+    id: 'PASSENGER_CAR',
+    labelEn: 'Passenger Cars & Taxis',
+    labelHi: 'यात्री कारें एवं टैक्सियाँ',
+    descEn: 'Private Cars, Cabs, Sedans (1–2 Cylinders)',
+    descHi: 'प्राइवेट कारें, सेडान व टैक्सियाँ (1–2 सिलेंडर)',
+    allowedCylinders: [1, 2],
+    defaultCylinders: 1,
+    icon: '🚗',
+  },
+  {
+    id: 'COMMERCIAL_VAN_LCV',
+    labelEn: 'Commercial Vans, Tempos & LCVs',
+    labelHi: 'कमर्शियल वैन, टेम्पो एवं एलसीवी',
+    descEn: 'Delivery Vans, Tempos, Compact LCVs (1–4 Cylinders)',
+    descHi: 'डिलीवरी वैन, टेम्पो व छोटे कमर्शियल वाहन (1–4 सिलेंडर)',
+    allowedCylinders: [1, 2, 3, 4],
+    defaultCylinders: 2,
+    icon: '🚐',
+  },
+  {
+    id: 'HEAVY_TRUCK_BUS',
+    labelEn: 'Heavy Commercial Trucks & Buses',
+    labelHi: 'भारी कमर्शियल ट्रक एवं बसें',
+    descEn: 'Haulage Trucks, 6-tank Chassis, Buses (4–6 Cylinders)',
+    descHi: 'भारी मालवाहक ट्रक, 6-सिलेंडर चेसिस व बसें (4–6 सिलेंडर)',
+    allowedCylinders: [4, 5, 6],
+    defaultCylinders: 4,
+    icon: '🚛',
+  },
+];
+
 interface MultiVehicleRow {
   id: string;
   vehicleType: string;
@@ -53,8 +96,9 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
   // Mode: single vehicle or multiple fleet
   const [bookingMode, setBookingMode] = useState<'single' | 'fleet'>('single');
 
-  // Single Vehicle State
-  const [vehicleClass, setVehicleClass] = useState<string>('Car');
+  // Single Vehicle State — 3 Intuitive Tiers
+  const [selectedTier, setSelectedTier] = useState<string>('PASSENGER_CAR');
+  const [vehicleClass, setVehicleClass] = useState<string>('Passenger Cars & Taxis');
   const [cylinderCount, setCylinderCount] = useState<number>(1);
   const [serviceDate, setServiceDate] = useState<string>(() => todayInIndia());
   const [selectedHour, setSelectedHour] = useState<string>('');
@@ -69,13 +113,27 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
 
   // Fleet Multi-vehicle State
   const [fleetVehicles, setFleetVehicles] = useState<MultiVehicleRow[]>([
-    { id: '1', vehicleType: 'LCV', cylinderCount: 2, registration: '' },
-    { id: '2', vehicleType: 'Truck', cylinderCount: 4, registration: '' },
+    { id: '1', vehicleType: 'PASSENGER_CAR', cylinderCount: 1, registration: '' },
+    { id: '2', vehicleType: 'COMMERCIAL_VAN_LCV', cylinderCount: 2, registration: '' },
   ]);
   const [fleetContactName, setFleetContactName] = useState<string>('');
   const [fleetContactPhone, setFleetContactPhone] = useState<string>('');
   const [fleetDate, setFleetDate] = useState<string>(() => addDays(todayInIndia(), 1));
   const [fleetSubmitted, setFleetSubmitted] = useState<boolean>(false);
+
+  // Active Tier helper
+  const activeTier = useMemo(() => {
+    return VEHICLE_TIERS.find((t) => t.id === selectedTier) || VEHICLE_TIERS[0];
+  }, [selectedTier]);
+
+  const handleTierSelect = (tierId: string) => {
+    const tier = VEHICLE_TIERS.find((t) => t.id === tierId) || VEHICLE_TIERS[0];
+    setSelectedTier(tier.id);
+    setVehicleClass(tier.labelEn);
+    if (!tier.allowedCylinders.includes(cylinderCount)) {
+      setCylinderCount(tier.defaultCylinders);
+    }
+  };
 
   // Backend Data
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -91,14 +149,6 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
   const [evidenceSubmitted, setEvidenceSubmitted] = useState<boolean>(false);
   const [evidenceError, setEvidenceError] = useState<string>('');
   const [idempotencyKey] = useState<string>(() => crypto.randomUUID());
-
-  // Auto-select cylinder count when Truck is chosen (truck defaults to 4)
-  const handleVehicleSelect = (v: string) => {
-    setVehicleClass(v);
-    if (v === 'Truck' && cylinderCount < 4) {
-      setCylinderCount(4);
-    }
-  };
 
   // Fetch slots and pricing categories
   useEffect(() => {
@@ -341,52 +391,61 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
               <div className="flow-step">
                 <div className="step-badge">
                   <span className="badge-num">1</span>
-                  <label className="step-title">{hindi ? 'वाहन प्रकार एवं सिलेंडर संख्या' : 'Vehicle Type & Cylinder Count'}</label>
+                  <label className="step-title">{hindi ? 'वाहन श्रेणी एवं सिलेंडर संख्या' : 'Vehicle Category & Cylinder Count'}</label>
                 </div>
 
-                <div className="category-pill-grid">
-                  {VEHICLE_OPTIONS.slice(0, 6).map((opt) => (
-                    <button
-                      type="button"
-                      key={opt.value}
-                      className={`pill-choice ${vehicleClass === opt.value ? 'selected' : ''}`}
-                      onClick={() => handleVehicleSelect(opt.value)}
-                    >
-                      {opt.value === 'Car' && '🚗 '}
-                      {opt.value === 'Taxi' && '🚕 '}
-                      {opt.value === 'Tempo' && '🛺 '}
-                      {opt.value === 'Van' && '🚐 '}
-                      {opt.value === 'LCV' && '🚚 '}
-                      {opt.value === 'Truck' && '🚛 '}
-                      {hindi ? opt.labelHi.split(' / ')[0] : opt.labelEn.split(' (')[0]}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="cylinder-selector-row">
-                  <span className="sub-label">{hindi ? 'सिलेंडर संख्या:' : 'Cylinders Fitted:'}</span>
-                  <div className="cylinder-pill-group">
-                    {[1, 2, 3, 4, 5, 6].map((num) => (
+                {/* 3 Intuitive Vehicle Tiers */}
+                <div className="tier-choice-grid">
+                  {VEHICLE_TIERS.map((tier) => {
+                    const isSelected = selectedTier === tier.id;
+                    return (
                       <button
                         type="button"
-                        key={num}
-                        className={`cyl-btn ${cylinderCount === num ? 'active' : ''}`}
-                        onClick={() => setCylinderCount(num)}
+                        key={tier.id}
+                        className={`tier-card-btn ${isSelected ? 'selected' : ''}`}
+                        onClick={() => handleTierSelect(tier.id)}
                       >
-                        {num}
+                        <span className="tier-icon">{tier.icon}</span>
+                        <div className="tier-text">
+                          <strong className="tier-label">{hindi ? tier.labelHi : tier.labelEn}</strong>
+                          <span className="tier-desc">{hindi ? tier.descHi : tier.descEn}</span>
+                        </div>
                       </button>
-                    ))}
-                    <a
-                      href={`https://wa.me/${DEFAULT_CONTACT_WHATSAPP.replace(/\D/g, '')}?text=${encodeURIComponent(
-                        hindi ? 'नमस्ते, मेरे वाहन में 6 से अधिक सीएनजी सिलेंडर हैं, विशेष टेस्टिंग स्लॉट चाहिए।' : 'Hello HSR, my vehicle has more than 6 CNG cylinders, I need to schedule a heavy testing bay.'
-                      )}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="cyl-more-link"
-                    >
-                      {hindi ? '> 6 सिलेंडर?' : '> 6 Cylinders?'}
-                    </a>
+                    );
+                  })}
+                </div>
+
+                {/* Cylinder Dropdown */}
+                <div className="cylinder-dropdown-row">
+                  <div className="cyl-dropdown-wrap">
+                    <label htmlFor="cylinder-select" className="sub-label">
+                      {hindi ? 'सिलेंडर संख्या चुनें:' : 'Select Number of Cylinders:'}
+                    </label>
+                    <div className="cyl-select-box">
+                      <select
+                        id="cylinder-select"
+                        className="form-input cylinder-select-dropdown font-mono-num"
+                        value={cylinderCount}
+                        onChange={(e) => setCylinderCount(Number(e.target.value))}
+                      >
+                        {activeTier.allowedCylinders.map((num) => (
+                          <option key={num} value={num}>
+                            {num} {hindi ? 'सिलेंडर' : num === 1 ? 'Cylinder' : 'Cylinders'}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
+                  <a
+                    href={`https://wa.me/${DEFAULT_CONTACT_WHATSAPP.replace(/\D/g, '')}?text=${encodeURIComponent(
+                      hindi ? 'नमस्ते, मेरे वाहन में 6 से अधिक सीएनजी सिलेंडर हैं, विशेष टेस्टिंग स्लॉट चाहिए।' : 'Hello HSR, my vehicle has more than 6 CNG cylinders, I need to schedule a heavy testing bay.'
+                    )}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="cyl-more-link"
+                  >
+                    {hindi ? '> 6 सिलेंडर? संपर्क करें' : '> 6 Cylinders? Contact Us'}
+                  </a>
                 </div>
               </div>
 
@@ -397,18 +456,37 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                   <label className="step-title">{hindi ? 'तारीख एवं समय का चयन' : 'Select Date & Available Slot'}</label>
                 </div>
 
-                {/* Quick Date Pills */}
-                <div className="date-pills-row">
-                  {quickDates.map((qd) => (
-                    <button
-                      type="button"
-                      key={qd.dateStr}
-                      className={`date-pill ${serviceDate === qd.dateStr ? 'selected' : ''}`}
-                      onClick={() => setServiceDate(qd.dateStr)}
-                    >
-                      {qd.label}
-                    </button>
-                  ))}
+                {/* 4 Quick Dates + Interactive Calendar Input */}
+                <div className="date-selection-bar">
+                  <div className="date-pills-row">
+                    {quickDates.map((qd) => (
+                      <button
+                        type="button"
+                        key={qd.dateStr}
+                        className={`date-pill ${serviceDate === qd.dateStr ? 'selected' : ''}`}
+                        onClick={() => setServiceDate(qd.dateStr)}
+                      >
+                        {qd.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="calendar-picker-box">
+                    <label htmlFor="booking-date-picker" className="calendar-picker-label">
+                      📅 {hindi ? 'कैलेंडर (30 दिन):' : 'Calendar (30 Days):'}
+                    </label>
+                    <input
+                      id="booking-date-picker"
+                      type="date"
+                      min={todayInIndia()}
+                      max={addDays(todayInIndia(), 30)}
+                      value={serviceDate}
+                      onChange={(e) => {
+                        if (e.target.value) setServiceDate(e.target.value);
+                      }}
+                      className="form-input calendar-date-input font-mono-num"
+                    />
+                  </div>
                 </div>
 
                 {/* Slots Loading or Hour Grid */}
@@ -452,7 +530,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                             className={`slot-card ${isSelected ? 'selected' : ''}`}
                             onClick={() => setSelectedSlotId(slot.slotSnapshotId)}
                           >
-                            <span className="slot-time">{slot.startTime} – {slot.endTime}</span>
+                            <span className="slot-time font-mono-num">{slot.startTime}</span>
                             <span className="slot-bay-tag">
                               {slot.dayRemaining > 2 ? (
                                 <span className="metric-chip metric-pass">{slot.dayRemaining} {hindi ? 'स्थान' : 'bays'}</span>
@@ -599,10 +677,10 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
 
                   <div className="advance-highlight-banner">
                     <div className="advance-info">
-                      <span className="adv-tag">{hindi ? 'अनिवार्य अग्रिम' : 'Advance Required'}</span>
-                      <strong className="adv-amt">₹500.00</strong>
+                      <span className="adv-tag">{hindi ? 'कुल ऑनलाइन भुगतान' : 'Full Payment at Booking'}</span>
+                      <strong className="adv-amt">{inr(selectedCategory.totalPaise)}</strong>
                       <span className="adv-desc">
-                        {hindi ? 'स्लॉट होल्ड करने के लिए ₹500 का अग्रिम भुगतान आवश्यक है। शेष राशि टेस्टिंग के बाद केंद्र पर देय होगी।' : '₹500 flat advance to hold testing bay. Remaining balance payable at station after test completion.'}
+                        {hindi ? 'अपनी टेस्टिंग बे एवं तकनीशियन का समय आरक्षित करने के लिए कुल वैधानिक शुल्क का ऑनलाइन भुगतान करें।' : 'Pay full certified testing fee online to confirm your dedicated bay and technician allocation.'}
                       </span>
                     </div>
                   </div>
@@ -626,7 +704,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                   {isSubmitting ? (
                     <span>⏳ {hindi ? 'स्लॉट सुरक्षित हो रहा है...' : 'Reserving Testing Bay...'}</span>
                   ) : (
-                    <span>⚡ {hindi ? 'स्लॉट बुक करें (₹500 अग्रिम)' : 'Reserve Testing Bay (₹500 Advance)'}</span>
+                    <span>⚡ {hindi ? 'स्लॉट बुक करें' : 'Reserve Testing Bay'}</span>
                   )}
                 </button>
               </div>
@@ -636,7 +714,10 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
             <div className="hold-confirmation-card">
               <div className="hold-header">
                 <span className="metric-chip metric-amber">⏳ {hindi ? 'स्लॉट 15 मिनट के लिए सुरक्षित' : 'Bay Held for 15 Minutes'}</span>
-                <h3 className="hold-title">{hindi ? 'अग्रिम भुगतान (₹500.00) पूर्ण करें' : 'Complete ₹500.00 Advance Payment'}</h3>
+                <h3 className="hold-title">
+                  {hindi ? 'ऑनलाइन भुगतान पूर्ण करें: ' : 'Complete Online Payment: '}
+                  {inr(holdResult.category?.totalPaise || selectedCategory?.totalPaise || 200000)}
+                </h3>
                 <p className="hold-meta">
                   <strong>{hindi ? 'बुकिंग कोड:' : 'Booking Reference:'}</strong> <code className="booking-code">{holdResult.bookingCode}</code>
                 </p>
@@ -769,50 +850,63 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
               <div className="fleet-repeater-box">
                 <label className="field-label">{hindi ? 'फ्लीट वाहन सूची (2 से 6 वाहन)' : 'Vehicle Roster (2 to 6 vehicles)'}</label>
                 {fleetVehicles.map((row, idx) => (
-                  <div key={row.id} className="fleet-vehicle-row">
-                    <span className="row-num">#{idx + 1}</span>
-                    <select
-                      className="form-input fleet-select"
-                      value={row.vehicleType}
-                      onChange={(e) => updateFleetRow(row.id, 'vehicleType', e.target.value)}
-                    >
-                      <option value="Car">Car</option>
-                      <option value="Taxi">Taxi</option>
-                      <option value="Tempo">Tempo</option>
-                      <option value="LCV">LCV</option>
-                      <option value="Truck">Truck</option>
-                      <option value="Bus">Bus</option>
-                    </select>
+                  <div key={row.id} className="fleet-vehicle-card" style={{ background: '#ffffff', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', padding: '1rem', marginBottom: '0.75rem' }}>
+                    <div className="fleet-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
+                      <strong className="row-num" style={{ fontSize: '0.9rem', color: 'var(--color-navy-900)' }}>#{idx + 1} {hindi ? 'वाहन' : 'Vehicle'}</strong>
+                      {fleetVehicles.length > 1 && (
+                        <button
+                          type="button"
+                          className="remove-row-btn"
+                          onClick={() => removeFleetRow(row.id)}
+                          aria-label="Remove vehicle"
+                          style={{ background: 'transparent', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                        >
+                          ✕ {hindi ? 'हटाएँ' : 'Remove'}
+                        </button>
+                      )}
+                    </div>
 
-                    <input
-                      type="number"
-                      min={1}
-                      max={6}
-                      className="form-input fleet-cyl-input"
-                      placeholder="Cylinders"
-                      value={row.cylinderCount}
-                      onChange={(e) => updateFleetRow(row.id, 'cylinderCount', parseInt(e.target.value, 10) || 1)}
-                    />
+                    <div className="form-grid-3">
+                      <div className="input-field">
+                        <label className="field-label" style={{ fontSize: '0.75rem', marginBottom: '0.2rem' }}>{hindi ? 'वाहन नंबर *' : 'Registration Number *'}</label>
+                        <input
+                          type="text"
+                          className="form-input fleet-reg-input text-uppercase font-mono-num"
+                          placeholder="HR36AB1234"
+                          value={row.registration}
+                          onChange={(e) => updateFleetRow(row.id, 'registration', e.target.value.toUpperCase())}
+                          required
+                        />
+                      </div>
 
-                    <input
-                      type="text"
-                      className="form-input fleet-reg-input text-uppercase font-mono-num"
-                      placeholder="HR36AB1234"
-                      value={row.registration}
-                      onChange={(e) => updateFleetRow(row.id, 'registration', e.target.value.toUpperCase())}
-                      required
-                    />
+                      <div className="input-field">
+                        <label className="field-label" style={{ fontSize: '0.75rem', marginBottom: '0.2rem' }}>{hindi ? 'श्रेणी' : 'Vehicle Category'}</label>
+                        <select
+                          className="form-input fleet-select"
+                          value={row.vehicleType}
+                          onChange={(e) => updateFleetRow(row.id, 'vehicleType', e.target.value)}
+                        >
+                          <option value="PASSENGER_CAR">🚗 {hindi ? 'कार / टैक्सी' : 'Passenger Car / Taxi'}</option>
+                          <option value="COMMERCIAL_VAN_LCV">🚐 {hindi ? 'वैन / टेम्पो / एलसीवी' : 'Van / Tempo / LCV'}</option>
+                          <option value="HEAVY_TRUCK_BUS">🚛 {hindi ? 'भारी ट्रक / बस' : 'Heavy Truck / Bus'}</option>
+                        </select>
+                      </div>
 
-                    {fleetVehicles.length > 1 && (
-                      <button
-                        type="button"
-                        className="remove-row-btn"
-                        onClick={() => removeFleetRow(row.id)}
-                        aria-label="Remove vehicle"
-                      >
-                        ✕
-                      </button>
-                    )}
+                      <div className="input-field">
+                        <label className="field-label" style={{ fontSize: '0.75rem', marginBottom: '0.2rem' }}>{hindi ? 'सिलेंडर संख्या' : 'Cylinders'}</label>
+                        <select
+                          className="form-input fleet-cyl-select font-mono-num"
+                          value={row.cylinderCount}
+                          onChange={(e) => updateFleetRow(row.id, 'cylinderCount', parseInt(e.target.value, 10) || 1)}
+                        >
+                          {[1, 2, 3, 4, 5, 6].map((num) => (
+                            <option key={num} value={num}>
+                              {num} {hindi ? 'सिलेंडर' : num === 1 ? 'Cyl' : 'Cyls'}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                   </div>
                 ))}
 

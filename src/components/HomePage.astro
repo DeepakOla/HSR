@@ -1,8 +1,7 @@
 ---
 import type { Locale } from '../lib/constants';
 import type { BusinessSettings } from '../lib/types';
-import { t } from '../lib/i18n';
-import InlineBooking from './booking/InlineBooking';
+import DueDateChecker from './home/DueDateChecker';
 
 interface Props {
   locale: Locale;
@@ -10,7 +9,6 @@ interface Props {
 }
 
 const { locale, settings } = Astro.props;
-const copy = t(locale);
 const businessName = locale === 'hi' ? settings.business_name_hi : settings.business_name_en;
 const cityReady = settings.city !== 'SETUP_REQUIRED';
 const phoneReady = settings.contact_phone !== 'SETUP_REQUIRED';
@@ -18,8 +16,11 @@ const mapReady = settings.map_url !== 'SETUP_REQUIRED' && settings.map_url.start
 
 const cityName = cityReady ? settings.city : 'Rewari';
 const heading = locale === 'en'
-  ? `CNG Cylinder Hydro Testing & Certification Centre in ${cityName}`
-  : `${cityName} में सीएनजी सिलेंडर हाइड्रो टेस्टिंग एवं सर्टिफिकेशन केंद्र`;
+  ? 'Government Approved CNG Cylinder Hydro Testing'
+  : 'सरकारी प्रमाणित सीएनजी सिलेंडर हाइड्रो टेस्टिंग';
+const subHeading = locale === 'en'
+  ? `Safe, Reliable & Certified CNG Cylinder Testing in ${cityName}.`
+  : `${cityName} में सुरक्षित, विश्वसनीय एवं प्रमाणित सीएनजी सिलेंडर टेस्टिंग।`;
 ---
 
 <!-- SECTION 1: HERO & IDENTITY -->
@@ -27,52 +28,31 @@ const heading = locale === 'en'
   <div class="container hero-grid">
     <div class="hero-content">
       <div class="trust-badge trust-badge-amber">
-        ⚡ {locale === 'en' ? 'Certified High-Pressure Hydrostatic Testing Bay' : 'प्रमाणित उच्च-दबाव हाइड्रोस्टेटिक टेस्टिंग बे'}
+        ⚡ {locale === 'en' ? 'Government Approved Testing Facility' : 'सरकारी प्रमाणित टेस्टिंग सुविधा'}
       </div>
       <p class="hero-brand">{businessName || 'HSR'}</p>
       <h1 class="hero-title">{heading}</h1>
+      <p class="hero-subtitle-trust" style="font-size: 1.25rem; font-weight: 600; color: var(--color-steel-400); margin: 0.25rem 0 0.75rem;">
+        {subHeading}
+      </p>
       <p class="hero-description">
         {locale === 'en'
-          ? 'Statutory 3-year hydrostatic stretch testing up to 300 bar hydraulic pressure. Avoid fuel pump refusal with certified testing for private cars, commercial taxis, delivery LCVs and heavy transport trucks.'
-          : '300 बार हाइड्रोलिक दबाव तक वैधानिक 3-वर्षीय हाइड्रोस्टेटिक स्ट्रेच टेस्टिंग। निजी कारों, टैक्सियों, कमर्शियल एलसीवी और भारी ट्रकों के प्रमाणित परीक्षण के साथ पंप पर गैस रिफिल रुकावट से बचें।'}
+          ? 'Mandatory periodic hydrostatic testing and compliance certification for passenger cars, commercial taxis, delivery tempos, and heavy transport trucks. Ensure safe refueling across all City Gas stations.'
+          : 'निजी कारों, टैक्सियों, कमर्शियल टेम्पो और भारी ट्रकों के लिए अनिवार्य वैधानिक हाइड्रोस्टेटिक परीक्षण एवं अनुपालन प्रमाणन। सभी सीएनजी स्टेशनों पर सुरक्षित एवं निर्बाध गैस रिफिलिंग सुनिश्चित करें।'}
       </p>
 
       <div class="hero-actions">
-        <a class="btn btn-primary hero-btn-main" href="#booking">
-          ⚡ {locale === 'en' ? 'Book Testing Bay (₹500 Adv)' : 'स्लॉट बुक करें (₹500 अग्रिम)'} ↓
+        <a class="btn btn-primary hero-btn-main" href={`/${locale}/book/`}>
+          ⚡ {locale === 'en' ? 'Book Testing Appointment' : 'टेस्टिंग स्लॉट बुक करें'} →
+        </a>
+        <a class="btn btn-outline" href="#check-due-date" style="background: rgba(255, 255, 255, 0.08); color: #ffffff; border-color: rgba(255, 255, 255, 0.3);">
+          🔍 {locale === 'en' ? 'Check Retest Due Date' : 'रीटेस्ट ड्यू-डेट जाँचें'} ↓
         </a>
         {phoneReady && (
           <a class="btn btn-secondary" href={`tel:${settings.contact_phone}`}>
-            📞 {locale === 'en' ? 'Call Station' : 'स्टेशन पर कॉल करें'}
+            📞 {locale === 'en' ? 'Call Centre' : 'कॉल करें'}
           </a>
         )}
-        {mapReady && (
-          <a class="btn btn-outline" href={settings.map_url} target="_blank" rel="noreferrer">
-            📍 {copy.actions.directions}
-          </a>
-        )}
-      </div>
-
-      <div class="hero-specs-row">
-        <div class="spec-item">
-          <strong class="font-mono-num">300 BAR</strong>
-          <span>{locale === 'en' ? 'Test Pressure' : 'परीक्षण दबाव'}</span>
-        </div>
-        <div class="spec-divider"></div>
-        <div class="spec-item">
-          <strong class="font-mono-num">3 YEARS</strong>
-          <span>{locale === 'en' ? 'Statutory Validity' : 'प्रमाणपत्र वैधता'}</span>
-        </div>
-        <div class="spec-divider"></div>
-        <div class="spec-item">
-          <strong class="font-mono-num">1–6 CYL</strong>
-          <span>{locale === 'en' ? 'Bay Capacity' : 'बे क्षमता'}</span>
-        </div>
-        <div class="spec-divider"></div>
-        <div class="spec-item">
-          <strong class="font-mono-num">₹500</strong>
-          <span>{locale === 'en' ? 'Flat Advance' : 'फ्लैट अग्रिम'}</span>
-        </div>
       </div>
     </div>
 
@@ -86,204 +66,26 @@ const heading = locale === 'en'
         />
         <div class="hero-overlay-badge">
           <span class="telemetry-dot"></span>
-          <span class="telemetry-text">{locale === 'en' ? 'Water Jacket Calibration: Active' : 'वाटर जैकेट कैलिब्रेशन: सक्रिय'}</span>
+          <span class="telemetry-text">{locale === 'en' ? 'Calibration & Safety: Certified' : 'कैलिब्रेशन एवं सुरक्षा: प्रमाणित'}</span>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- SECTION 2: URGENT PUMP REFUSAL GUIDANCE -->
-<section class="section pump-refusal-section" id="refused-cng">
+<!-- SECTION 2: INTELLIGENT CNG DUE-DATE CHECKER -->
+<section class="section due-date-section" id="check-due-date" style="background: var(--color-slate-100); padding: 3rem 0;">
   <div class="container">
-    <div class="refusal-card">
-      <div class="refusal-header">
-        <span class="metric-chip metric-amber">🚨 {locale === 'en' ? 'Urgent Driver Advisory' : 'चालक सूचना'}</span>
-        <h2 class="refusal-title">
-          {locale === 'en'
-            ? 'Refused CNG at the Pump? What to do immediately'
-            : 'पंप पर सीएनजी भरने से मना कर दिया? तुरंत क्या करें'}
-        </h2>
-        <p class="refusal-sub">
-          {locale === 'en'
-            ? 'City Gas stations in Haryana and NCR strictly deny refilling if your vehicle cylinder testing compliance plate is past its 3-year date or missing.'
-            : 'हरियाणा व एनसीआर के सीएनजी पंपों पर 3 साल से पुरानी अथवा गायब टेस्टिंग प्लेट वाले वाहनों में गैस भरना सख्त वर्जित है।'}
-        </p>
-      </div>
-
-      <div class="refusal-steps-grid">
-        <div class="refusal-step-box">
-          <div class="refusal-step-num">01</div>
-          <h3>{locale === 'en' ? 'Check Your Plate' : 'प्लेट की तारीख देखें'}</h3>
-          <p>
-            {locale === 'en'
-              ? 'Locate the brass compliance plate stamped near your CNG refilling valve or on the cylinder collar. Note the due date.'
-              : 'अपने वाहन के फिलिंग वाल्व या सिलेंडर के पास लगी पीतल की प्लेट पर लिखी एक्सपायरी तारीख जाँचें।'}
-          </p>
-        </div>
-
-        <div class="refusal-step-box">
-          <div class="refusal-step-num">02</div>
-          <h3>{locale === 'en' ? 'Book Express Slot' : 'एक्सप्रेस स्लॉट बुक करें'}</h3>
-          <p>
-            {locale === 'en'
-              ? 'Reserve an appointment below with ₹500 flat advance. Choose your vehicle type and time slot for dedicated bay allocation.'
-              : 'नीचे दिए गए फॉर्म से ₹500 का अग्रिम भुगतान करके अपनी सुविधानुसार समय का स्लॉट आरक्षित करें।'}
-          </p>
-        </div>
-
-        <div class="refusal-step-box">
-          <div class="refusal-step-num">03</div>
-          <h3>{locale === 'en' ? '2–3 Hr Turnaround' : '2–3 घंटे में प्लेट प्राप्त करें'}</h3>
-          <p>
-            {locale === 'en'
-              ? 'Complete certified hydrostatic testing, receive a new stamped compliance plate and digital certificate, and resume normal refueling.'
-              : 'हाइड्रोस्टेटिक टेस्टिंग पूर्ण करवाकर नई मोहरबंद प्लेट व प्रमाणपत्र लें और तुरंत बिना किसी रुकावट के गैस भरवाएँ।'}
-          </p>
-        </div>
-      </div>
-
-      <div class="refusal-cta-row">
-        <a href="#booking" class="btn btn-primary">
-          ⚡ {locale === 'en' ? 'Reserve Emergency Testing Slot' : 'आपातकालीन टेस्टिंग स्लॉट बुक करें'}
-        </a>
-        {phoneReady && (
-          <a href={`tel:${settings.contact_phone}`} class="btn btn-outline" style={{ background: '#ffffff' }}>
-            📞 {locale === 'en' ? 'Speak with Reception' : 'रिसेप्शन से बात करें'} ({settings.contact_phone})
-          </a>
-        )}
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- SECTION 3: INLINE BOOKING CONTAINER -->
-<section class="section booking-section">
-  <div class="container">
-    <div class="section-title-wrap">
-      <span class="trust-badge">{locale === 'en' ? 'Direct Bay Reservation' : 'सीधी बे बुकिंग'}</span>
-      <h2 class="section-heading">
-        {locale === 'en' ? 'Reserve Your CNG Cylinder Testing Appointment' : 'सीएनजी सिलेंडर टेस्टिंग अपॉइंटमेंट बुक करें'}
-      </h2>
-      <p class="section-subtext">
-        {locale === 'en'
-          ? 'Fast, transparent booking for single vehicles or commercial fleets. Flat ₹500 advance hold; balance payable upon completion at station.'
-          : 'एकल वाहनों अथवा वाणिज्यिक फ्लीट के लिए तेज और पारदर्शी बुकिंग। मात्र ₹500 का फ्लैट अग्रिम; शेष राशि टेस्टिंग के बाद केंद्र पर देय।'}
-      </p>
-    </div>
-
-    <!-- Embedded React Island -->
-    <InlineBooking
+    <DueDateChecker
       client:load
       locale={locale}
-      stationPhone={settings.contact_phone !== 'SETUP_REQUIRED' ? settings.contact_phone : undefined}
-      stationCity={cityName}
+      bookUrl={`/${locale}/book/`}
+      stationPhone={phoneReady ? settings.contact_phone : undefined}
     />
   </div>
 </section>
 
-<!-- SECTION 4: TRANSPARENT PRICING TABLE -->
-<section class="section pricing-section" id="pricing">
-  <div class="container">
-    <div class="section-title-wrap">
-      <span class="trust-badge trust-badge-amber">{locale === 'en' ? 'Standardized Rates' : 'मानकीकृत दरें'}</span>
-      <h2 class="section-heading">
-        {locale === 'en' ? 'Transparent Pricing & Flat Advance Policy' : 'पारदर्शी शुल्क संरचना एवं अग्रिम नीति'}
-      </h2>
-      <p class="section-subtext">
-        {locale === 'en'
-          ? 'Every test includes degassing, ultrasonic flaw scan, 300 bar water jacket expansion test, internal hot-air baking, brass compliance plate, and digital test certificate.'
-          : 'प्रत्येक परीक्षण में डीगैसिंग, अल्ट्रासोनिक जांच, 300 बार वाटर जैकेट टेस्ट, आंतरिक सुखाना, पीतल की प्लेट और डिजिटल प्रमाणपत्र सम्मिलित है।'}
-      </p>
-    </div>
-
-    <div class="pricing-table-wrap">
-      <table class="industrial-pricing-table">
-        <thead>
-          <tr>
-            <th>{locale === 'en' ? 'Cylinder Count' : 'सिलेंडर संख्या'}</th>
-            <th>{locale === 'en' ? 'Vehicle Classes' : 'वाहन प्रकार'}</th>
-            <th>{locale === 'en' ? 'Base Fee' : 'मूल शुल्क'}</th>
-            <th>{locale === 'en' ? 'GST (18%)' : 'जीएसटी (18%)'}</th>
-            <th>{locale === 'en' ? 'Total Statutory Rate' : 'कुल वैधानिक शुल्क'}</th>
-            <th>{locale === 'en' ? 'Advance Required' : 'आवश्यक अग्रिम'}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td><strong class="font-mono-num">1 Cylinder</strong></td>
-            <td>Private Cars, Sedans, Cabs (WagonR, Dzire, Aura)</td>
-            <td class="font-mono-num">₹1,695</td>
-            <td class="font-mono-num">₹305</td>
-            <td><strong class="font-mono-num highlight-cost">₹2,000</strong></td>
-            <td><span class="metric-chip metric-pass">₹500 Flat</span></td>
-          </tr>
-          <tr>
-            <td><strong class="font-mono-num">2 Cylinders</strong></td>
-            <td>Dual-Tank Taxis, Small Tempos, Compact LCVs</td>
-            <td class="font-mono-num">₹2,966</td>
-            <td class="font-mono-num">₹534</td>
-            <td><strong class="font-mono-num highlight-cost">₹3,500</strong></td>
-            <td><span class="metric-chip metric-pass">₹500 Flat</span></td>
-          </tr>
-          <tr>
-            <td><strong class="font-mono-num">3 Cylinders</strong></td>
-            <td>Commercial Vans, Tempos, Mid-size LCVs</td>
-            <td class="font-mono-num">₹4,237</td>
-            <td class="font-mono-num">₹763</td>
-            <td><strong class="font-mono-num highlight-cost">₹5,000</strong></td>
-            <td><span class="metric-chip metric-pass">₹500 Flat</span></td>
-          </tr>
-          <tr>
-            <td><strong class="font-mono-num">4 Cylinders</strong></td>
-            <td>Heavy Delivery LCVs, Mini-Trucks (Tata 407, Bolero Maxi)</td>
-            <td class="font-mono-num">₹5,508</td>
-            <td class="font-mono-num">₹992</td>
-            <td><strong class="font-mono-num highlight-cost">₹6,500</strong></td>
-            <td><span class="metric-chip metric-pass">₹500 Flat</span></td>
-          </tr>
-          <tr>
-            <td><strong class="font-mono-num">5 Cylinders</strong></td>
-            <td>Commercial Transport Trucks & City Buses</td>
-            <td class="font-mono-num">₹6,780</td>
-            <td class="font-mono-num">₹1,220</td>
-            <td><strong class="font-mono-num highlight-cost">₹8,000</strong></td>
-            <td><span class="metric-chip metric-pass">₹500 Flat</span></td>
-          </tr>
-          <tr>
-            <td><strong class="font-mono-num">6 Cylinders</strong></td>
-            <td>Heavy Cascade Haulage Trucks (6-tank chassis)</td>
-            <td class="font-mono-num">₹8,051</td>
-            <td class="font-mono-num">₹1,449</td>
-            <td><strong class="font-mono-num highlight-cost">₹9,500</strong></td>
-            <td><span class="metric-chip metric-pass">₹500 Flat</span></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="pricing-disclaimer-card">
-      <div class="disclaimer-item">
-        <strong>💡 {locale === 'en' ? 'Flat ₹500 Advance Policy:' : 'फ्लैट ₹500 अग्रिम नीति:'}</strong>
-        <p>
-          {locale === 'en'
-            ? 'Regardless of cylinder count, only ₹500 is collected online to reserve your testing bay and technician time. The remaining balance is payable upon successful test completion at our facility.'
-            : 'सिलेंडर की संख्या चाहे जो भी हो, ऑनलाइन केवल ₹500 अग्रिम लिया जाता है ताकि आपकी टेस्टिंग बे सुरक्षित रहे। शेष राशि का भुगतान परीक्षण के पश्चात केंद्र पर किया जाता है।'}
-        </p>
-      </div>
-      <div class="disclaimer-item">
-        <strong>🛡️ {locale === 'en' ? 'Condemnation Safety Rule:' : 'कंडमनेशन सुरक्षा नियम:'}</strong>
-        <p>
-          {locale === 'en'
-            ? 'Under statutory Gas Cylinders Rules, cylinders that fail the hydrostatic expansion test (exceeding 10% permanent stretch) are condemned and defaced to protect motorists from catastrophic burst hazards.'
-            : 'वैधानिक नियमों के अनुसार यदि कोई सिलेंडर परीक्षण में विफल (10% से अधिक स्थाई खिंचाव) होता है, तो सुरक्षा कारणों से उसे नष्ट/कंडम किया जाता है ताकि भविष्य में विस्फोट का खतरा न रहे।'}
-        </p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- SECTION 5: 5-STEP TESTING STANDARDS -->
+<!-- SECTION 3: 5-STEP TESTING STANDARDS -->
 <section class="section process-section" id="process">
   <div class="container">
     <div class="section-title-wrap">

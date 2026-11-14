@@ -4,23 +4,31 @@ import { validateVehicleRegistration } from '../src/lib/vehicle-registration';
 import { VEHICLE_OPTIONS, inr } from '../src/lib/booking-wizard-helpers';
 
 describe('Website Redesign & Inline Booking Verification', () => {
-  it('verifies InlineBooking component file exists and exports properly', async () => {
+  it('verifies InlineBooking component file exists and implements 3 tiers and calendar', async () => {
     const inlineContent = await fs.readFile('src/components/booking/InlineBooking.tsx', 'utf-8');
     expect(inlineContent).toContain('export default function InlineBooking');
     expect(inlineContent).toContain('One Vehicle');
     expect(inlineContent).toContain('Multiple Vehicles / Fleets');
-    expect(inlineContent).toContain('500.00');
+    expect(inlineContent).toContain('VEHICLE_TIERS');
+    expect(inlineContent).toContain('Passenger Cars & Taxis');
+    expect(inlineContent).toContain('Commercial Vans, Tempos & LCVs');
+    expect(inlineContent).toContain('Heavy Commercial Trucks & Buses');
+    expect(inlineContent).toContain('Reserve Testing Bay');
   });
 
-  it('verifies HomePage.astro implements the 7 Precision Hydro Test sections', async () => {
+  it('verifies HomePage.astro implements the simplified trust architecture with DueDateChecker', async () => {
     const homeContent = await fs.readFile('src/components/HomePage.astro', 'utf-8');
     expect(homeContent).toContain('id="hero"');
-    expect(homeContent).toContain('id="refused-cng"');
-    expect(homeContent).toContain('InlineBooking');
-    expect(homeContent).toContain('id="pricing"');
+    expect(homeContent).toContain('Government Approved CNG Cylinder Hydro Testing');
+    expect(homeContent).toContain('id="check-due-date"');
+    expect(homeContent).toContain('DueDateChecker');
     expect(homeContent).toContain('id="process"');
     expect(homeContent).toContain('id="standards"');
     expect(homeContent).toContain('id="location"');
+
+    // Dedicated booking page embeds InlineBooking
+    const bookContent = await fs.readFile('src/pages/en/book.astro', 'utf-8');
+    expect(bookContent).toContain('InlineBooking');
   });
 
   it('verifies zero prototype mockup leakage in production components', async () => {

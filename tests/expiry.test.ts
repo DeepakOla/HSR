@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateNextRetestDate, isValidIsoDate } from '../src/lib/expiry';
+import { calculateNextRetestDate, calculateRemainingValidity, isValidIsoDate } from '../src/lib/expiry';
 
 describe('calculateNextRetestDate', () => {
   it('adds exactly three years for standard date', () => {
@@ -27,5 +27,29 @@ describe('isValidIsoDate', () => {
 describe('calculateNextRetestDate input validation', () => {
   it('rejects impossible calendar dates', () => {
     expect(() => calculateNextRetestDate('2026-02-31')).toThrow();
+  });
+});
+
+describe('calculateRemainingValidity', () => {
+  it('calculates valid future retest dates accurately', () => {
+    const res = calculateRemainingValidity('2028-06-15', '2026-11-14', 'en');
+    expect(res.status).toBe('VALID');
+    expect(res.daysRemaining).toBeGreaterThan(60);
+    expect(res.timeRemainingFormatted).toContain('year');
+  });
+
+  it('detects expiring soon status within 60 days', () => {
+    const res = calculateRemainingValidity('2026-12-01', '2026-11-14', 'en');
+    expect(res.status).toBe('EXPIRING_SOON');
+    expect(res.daysRemaining).toBe(17);
+    expect(res.timeRemainingFormatted).toBe('17 days remaining');
+  });
+
+  it('detects overdue testing status accurately', () => {
+    const res = calculateRemainingValidity('2026-10-14', '2026-11-14', 'en');
+    expect(res.status).toBe('OVERDUE');
+    expect(res.daysRemaining).toBeLessThan(0);
+    expect(res.statusLabel).toBe('Testing Overdue');
+    expect(res.timeRemainingFormatted).toContain('Overdue');
   });
 });

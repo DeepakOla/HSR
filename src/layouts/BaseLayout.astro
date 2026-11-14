@@ -81,19 +81,36 @@ const schema = buildLocalBusinessSchema({
     <script type="application/ld+json" set:html={JSON.stringify(schema)} />
   </head>
   <body>
-    <!-- Demo Preview Banner (v0.0.1-preview.1) -->
-    <aside class="demo-banner" role="status" aria-label={locale === 'en' ? 'Demonstration Notice' : 'डेमो सूचना'}>
-      <div class="container demo-banner-inner">
-        <div class="demo-banner-content">
-          <span class="demo-tag">{locale === 'en' ? 'DEMO PREVIEW v0.0.1' : 'डेमो पूर्वावलोकन v0.0.1'}</span>
-          <span class="demo-text">
-            {locale === 'en'
-              ? 'Pre-operational verification preview. Online bookings and payments are simulations; no real vehicles or live payments will be processed.'
-              : 'संचालन-पूर्व सत्यापन पूर्वावलोकन। ऑनलाइन बुकिंग और भुगतान सिमुलेशन हैं; कोई वास्तविक वाहन या लाइव भुगतान संसाधित नहीं किया जाएगा।'}
+    <!-- Animated Announcement Ticker Bar (Moving Right to Left) -->
+    <aside class="announcement-ticker-bar demo-banner" role="status" aria-label={locale === 'en' ? 'Station Announcements' : 'स्टेशन सूचना'}>
+      <div class="ticker-track-container">
+        <div class="ticker-track">
+          <span class="ticker-item">
+            <span class="ticker-badge demo-tag">⚡ {locale === 'en' ? 'GOVERNMENT APPROVED' : 'सरकारी प्रमाणित'}</span>
+            <span class="demo-text">{locale === 'en' ? 'Certified CNG Cylinder Hydro Testing Facility — Rewari, Haryana' : 'प्रमाणित सीएनजी सिलेंडर हाइड्रो टेस्टिंग सुविधा — रेवाड़ी, हरियाणा'}</span>
+          </span>
+          <span class="ticker-item">
+            <span class="ticker-badge">⏱️ {locale === 'en' ? 'FAST' : 'त्वरित'}</span>
+            <span>{locale === 'en' ? '2 to 3 Hour Express Turnaround | Avoid Fuel Pump Refusal' : '2 से 3 घंटे में एक्सप्रेस टेस्टिंग | पंप पर गैस रिफिलिंग इंकार से बचें'}</span>
+          </span>
+          <span class="ticker-item">
+            <span class="ticker-badge">🛡️ {locale === 'en' ? 'COMPLIANCE' : 'अनुपालन'}</span>
+            <span>{locale === 'en' ? '300 Bar Water Jacket Test | Stamped Brass Compliance Plate & Certificate' : 'प्रमाणित 300 बार वाटर जैकेट टेस्ट | मोहरबंद पीतल प्लेट एवं प्रमाणपत्र'}</span>
+          </span>
+          <!-- Duplicate for seamless loop -->
+          <span class="ticker-item">
+            <span class="ticker-badge demo-tag">⚡ {locale === 'en' ? 'GOVERNMENT APPROVED' : 'सरकारी प्रमाणित'}</span>
+            <span class="demo-text">{locale === 'en' ? 'Certified CNG Cylinder Hydro Testing Facility — Rewari, Haryana' : 'प्रमाणित सीएनजी सिलेंडर हाइड्रो टेस्टिंग सुविधा — रेवाड़ी, हरियाणा'}</span>
+          </span>
+          <span class="ticker-item">
+            <span class="ticker-badge">⏱️ {locale === 'en' ? 'FAST' : 'त्वरित'}</span>
+            <span>{locale === 'en' ? '2 to 3 Hour Express Turnaround | Avoid Fuel Pump Refusal' : '2 से 3 घंटे में एक्सप्रेस टेस्टिंग | पंप पर गैस रिफिलिंग इंकार से बचें'}</span>
           </span>
         </div>
-        <button type="button" class="demo-feedback-btn" id="open-feedback-btn">
-          {locale === 'en' ? 'Give Feedback' : 'प्रतिक्रिया दें'}
+      </div>
+      <div class="ticker-feedback-dock">
+        <button type="button" class="ticker-feedback-btn" id="open-feedback-btn">
+          💬 {locale === 'en' ? 'Feedback' : 'प्रतिक्रिया'}
         </button>
       </div>
     </aside>
@@ -102,19 +119,21 @@ const schema = buildLocalBusinessSchema({
       <div class="container topbar">
         <a href={`/${locale}/`} class="brand-link">
           <span class="brand-logo-text">{businessName || 'HSR'}</span>
-          <span class="brand-subtext">{locale === 'en' ? 'CNG Hydro Testing Station' : 'सीएनजी हाइड्रो टेस्टिंग स्टेशन'}</span>
+          <span class="brand-subtext">{locale === 'en' ? 'CNG Hydro Testing' : 'सीएनजी हाइड्रो टेस्टिंग'}</span>
         </a>
 
-        <!-- Desktop Navigation -->
+        <!-- Desktop Navigation: Services, Book, Blog, Contact, Login -->
         <nav aria-label={locale === 'en' ? 'Primary navigation' : 'मुख्य नेविगेशन'} class="primary-nav">
           <ul class="nav-list">
-            <li><a href={getAnchor('booking')}>{locale === 'en' ? 'Book Slot' : 'स्लॉट बुक करें'}</a></li>
-            <li><a href={getAnchor('refused-cng')}>{locale === 'en' ? 'Refused at Pump?' : 'पंप पर मना किया?'}</a></li>
-            <li><a href={getAnchor('pricing')}>{locale === 'en' ? 'Pricing' : 'कीमत'}</a></li>
-            <li><a href={getAnchor('process')}>{locale === 'en' ? 'Testing Process' : 'परीक्षण विधि'}</a></li>
-            <li><a href={`/${locale}/check-expiry/`}>{copy.nav.expiry}</a></li>
-            <li><a href={`/${locale}/blog/`}>{copy.nav.blog}</a></li>
-            <li><a href={getAnchor('location')}>{locale === 'en' ? 'Station & FAQs' : 'स्टेशन व प्रश्न'}</a></li>
+            <li><a href={`/${locale}/services/`}>{locale === 'en' ? 'Services' : 'सेवाएँ'}</a></li>
+            <li><a href={`/${locale}/book/`}>{locale === 'en' ? 'Book' : 'बुक करें'}</a></li>
+            <li><a href={`/${locale}/blog/`}>{locale === 'en' ? 'Blog' : 'ब्लॉग'}</a></li>
+            <li><a href={`/${locale}/contact/`}>{locale === 'en' ? 'Contact' : 'संपर्क'}</a></li>
+            <li>
+              <a href="/admin/login/" class="nav-login-btn" style="color: var(--color-steel-600); font-weight: 700;">
+                🔐 {locale === 'en' ? 'Login' : 'लॉगिन'}
+              </a>
+            </li>
           </ul>
         </nav>
 
@@ -122,7 +141,7 @@ const schema = buildLocalBusinessSchema({
           <a class="lang-pill" href={localizePath(Astro.url.pathname, alternate)} aria-label="Change language">
             {alternate === 'hi' ? 'हिंदी' : 'English'}
           </a>
-          <a href={getAnchor('booking')} class="btn btn-primary nav-book-btn">
+          <a href={`/${locale}/book/`} class="btn btn-primary nav-book-btn">
             {copy.actions.book}
           </a>
         </div>
@@ -155,26 +174,20 @@ const schema = buildLocalBusinessSchema({
           </div>
 
           <nav aria-label={locale === 'en' ? 'Mobile navigation' : 'मोबाइल नेविगेशन'} class="mobile-nav-links">
-            <a href={getAnchor('booking')} class="mobile-nav-item mobile-book-cta">
-              ⚡ {locale === 'en' ? 'Book Inspection Slot' : 'स्लॉट बुक करें'}
+            <a href={`/${locale}/book/`} class="mobile-nav-item mobile-book-cta">
+              ⚡ {locale === 'en' ? 'Book Testing Bay' : 'स्लॉट बुक करें'}
             </a>
-            <a href={getAnchor('refused-cng')} class="mobile-nav-item">
-              🚨 {locale === 'en' ? 'Refused CNG at Pump?' : 'पंप पर गैस भरने से मना किया?'}
-            </a>
-            <a href={getAnchor('pricing')} class="mobile-nav-item">
-              💳 {locale === 'en' ? 'Pricing & ₹500 Flat Advance' : 'कीमत व ₹500 अग्रिम'}
-            </a>
-            <a href={getAnchor('process')} class="mobile-nav-item">
-              🔬 {locale === 'en' ? '5-Step Water Jacket Test' : '5-चरणीय वाटर जैकेट परीक्षण'}
-            </a>
-            <a href={`/${locale}/check-expiry/`} class="mobile-nav-item">
-              🔍 {copy.nav.expiry}
+            <a href={`/${locale}/services/`} class="mobile-nav-item">
+              🔬 {locale === 'en' ? 'Our Services' : 'हमारी सेवाएँ'}
             </a>
             <a href={`/${locale}/blog/`} class="mobile-nav-item">
-              📖 {copy.nav.blog}
+              📖 {locale === 'en' ? 'Blog & Advice' : 'ब्लॉग व सलाह'}
             </a>
-            <a href={getAnchor('location')} class="mobile-nav-item">
-              📍 {locale === 'en' ? 'Facility Location & FAQs' : 'स्टेशन का पता व प्रश्न'}
+            <a href={`/${locale}/contact/`} class="mobile-nav-item">
+              📍 {locale === 'en' ? 'Contact & Facility' : 'संपर्क व केंद्र'}
+            </a>
+            <a href="/admin/login/" class="mobile-nav-item" style="border-top: 1px solid var(--border-subtle); margin-top: 0.5rem; padding-top: 1rem; color: var(--color-steel-600); font-weight: 700;">
+              🔐 {locale === 'en' ? 'Login Portal (Staff / Admin / Customer)' : 'लॉगिन पोर्टल (कर्मचारी / एडमिन / ग्राहक)'}
             </a>
           </nav>
 

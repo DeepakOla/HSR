@@ -65,32 +65,56 @@ const whatsappLink = contact && whatsappReady ? `https://wa.me/${contact.whatsap
       <div class="default-service-overview">
         <p class="lead-text">
           {locale === 'en'
-            ? 'High-precision CNG cylinder hydrostatic stretch testing up to 300 bar pressure. Fully certified under statutory Gas Cylinders Rules 2016 and MoRTH automotive safety directives.'
+            ? 'High-precision CNG cylinder hydrostatic stretch testing up to 300 bar pressure. Fully certified under statutory Gas Cylinders Rules 2016 and MoRTH automotive safety directives in Rewari, Haryana.'
             : '300 बार दबाव तक उच्च-सटीक सीएनजी सिलेंडर हाइड्रोस्टेटिक स्ट्रेच टेस्टिंग। वैधानिक गैस सिलेंडर नियमों और सड़क परिवहन मंत्रालय सुरक्षा निर्देशों के तहत पूर्णतः प्रमाणित।'}
         </p>
 
-        <div class="overview-grid">
-          <div class="overview-box">
-            <h3>🔬 {locale === 'en' ? '5-Step Certified Testing' : '5-चरणीय प्रमाणित टेस्टिंग'}</h3>
+        <div class="overview-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin: 1.5rem 0;">
+          <div class="overview-box" style="background: #ffffff; border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 1.5rem;">
+            <h3>🚗 {locale === 'en' ? 'Passenger Cars & Taxis' : 'यात्री कारें एवं टैक्सियाँ'}</h3>
             <p>
               {locale === 'en'
-                ? 'Includes residual methane degassing, ultrasonic wall-thickness scanning, 300 bar water-jacket expansion measurement, internal hot-air baking, and official date stamping.'
-                : 'मीथेन डीगैसिंग, अल्ट्रासोनिक मोटाई जांच, 300 बार वाटर जैकेट टेस्ट, आंतरिक सुखाना और आधिकारिक मोहर लगाना शामिल है।'}
+                ? 'Certified hydrostatic testing for 1 and 2 cylinder cars (WagonR, Dzire, Aura, Ertiga, private cars and cabs). Fast 2-hour turnaround.'
+                : '1 और 2 सिलेंडर कारों के लिए प्रमाणित हाइड्रोस्टेटिक टेस्टिंग। 2 घंटे में त्वरित सेवा।'}
             </p>
-            <a href={`/${locale}/#process`} class="text-link">
-              {locale === 'en' ? 'Explore 5-Step Process →' : 'परीक्षण प्रक्रिया देखें →'}
+            <a href={`/${locale}/book/`} class="btn btn-outline" style="margin-top: 0.75rem; display: inline-flex;">
+              ⚡ {locale === 'en' ? 'Book Car Testing →' : 'कार स्लॉट बुक करें →'}
             </a>
           </div>
 
-          <div class="overview-box">
-            <h3>💳 {locale === 'en' ? 'Transparent Pricing' : 'पारदर्शी शुल्क संरचना'}</h3>
+          <div class="overview-box" style="background: #ffffff; border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 1.5rem;">
+            <h3>🚐 {locale === 'en' ? 'Commercial Vans & Tempos' : 'कमर्शियल वैन एवं टेम्पो'}</h3>
             <p>
               {locale === 'en'
-                ? 'Clear rates from 1 to 6 cylinders with 18% GST itemized. Only ₹500 flat advance is required to reserve your testing bay; balance payable on-site.'
-                : '1 से 6 सिलेंडरों के लिए स्पष्ट दरें व 18% जीएसटी। बे सुरक्षित करने के लिए केवल ₹500 का अग्रिम; शेष राशि केंद्र पर देय।'}
+                ? 'Dedicated bay testing for delivery tempos, logistics vans, and light commercial vehicles (1 to 4 cylinders). Complete transport compliance certificate.'
+                : 'डिलीवरी टेम्पो, वैन और छोटे कमर्शियल वाहनों (1 से 4 सिलेंडर) के लिए विशेष बे टेस्टिंग।'}
             </p>
-            <a href={`/${locale}/#pricing`} class="text-link">
-              {locale === 'en' ? 'View Price Breakdown →' : 'शुल्क तालिका देखें →'}
+            <a href={`/${locale}/book/`} class="btn btn-outline" style="margin-top: 0.75rem; display: inline-flex;">
+              ⚡ {locale === 'en' ? 'Book Tempo Slot →' : 'टेम्पो स्लॉट बुक करें →'}
+            </a>
+          </div>
+
+          <div class="overview-box" style="background: #ffffff; border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 1.5rem;">
+            <h3>🚛 {locale === 'en' ? 'Heavy Commercial Trucks & Buses' : 'भारी कमर्शियल ट्रक एवं बसें'}</h3>
+            <p>
+              {locale === 'en'
+                ? 'Multi-cylinder cascade testing for heavy transport haulers, chassis mounts, and city transport buses (4 to 6 cylinders).'
+                : 'भारी मालवाहक ट्रकों, 6-सिलेंडर चेसिस और बसों के लिए मल्टी-सिलेंडर कैस्केड टेस्टिंग।'}
+            </p>
+            <a href={`/${locale}/book/`} class="btn btn-outline" style="margin-top: 0.75rem; display: inline-flex;">
+              ⚡ {locale === 'en' ? 'Book Truck Bay →' : 'ट्रक स्लॉट बुक करें →'}
+            </a>
+          </div>
+
+          <div class="overview-box" style="background: #ffffff; border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 1.5rem;">
+            <h3>🔧 {locale === 'en' ? 'Valve Inspection & Plate Stamping' : 'वाल्व निरीक्षण एवं प्लेट स्टैम्पिंग'}</h3>
+            <p>
+              {locale === 'en'
+                ? 'High-pressure valve overhaul, burst disc safety inspection, ultrasonic neck thread scan, and official stamped brass compliance plate mounting.'
+                : 'वाल्व ओवरहाल, बर्स्ट डिस्क सुरक्षा निरीक्षण, थ्रेड जांच और आधिकारिक पीतल की कंप्लायंस प्लेट फिटिंग।'}
+            </p>
+            <a href={`/${locale}/book/`} class="btn btn-outline" style="margin-top: 0.75rem; display: inline-flex;">
+              ⚡ {locale === 'en' ? 'Book Inspection →' : 'जाँच स्लॉट बुक करें →'}
             </a>
           </div>
         </div>
@@ -100,10 +124,10 @@ const whatsappLink = contact && whatsappReady ? `https://wa.me/${contact.whatsap
     <!-- Direct Quick Conversion Jump Banner -->
     <div class="content-action-banner">
       <div class="action-banner-text">
-        <strong>{locale === 'en' ? 'Need an urgent testing appointment?' : 'तुरंत टेस्टिंग अपॉइंटमेंट की आवश्यकता है?'}</strong>
-        <span>{locale === 'en' ? 'Book your slot online with flat ₹500 advance. 2 to 3 hours express turnaround.' : '₹500 अग्रिम के साथ ऑनलाइन स्लॉट बुक करें। 2 से 3 घंटे में सेवा।'}</span>
+        <strong>{locale === 'en' ? 'Need an urgent certified testing appointment?' : 'तुरंत टेस्टिंग अपॉइंटमेंट की आवश्यकता है?'}</strong>
+        <span>{locale === 'en' ? 'Book your slot online. Fast 2 to 3 hours express turnaround in Rewari.' : 'ऑनलाइन स्लॉट बुक करें। रेवाड़ी में 2 से 3 घंटे में त्वरित सेवा।'}</span>
       </div>
-      <a href={`/${locale}/#booking`} class="btn btn-primary">
+      <a href={`/${locale}/book/`} class="btn btn-primary">
         ⚡ {locale === 'en' ? 'Reserve Testing Bay' : 'स्लॉट बुक करें'}
       </a>
     </div>

@@ -4,17 +4,15 @@ test.describe('Customer Booking & Demo Preview Journeys (E2E)', () => {
   test('displays demo preview banner in English and Hindi', async ({ page }) => {
     // English Home
     await page.goto('/en/');
-    const enBanner = page.locator('.demo-banner');
+    const enBanner = page.locator('.announcement-ticker-bar');
     await expect(enBanner).toBeVisible();
-    await expect(page.locator('.demo-tag')).toContainText('DEMO PREVIEW v0.0.1');
-    await expect(page.locator('.demo-text')).toContainText('Pre-operational verification preview');
+    await expect(page.locator('.ticker-badge').first()).toContainText('GOVERNMENT APPROVED');
 
     // Hindi Home
     await page.goto('/hi/');
-    const hiBanner = page.locator('.demo-banner');
+    const hiBanner = page.locator('.announcement-ticker-bar');
     await expect(hiBanner).toBeVisible();
-    await expect(page.locator('.demo-tag')).toContainText('डेमो पूर्वावलोकन v0.0.1');
-    await expect(page.locator('.demo-text')).toContainText('संचालन-पूर्व सत्यापन पूर्वावलोकन');
+    await expect(page.locator('.ticker-badge').first()).toContainText('सरकारी प्रमाणित');
   });
 
   test('floating feedback button opens interactive feedback dialog', async ({ page }) => {
@@ -66,11 +64,22 @@ test.describe('Customer Booking & Demo Preview Journeys (E2E)', () => {
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   });
 
-  test('homepage embeds inline booking container with single and fleet tabs', async ({ page }) => {
+  test('homepage renders Due-Date Checker and book page renders dedicated booking container with single and fleet tabs', async ({ page }) => {
     await page.goto('/en/');
     await page.waitForLoadState('networkidle');
 
-    // Check inline booking container is rendered directly on homepage
+    // Check Due Date Checker is rendered directly on homepage
+    const dueDateCard = page.locator('.due-date-checker-card');
+    await expect(dueDateCard).toBeVisible();
+    await expect(page.locator('#check-due-date')).toBeVisible();
+    await expect(page.locator('#process')).toBeVisible();
+    await expect(page.locator('#standards')).toBeVisible();
+    await expect(page.locator('#location')).toBeVisible();
+
+    // Navigate to dedicated booking page
+    await page.goto('/en/book/');
+    await page.waitForLoadState('networkidle');
+
     const bookingBox = page.locator('.inline-booking-box');
     await expect(bookingBox).toBeVisible();
 
@@ -87,10 +96,5 @@ test.describe('Customer Booking & Demo Preview Journeys (E2E)', () => {
     // Switch back to single vehicle
     await singleTab.click();
     await expect(page.locator('.booking-pane')).toBeVisible();
-
-    // Verify presence of pump refusal and pricing sections
-    await expect(page.locator('#refused-cng')).toBeVisible();
-    await expect(page.locator('#pricing')).toBeVisible();
-    await expect(page.locator('#process')).toBeVisible();
   });
 });
