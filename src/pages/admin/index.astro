@@ -58,44 +58,42 @@ if (env?.DB) {
       metrics.pendingRevenuePaise = bookingStats.pendingRevenue || 0;
     }
 
-    // 2. Cylinder test outcomes
-    const cylinderStats = await env.DB.prepare(`
+    // 2. Tested cylinder stats
+    const cylStats = await env.DB.prepare(`
       SELECT 
-        SUM(CASE WHEN test_outcome = 'PASS' THEN 1 ELSE 0 END) as passCount,
-        SUM(CASE WHEN test_outcome = 'FAIL_CONDEMNED' THEN 1 ELSE 0 END) as failCount
-      FROM cylinder_test_records
-      WHERE date(tested_at) = ?
-    `).bind(today).first<any>();
+        SUM(CASE WHEN current_status = 'ACTIVE' THEN 1 ELSE 0 END) as passedCount,
+        SUM(CASE WHEN current_status = 'CONDEMNED' THEN 1 ELSE 0 END) as condemnedCount
+      FROM cylinders
+      WHERE date(created_at) = date('now')
+    `).first<any>();
 
-    if (cylinderStats) {
-      metrics.passedCylinders = cylinderStats.passCount || 0;
-      metrics.condemnedCylinders = cylinderStats.failCount || 0;
+    if (cylStats) {
+      metrics.passedCylinders = cylStats.passedCount || 0;
+      metrics.condemnedCylinders = cylStats.condemnedCount || 0;
     }
 
-    // 3. Station resources status
-    const resourceRows = await env.DB.prepare(`
-      SELECT id, resource_code as resourceCode, resource_name as resourceName,
-             resource_type as resourceType, status, calibration_valid_until as validUntil
+    // 3. Station Resource Status
+    const resRows = await env.DB.prepare(`
+      SELECT resource_code as resourceCode, resource_name as resourceName,
+             resource_type as resourceType, status
       FROM station_resources
-      WHERE is_active = 1
-      ORDER BY resource_type ASC, resource_code ASC
+      ORDER BY resource_code ASC LIMIT 10
     `).all<any>();
-    resources = resourceRows.results || [];
+    resources = resRows.results || [];
 
-    // 4. Recent bookings list
+    // 4. Recent bookings
     const recentRows = await env.DB.prepare(`
-      SELECT b.id, b.booking_code as bookingCode,
-             COALESCE(b.display_reg_no, v.display_reg_no, v.registration_display, 'HR-26') as regNo,
-             COALESCE(b.slot_start_time, b.slot_start_snapshot, '09:00') as slotTime,
-             COALESCE(b.booked_cylinder_count, b.cylinder_count_snapshot, 1) as cylinderCount,
-             COALESCE(b.total_price_paise_snapshot, 0) as totalPricePaise,
-             b.reservation_state as reservationState,
-             b.payment_state as paymentState,
-             COALESCE(b.testing_status, 'NOT_ARRIVED') as testingStatus
+      SELECT 
+        b.booking_code as bookingCode,
+        COALESCE(b.display_reg_no, v.registration_display, 'HR-26') as regNo,
+        b.slot_start_time as slotTime,
+        b.cylinder_count as cylinderCount,
+        b.total_price_paise as totalPricePaise,
+        b.reservation_state as reservationState,
+        COALESCE(b.testing_status, 'SCHEDULED') as testingStatus
       FROM bookings b
       LEFT JOIN vehicles v ON v.id = b.vehicle_id
-      ORDER BY b.created_at DESC
-      LIMIT 6
+      ORDER BY b.created_at DESC LIMIT 6
     `).all<any>();
     recentBookings = recentRows.results || [];
   } catch (err) {
@@ -104,178 +102,267 @@ if (env?.DB) {
 }
 ---
 
-<AdminLayout title="Executive Overview" owner={isOwner}>
-  <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
-    <div>
-      <div style="font-size: 0.78rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">
-        HSR Green Energy • Operations & Management Console
+<AdminLayout title="Station Executive Overview" owner={isOwner} activeNav="overview">
+  <div class="admin-app">
+    <!-- Header -->
+    <div class="admin-heading">
+      <div>
+        <p class="admin-eyebrow">OPERATIONS & MANAGEMENT CONSOLE</p>
+        <h1>Station Executive Overview</h1>
+        <p class="admin-subtitle">
+          Live telemetry and operational monitoring for Rewari Hydro Testing Facility • Date: <strong>{today}</strong>
+        </p>
       </div>
-      <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.85rem; font-weight: 800; color: #0a1128; margin: 0;">
-        Station Executive Overview
-      </h1>
-      <p style="color: #64748b; font-size: 0.92rem; margin: 0.25rem 0 0;">
-        Live monitoring for Rewari Hydro Testing Facility • Date: <strong>{today}</strong>
-      </p>
-    </div>
 
-    <div style="display: flex; gap: 0.75rem;">
-      <a href="/admin/reception" style="display: inline-flex; align-items: center; gap: 0.5rem; background: #0a1128; color: #ffffff; padding: 0.65rem 1.25rem; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 0.9rem;">
-        📋 Reception Queue →
-      </a>
-      {isOwner && (
-        <a href="/admin/owner" style="display: inline-flex; align-items: center; gap: 0.5rem; background: #ffffff; border: 1.5px solid #cbd5e1; color: #334155; padding: 0.65rem 1.25rem; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 0.9rem;">
-          ⚙️ Owner Settings
+      <div class="admin-actions">
+        <a href="/admin/reception/" class="admin-button">
+          📋 Reception Queue →
         </a>
-      )}
-    </div>
-  </div>
-
-  <!-- KPI METRICS GRID -->
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
-      <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Today's Bookings</span>
-      <div style="font-size: 2rem; font-weight: 800; color: #0a1128; margin-top: 0.25rem;">
-        {metrics.todayBookings}
-      </div>
-      <div style="font-size: 0.78rem; color: #64748b; margin-top: 0.25rem;">
-        🌐 Web: {metrics.webBookings} • 🚶 Desk: {metrics.walkinBookings}
-      </div>
-    </div>
-
-    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
-      <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Active in Bays</span>
-      <div style="font-size: 2rem; font-weight: 800; color: #0284c7; margin-top: 0.25rem;">
-        {metrics.inProgress}
-      </div>
-      <div style="font-size: 0.78rem; color: #64748b; margin-top: 0.25rem;">
-        Under test or intake
-      </div>
-    </div>
-
-    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
-      <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Completed Tests</span>
-      <div style="font-size: 2rem; font-weight: 800; color: #15803d; margin-top: 0.25rem;">
-        {metrics.completed}
-      </div>
-      <div style="font-size: 0.78rem; color: #15803d; margin-top: 0.25rem;">
-        Passed: {metrics.passedCylinders} {metrics.condemnedCylinders > 0 ? `• Condemned: ${metrics.condemnedCylinders}` : ''}
-      </div>
-    </div>
-
-    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
-      <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Revenue Collected</span>
-      <div style="font-size: 2rem; font-weight: 800; color: #0a1128; margin-top: 0.25rem;">
-        ₹{(metrics.totalRevenuePaise / 100).toLocaleString('en-IN')}
-      </div>
-      <div style="font-size: 0.78rem; color: #ea580c; margin-top: 0.25rem;">
-        Pending counter: ₹{(metrics.pendingRevenuePaise / 100).toLocaleString('en-IN')}
-      </div>
-    </div>
-  </div>
-
-  <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
-    <!-- RECENT BOOKINGS & WORKFLOW TABLE -->
-    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-        <h2 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.15rem; font-weight: 700; color: #0a1128; margin: 0;">
-          Recent Testing Appointments
-        </h2>
-        <a href="/admin/reception" style="font-size: 0.85rem; font-weight: 600; color: #0284c7; text-decoration: none;">
-          View Reception Desk →
-        </a>
-      </div>
-
-      <div style="overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
-          <thead>
-            <tr style="border-bottom: 1.5px solid #e2e8f0; color: #64748b; font-size: 0.75rem; text-transform: uppercase;">
-              <th style="padding: 0.6rem 0.5rem;">Vehicle Reg</th>
-              <th style="padding: 0.6rem 0.5rem;">Time</th>
-              <th style="padding: 0.6rem 0.5rem;">Cylinders</th>
-              <th style="padding: 0.6rem 0.5rem;">Amount</th>
-              <th style="padding: 0.6rem 0.5rem;">Booking</th>
-              <th style="padding: 0.6rem 0.5rem;">Testing</th>
-            </tr>
-          </thead>
-          <tbody>
-            {recentBookings.length === 0 ? (
-              <tr>
-                <td colspan="6" style="padding: 2rem 0; text-align: center; color: #94a3b8;">
-                  No bookings recorded yet for this session.
-                </td>
-              </tr>
-            ) : (
-              recentBookings.map((b) => (
-                <tr style="border-bottom: 1px solid #f1f5f9;">
-                  <td style="padding: 0.75rem 0.5rem; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #0a1128;">
-                    {b.regNo}
-                  </td>
-                  <td style="padding: 0.75rem 0.5rem; color: #475569;">
-                    {b.slotTime}
-                  </td>
-                  <td style="padding: 0.75rem 0.5rem; color: #475569;">
-                    {b.cylinderCount} Cyl
-                  </td>
-                  <td style="padding: 0.75rem 0.5rem; font-weight: 600; color: #0a1128;">
-                    ₹{(b.totalPricePaise / 100).toLocaleString('en-IN')}
-                  </td>
-                  <td style="padding: 0.75rem 0.5rem;">
-                    <span style={`display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; ${
-                      b.reservationState === 'CONFIRMED' ? 'background: #dcfce7; color: #15803d;' : 'background: #fef3c7; color: #b45309;'
-                    }`}>
-                      {b.reservationState}
-                    </span>
-                  </td>
-                  <td style="padding: 0.75rem 0.5rem;">
-                    <span style="font-size: 0.78rem; font-weight: 600; color: #0284c7;">
-                      {b.testingStatus}
-                    </span>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- PHYSICAL BAYS & HYDRO RIGS -->
-    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
-        <h2 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.15rem; font-weight: 700; color: #0a1128; margin: 0;">
-          Bays & Equipment
-        </h2>
         {isOwner && (
-          <a href="/admin/bays-equipment" style="font-size: 0.85rem; font-weight: 600; color: #0284c7; text-decoration: none;">
-            Manage →
+          <a href="/admin/owner/" class="admin-button secondary">
+            ⚙️ Owner Settings
           </a>
         )}
       </div>
+    </div>
 
-      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-        {resources.length === 0 ? (
-          <p style="color: #94a3b8; font-size: 0.88rem; margin: 0;">No resources configured.</p>
-        ) : (
-          resources.map((res) => (
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
-              <div>
-                <strong style="color: #0a1128; font-size: 0.9rem; display: block;">{res.resourceName}</strong>
-                <span style="font-size: 0.75rem; color: #64748b;">
-                  Code: <code>{res.resourceCode}</code> • {res.resourceType}
+    <!-- KPI Metrics Ribbon -->
+    <div class="admin-metrics">
+      <div class="admin-card">
+        <div class="admin-metric-label">Today's Appointments</div>
+        <div class="admin-metric-value">{metrics.todayBookings}</div>
+        <div class="admin-metric-note">🌐 Web: {metrics.webBookings} • 🚶 Desk: {metrics.walkinBookings}</div>
+      </div>
+
+      <div class="admin-card">
+        <div class="admin-metric-label">Active In Bays</div>
+        <div class="admin-metric-value text-steel">{metrics.inProgress}</div>
+        <div class="admin-metric-note">Under test or intake</div>
+      </div>
+
+      <div class="admin-card">
+        <div class="admin-metric-label">Completed Tests</div>
+        <div class="admin-metric-value text-pass">{metrics.completed}</div>
+        <div class="admin-metric-note">Passed: {metrics.passedCylinders} {metrics.condemnedCylinders > 0 ? `• Condemned: ${metrics.condemnedCylinders}` : ''}</div>
+      </div>
+
+      <div class="admin-card">
+        <div class="admin-metric-label">Revenue Collected</div>
+        <div class="admin-metric-value">₹{(metrics.totalRevenuePaise / 100).toLocaleString('en-IN')}</div>
+        <div class="admin-metric-note">Pending counter: ₹{(metrics.pendingRevenuePaise / 100).toLocaleString('en-IN')}</div>
+      </div>
+    </div>
+
+    <!-- Main 2-Column Grid -->
+    <div class="overview-grid">
+      <!-- Recent Bookings Table -->
+      <section class="admin-card">
+        <div class="overview-card-head">
+          <h2 class="admin-section-title">Recent Testing Appointments</h2>
+          <a href="/admin/reception/" class="quick-link">View Full Desk →</a>
+        </div>
+
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Vehicle Reg</th>
+                <th>Time Slot</th>
+                <th>Cylinders</th>
+                <th>Amount</th>
+                <th>Booking Status</th>
+                <th>Testing Progress</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentBookings.length === 0 ? (
+                <tr>
+                  <td colspan="6" class="table-empty-cell">
+                    No bookings recorded yet for this session.
+                  </td>
+                </tr>
+              ) : (
+                recentBookings.map((b) => (
+                  <tr>
+                    <td>
+                      <span class="reg-pill">{b.regNo}</span>
+                    </td>
+                    <td class="font-mono-col">{b.slotTime}</td>
+                    <td>{b.cylinderCount} Cyl</td>
+                    <td class="font-mono-col font-bold">
+                      ₹{(b.totalPricePaise / 100).toLocaleString('en-IN')}
+                    </td>
+                    <td>
+                      <span class={`admin-status ${b.reservationState === 'CONFIRMED' ? '' : 'pending'}`}>
+                        {b.reservationState}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="telemetry-chip">{b.testingStatus}</span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Equipment Status Card -->
+      <section class="admin-card">
+        <div class="overview-card-head">
+          <h2 class="admin-section-title">Bays & Equipment</h2>
+          {isOwner && <a href="/admin/bays-equipment/" class="quick-link">Manage →</a>}
+        </div>
+
+        <div class="equipment-list">
+          {resources.length === 0 ? (
+            <p class="text-muted-col">No resources configured.</p>
+          ) : (
+            resources.map((res) => (
+              <div class="equipment-row">
+                <div>
+                  <strong class="equipment-name">{res.resourceName}</strong>
+                  <span class="equipment-code">Code: <code>{res.resourceCode}</code> • {res.resourceType}</span>
+                </div>
+                <span class={`admin-status ${res.status === 'ONLINE' ? '' : res.status === 'OCCUPIED' ? 'pending' : 'error'}`}>
+                  {res.status}
                 </span>
               </div>
-              <span style={`padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; ${
-                res.status === 'ONLINE' ? 'background: #dcfce7; color: #15803d;' :
-                res.status === 'OCCUPIED' ? 'background: #e0f2fe; color: #0369a1;' :
-                res.status === 'MAINTENANCE' ? 'background: #fee2e2; color: #b91c1c;' :
-                'background: #fef3c7; color: #b45309;'
-              }`}>
-                {res.status}
-              </span>
-            </div>
-          ))
-        )}
-      </div>
+            ))
+          )}
+        </div>
+      </section>
     </div>
   </div>
 </AdminLayout>
+
+<style>
+  .overview-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  @media (max-width: 1024px) {
+    .overview-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .overview-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .overview-card-head .admin-section-title {
+    margin: 0;
+  }
+
+  .quick-link {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #0284c7;
+    text-decoration: none;
+  }
+
+  .quick-link:hover {
+    text-decoration: underline;
+  }
+
+  .reg-pill {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    background: #0a1128;
+    color: #ffffff;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.82rem;
+    letter-spacing: 0.03em;
+  }
+
+  .font-mono-col {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+  }
+
+  .font-bold {
+    font-weight: 700;
+  }
+
+  .text-steel {
+    color: #0284c7 !important;
+  }
+
+  .text-pass {
+    color: #15803d !important;
+  }
+
+  .telemetry-chip {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #0284c7;
+    background: #f0f9ff;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    border: 1px solid #bae6fd;
+  }
+
+  .table-empty-cell {
+    text-align: center;
+    padding: 2.5rem 1rem !important;
+    color: #94a3b8;
+  }
+
+  .equipment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .equipment-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .equipment-name {
+    display: block;
+    color: #0a1128;
+    font-size: 0.88rem;
+  }
+
+  .equipment-code {
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+
+  :global(html.dark) .overview-card-head {
+    border-color: #1e293b;
+  }
+
+  :global(html.dark) .equipment-row {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  :global(html.dark) .equipment-name {
+    color: #f8fafc;
+  }
+
+  :global(html.dark) .equipment-code {
+    color: #94a3b8;
+  }
+</style>

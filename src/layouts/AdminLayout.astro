@@ -1,57 +1,1020 @@
 ---
+import { getStaffContext } from '../lib/auth';
+import { getRuntimeEnv } from '../lib/runtime-env';
+import '../styles/design-tokens.css';
+import '../styles/admin.css';
+
 interface Props {
   title: string;
   owner?: boolean;
+  activeNav?: 'overview' | 'reception' | 'testing' | 'bays' | 'register' | 'records' | 'finance' | 'owner' | 'reminders';
+  breadcrumb?: string;
 }
-const { title, owner = false } = Astro.props;
+
+const { title, owner = false, activeNav: explicitActiveNav, breadcrumb } = Astro.props;
+const env = getRuntimeEnv(Astro.locals);
+const staff = await getStaffContext(Astro.request, env);
+const staffEmail = staff?.email || 'kumardeepakola@gmail.com';
+const isOwner = staff?.role === 'OWNER' || owner;
+const staffRoleLabel = isOwner ? 'Owner Console' : 'Desk Officer';
+const userInitials = isOwner ? 'OW' : 'ST';
+
+const pathname = Astro.url.pathname;
+let currentNav = explicitActiveNav;
+if (!currentNav) {
+  if (pathname.includes('/admin/reception')) currentNav = 'reception';
+  else if (pathname.includes('/admin/owner')) currentNav = 'owner';
+  else if (pathname.includes('/admin/records')) currentNav = 'records';
+  else if (pathname.includes('/admin/cylinder-register') || pathname.includes('/admin/register')) currentNav = 'register';
+  else if (pathname.includes('/admin/bays-equipment')) currentNav = 'bays';
+  else if (pathname.includes('/admin/finance')) currentNav = 'finance';
+  else if (pathname.includes('/admin/reminders')) currentNav = 'reminders';
+  else if (pathname.includes('/staff/testing')) currentNav = 'testing';
+  else if (pathname === '/admin' || pathname === '/admin/') currentNav = 'overview';
+  else currentNav = 'overview';
+}
+
+const derivedBreadcrumb = breadcrumb || (
+  currentNav === 'overview' ? 'Executive Overview' :
+  currentNav === 'reception' ? 'Reception Desk' :
+  currentNav === 'testing' ? 'Testing Bay' :
+  currentNav === 'bays' ? 'Bays & Rigs' :
+  currentNav === 'register' ? 'Cylinder Register & PESO Lookup' :
+  currentNav === 'records' ? 'Master Records' :
+  currentNav === 'reminders' ? 'Retest Reminders' :
+  currentNav === 'finance' ? 'Finance Ledger' :
+  currentNav === 'owner' ? 'Owner Settings' : title
+);
 ---
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="robots" content="noindex,nofollow" />
-    <title>{title} | HSR Green Energy</title>
+    <title>{title} | ⚡ HSR Management Portal</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/src/styles/design-tokens.css" />
+    <link rel="stylesheet" href="/styles/design-tokens.css" />
+    <link rel="stylesheet" href="/styles/admin.css" />
+    <script is:inline>
+      if (localStorage.getItem('hsr_theme') === 'dark' || (!('hsr_theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    </script>
   </head>
-  <body>
-    <header class="staff-header">
-      <a class="staff-brand" href="/admin/reception">
-        <span class="staff-mark">HSR</span>
-        <span><strong>HSR CNG Testing</strong><small>Staff & Operations Portal</small></span>
-      </a>
-      <nav>
-        <a href="/admin/" class="nav-link">📊 Overview</a>
-        <a href="/admin/reception" class="nav-link">📋 Reception Desk</a>
-        <a href="/staff/testing" class="nav-link">🛢️ Testing Bay</a>
-        {owner && <a href="/admin/bays-equipment" class="nav-link">🔧 Bays & Rigs</a>}
-        {owner && <a href="/admin/records" class="nav-link">📁 Records</a>}
-        {owner && <a href="/admin/finance" class="nav-link">💰 Finance</a>}
-        {owner && <a href="/admin/owner" class="nav-link">⚙️ Settings</a>}
-        <a href="/api/auth/logout" class="nav-link" style="color:#dc2626;">🚪 Logout</a>
-        <a href="/en/" class="nav-link public-link" target="_blank">🌐 Public Site ↗</a>
+  <body class="mgmt-body">
+    <!-- Backdrop overlay for mobile drawer -->
+    <div id="sidebar-backdrop" class="mgmt-backdrop" onclick="toggleSidebar(false)" aria-hidden="true"></div>
+
+    <!-- Zen Dock Left Sidebar -->
+    <aside id="mgmt-sidebar" class="mgmt-sidebar" aria-label="Portal Navigation">
+      <!-- Brand & Facility Lockup -->
+      <div class="sidebar-header">
+        <a class="brand-lockup" href="/admin/">
+          <div class="brand-badge">HSR</div>
+          <div class="brand-info">
+            <span class="brand-title">HSR CNG Testing</span>
+            <span class="brand-tag">⚡ Management Portal</span>
+          </div>
+        </a>
+        <button id="sidebar-close-btn" class="sidebar-btn-close" onclick="toggleSidebar(false)" aria-label="Close Sidebar" title="Close Sidebar">
+          ✕
+        </button>
+      </div>
+
+      <!-- Quick public link -->
+      <div class="sidebar-quick-link">
+        <a href="/en/" target="_blank" rel="noopener noreferrer" class="public-site-btn">
+          <span>🌐 Public Website</span>
+          <span class="ext-arrow">↗</span>
+        </a>
+      </div>
+
+      <!-- Navigation groups -->
+      <nav class="sidebar-nav">
+        <div class="nav-section-title">Operations</div>
+        <a href="/admin/" class={`nav-item ${currentNav === 'overview' ? 'active' : ''}`}>
+          <span class="nav-icon">📊</span>
+          <span class="nav-label">Overview</span>
+        </a>
+        <a href="/admin/reception/" class={`nav-item ${currentNav === 'reception' ? 'active' : ''}`}>
+          <span class="nav-icon">📋</span>
+          <span class="nav-label">Reception Desk</span>
+          <span class="live-dot" title="Live Queue"></span>
+        </a>
+        <a href="/staff/testing/" class={`nav-item ${currentNav === 'testing' ? 'active' : ''}`}>
+          <span class="nav-icon">🛢️</span>
+          <span class="nav-label">Testing Bay</span>
+        </a>
+        <a href="/admin/bays-equipment/" class={`nav-item ${currentNav === 'bays' ? 'active' : ''}`}>
+          <span class="nav-icon">🔧</span>
+          <span class="nav-label">Bays & Rigs</span>
+        </a>
+
+        <div class="nav-section-title">Registry & Compliance</div>
+        <a href="/admin/cylinder-register/" class={`nav-item ${currentNav === 'register' ? 'active' : ''}`}>
+          <span class="nav-icon">🔍</span>
+          <span class="nav-label">Cylinder Register</span>
+        </a>
+        <a href="/admin/records/" class={`nav-item ${currentNav === 'records' ? 'active' : ''}`}>
+          <span class="nav-icon">📁</span>
+          <span class="nav-label">Master Records</span>
+        </a>
+        <a href="/admin/reminders/" class={`nav-item ${currentNav === 'reminders' ? 'active' : ''}`}>
+          <span class="nav-icon">🔔</span>
+          <span class="nav-label">Retest Reminders</span>
+        </a>
+
+        {isOwner && (
+          <>
+            <div class="nav-section-title">Administration</div>
+            <a href="/admin/finance/" class={`nav-item ${currentNav === 'finance' ? 'active' : ''}`}>
+              <span class="nav-icon">💰</span>
+              <span class="nav-label">Finance & Ledger</span>
+            </a>
+            <a href="/admin/owner/" class={`nav-item ${currentNav === 'owner' ? 'active' : ''}`}>
+              <span class="nav-icon">⚙️</span>
+              <span class="nav-label">Owner Settings</span>
+            </a>
+          </>
+        )}
       </nav>
-    </header>
-    <main class="staff-content"><slot /></main>
+
+      <!-- Live Laboratory Telemetry Status -->
+      <div class="sidebar-telemetry">
+        <div class="telemetry-head">
+          <span class="stat-indicator"></span>
+          <span>Testing Station Lab</span>
+          <span class="telemetry-badge">PESO OK</span>
+        </div>
+        <div class="telemetry-row">
+          <span>Facility:</span>
+          <strong>Rewari Industrial</strong>
+        </div>
+        <div class="telemetry-row">
+          <span>Hydro Rig:</span>
+          <strong class="color-pass">300 BAR READY</strong>
+        </div>
+      </div>
+
+      <!-- Staff Session & Action Footer -->
+      <div class="sidebar-footer">
+        <div class="user-session">
+          <div class="user-avatar">{userInitials}</div>
+          <div class="user-details">
+            <span class="user-title">{staffRoleLabel}</span>
+            <span class="user-sub" title={staffEmail}>{staffEmail}</span>
+          </div>
+        </div>
+        <div class="footer-actions">
+          <button id="theme-toggle-btn" class="btn-icon" onclick="toggleTheme()" aria-label="Toggle Dark/Light Mode" title="Toggle Theme">
+            🌓
+          </button>
+          <a href="/api/auth/logout/" class="btn-icon btn-logout" title="Sign out / Logout">
+            🚪
+          </a>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Viewport Canvas -->
+    <div id="mgmt-canvas" class="mgmt-canvas">
+      <!-- Sticky Command Top Bar -->
+      <header class="top-command-bar">
+        <div class="command-bar-left">
+          <button id="sidebar-toggle-btn" class="btn-hamburger" onclick="toggleSidebar()" aria-label="Toggle Portal Sidebar" title="Toggle Sidebar">
+            <span class="hamburger-bar"></span>
+            <span class="hamburger-bar"></span>
+            <span class="hamburger-bar"></span>
+          </button>
+          <div class="breadcrumbs">
+            <span class="portal-root">⚡ HSR PORTAL</span>
+            <span class="crumb-separator">/</span>
+            <span class="crumb-current">{derivedBreadcrumb}</span>
+          </div>
+        </div>
+
+        <div class="command-bar-right">
+          <div class="live-facility-pill">
+            <span class="live-beacon"></span>
+            <span>Rewari Lab Online</span>
+          </div>
+
+          {currentNav !== 'reception' && (
+            <a href="/admin/reception/" class="quick-nav-btn">
+              <span>📋</span> Reception Queue
+            </a>
+          )}
+          {currentNav !== 'register' && (
+            <a href="/admin/cylinder-register/" class="quick-nav-btn secondary">
+              <span>🛢️</span> Cylinder Register
+            </a>
+          )}
+
+          <a href="/en/" target="_blank" rel="noopener noreferrer" class="quick-nav-icon-btn" title="View Public Website">
+            <span>🌐</span>
+          </a>
+        </div>
+      </header>
+
+      <!-- Main Content Slot -->
+      <main class="mgmt-content">
+        <slot />
+      </main>
+
+      <!-- Mobile Bottom Tab Bar -->
+      <nav class="mgmt-mobile-bottom-bar" aria-label="Mobile Navigation">
+        <a href="/admin/" class={`mobile-tab ${currentNav === 'overview' ? 'active' : ''}`}>
+          <span class="mobile-tab-icon">📊</span>
+          <span class="mobile-tab-label">Overview</span>
+        </a>
+        <a href="/admin/reception/" class={`mobile-tab ${currentNav === 'reception' ? 'active' : ''}`}>
+          <span class="mobile-tab-icon">📋</span>
+          <span class="mobile-tab-label">Reception</span>
+        </a>
+        <a href="/admin/cylinder-register/" class={`mobile-tab ${currentNav === 'register' ? 'active' : ''}`}>
+          <span class="mobile-tab-icon">🔍</span>
+          <span class="mobile-tab-label">Register</span>
+        </a>
+        <a href="/admin/records/" class={`mobile-tab ${currentNav === 'records' ? 'active' : ''}`}>
+          <span class="mobile-tab-icon">📁</span>
+          <span class="mobile-tab-label">Records</span>
+        </a>
+        {isOwner ? (
+          <a href="/admin/owner/" class={`mobile-tab ${currentNav === 'owner' ? 'active' : ''}`}>
+            <span class="mobile-tab-icon">⚙️</span>
+            <span class="mobile-tab-label">Settings</span>
+          </a>
+        ) : (
+          <button class="mobile-tab" onclick="toggleSidebar(true)">
+            <span class="mobile-tab-icon">☰</span>
+            <span class="mobile-tab-label">Menu</span>
+          </button>
+        )}
+      </nav>
+    </div>
+
+    <!-- Client-side script for sidebar collapse & dark mode -->
+    <script is:inline>
+      function toggleSidebar(forceState) {
+        const sidebar = document.getElementById('mgmt-sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
+        const canvas = document.getElementById('mgmt-canvas');
+        const isMobile = window.innerWidth < 1024;
+
+        if (isMobile) {
+          const isOpen = forceState !== undefined ? forceState : !sidebar.classList.contains('open');
+          if (isOpen) {
+            sidebar.classList.add('open');
+            backdrop.classList.add('active');
+            document.body.classList.add('drawer-locked');
+          } else {
+            sidebar.classList.remove('open');
+            backdrop.classList.remove('active');
+            document.body.classList.remove('drawer-locked');
+          }
+        } else {
+          // Desktop collapse / expand
+          const isCollapsed = forceState !== undefined ? !forceState : !sidebar.classList.contains('collapsed');
+          if (isCollapsed) {
+            sidebar.classList.add('collapsed');
+            canvas.classList.add('sidebar-collapsed');
+            localStorage.setItem('hsr_admin_sidebar_collapsed', 'true');
+          } else {
+            sidebar.classList.remove('collapsed');
+            canvas.classList.remove('sidebar-collapsed');
+            localStorage.setItem('hsr_admin_sidebar_collapsed', 'false');
+          }
+        }
+      }
+
+      function toggleTheme() {
+        const html = document.documentElement;
+        if (html.classList.contains('dark')) {
+          html.classList.remove('dark');
+          localStorage.setItem('hsr_theme', 'light');
+        } else {
+          html.classList.add('dark');
+          localStorage.setItem('hsr_theme', 'dark');
+        }
+      }
+
+      // Initialize desktop collapse state from localStorage
+      document.addEventListener('DOMContentLoaded', () => {
+        if (window.innerWidth >= 1024) {
+          if (localStorage.getItem('hsr_admin_sidebar_collapsed') === 'true') {
+            document.getElementById('mgmt-sidebar')?.classList.add('collapsed');
+            document.getElementById('mgmt-canvas')?.classList.add('sidebar-collapsed');
+          }
+        }
+      });
+    </script>
   </body>
 </html>
+
 <style>
-  :global(*) { box-sizing:border-box }
-  :global(body) { margin:0; background:#f8fafc; color:#0f172a; font-family:'Inter',system-ui,sans-serif }
-  .staff-header { min-height:68px; padding:0 clamp(18px,4vw,48px); background:#ffffff; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between; gap:20px; box-shadow:0 1px 3px rgba(0,0,0,0.03); }
-  .staff-brand { display:flex; gap:12px; align-items:center; color:#0a1128; text-decoration:none }
-  .staff-mark { width:42px;height:42px;border-radius:8px;background:#0a1128;color:#ffffff;display:grid;place-items:center;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:16px;letter-spacing:-0.5px }
-  .staff-brand strong,.staff-brand small { display:block }
-  .staff-brand strong { font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;color:#0a1128;font-weight:700 }
-  .staff-brand small { color:#64748b;font-size:11px;margin-top:2px;text-transform:uppercase;letter-spacing:0.04em }
-  nav { display:flex;gap:18px;align-items:center;flex-wrap:wrap }
-  nav a { color:#334155;text-decoration:none;font-size:13.5px;font-weight:600;padding:6px 10px;border-radius:6px;transition:all 0.15s ease }
-  nav a:hover { color:#0a1128;background:#f1f5f9 }
-  nav a.public-link { color:#0284c7;background:rgba(2,132,199,0.08) }
-  nav a.public-link:hover { background:rgba(2,132,199,0.15) }
-  .staff-content { max-width:1440px;margin:0 auto;padding:24px clamp(16px,3vw,36px) 56px }
-  @media(max-width:768px) { .staff-header { align-items:flex-start;padding:14px 16px;flex-direction:column;gap:12px } nav { width:100%;gap:10px } .staff-content { padding:16px 12px 36px } }
+  :root {
+    --sidebar-w: 260px;
+    --sidebar-collapsed-w: 0px;
+    --topbar-h: 62px;
+    --navy-dark: #0a1128;
+    --navy-surface: #0f172a;
+    --orange-action: #ea580c;
+    --steel-blue: #0284c7;
+    --border-color: #e2e8f0;
+    --card-bg: #ffffff;
+    --bg-canvas: #f8fafc;
+  }
+
+  :global(*) {
+    box-sizing: border-box;
+  }
+
+  :global(body.mgmt-body) {
+    margin: 0;
+    background: var(--bg-canvas);
+    color: #0f172a;
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  :global(body.drawer-locked) {
+    overflow: hidden;
+  }
+
+  /* Backdrop scrim */
+  .mgmt-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 17, 40, 0.65);
+    backdrop-filter: blur(2px);
+    z-index: 90;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .mgmt-backdrop.active {
+    display: block;
+    opacity: 1;
+  }
+
+  /* Zen Dock Left Sidebar */
+  .mgmt-sidebar {
+    width: var(--sidebar-w);
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    background: #ffffff;
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 1px 0 3px rgba(15, 23, 42, 0.03);
+  }
+
+  .sidebar-header {
+    height: var(--topbar-h);
+    padding: 0 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+    background: #ffffff;
+  }
+
+  .brand-lockup {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .brand-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: var(--navy-dark);
+    color: #ffffff;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: -0.5px;
+    display: grid;
+    place-items: center;
+    border: 1.5px solid #1e293b;
+    box-shadow: 0 1px 2px rgba(10, 17, 40, 0.15);
+  }
+
+  .brand-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .brand-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--navy-dark);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+
+  .brand-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--orange-action);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .sidebar-btn-close {
+    display: none;
+    background: transparent;
+    border: none;
+    color: #64748b;
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 0.4rem;
+    border-radius: 6px;
+  }
+
+  .sidebar-btn-close:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+  }
+
+  .sidebar-quick-link {
+    padding: 0.75rem 1rem 0.25rem;
+  }
+
+  .public-site-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.45rem 0.75rem;
+    border-radius: 6px;
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    color: #0284c7;
+    text-decoration: none;
+    font-size: 0.78rem;
+    font-weight: 600;
+    transition: all 0.15s ease;
+  }
+
+  .public-site-btn:hover {
+    background: #f0f9ff;
+    border-color: #bae6fd;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .nav-section-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.75rem 0.5rem 0.25rem;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.55rem 0.65rem;
+    border-radius: 8px;
+    color: #475569;
+    text-decoration: none;
+    font-size: 0.86rem;
+    font-weight: 600;
+    transition: all 0.15s ease;
+    position: relative;
+  }
+
+  .nav-item:hover {
+    background: #f1f5f9;
+    color: var(--navy-dark);
+  }
+
+  .nav-item.active {
+    background: var(--navy-dark);
+    color: #ffffff;
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(10, 17, 40, 0.12);
+  }
+
+  .nav-icon {
+    font-size: 1rem;
+    display: grid;
+    place-items: center;
+    width: 20px;
+  }
+
+  .nav-label {
+    flex: 1;
+  }
+
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--orange-action);
+    box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.2);
+    animation: pulseGlow 2s infinite;
+  }
+
+  @keyframes pulseGlow {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  /* Telemetry mini badge */
+  .sidebar-telemetry {
+    margin: 0.5rem 0.75rem;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.75rem;
+  }
+
+  .telemetry-head {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 0.4rem;
+  }
+
+  .stat-indicator {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #15803d;
+  }
+
+  .telemetry-badge {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    font-weight: 700;
+  }
+
+  .telemetry-row {
+    display: flex;
+    justify-content: space-between;
+    color: #64748b;
+    margin-top: 0.2rem;
+  }
+
+  .color-pass {
+    color: #15803d;
+  }
+
+  /* Sidebar footer */
+  .sidebar-footer {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--border-color);
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .user-session {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-width: 0;
+  }
+
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: var(--navy-dark);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    font-size: 11px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+
+  .user-details {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .user-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--navy-dark);
+    line-height: 1.1;
+  }
+
+  .user-sub {
+    font-size: 0.68rem;
+    color: #64748b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 130px;
+  }
+
+  .footer-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .btn-icon {
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: #64748b;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: all 0.15s ease;
+  }
+
+  .btn-icon:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #0f172a;
+  }
+
+  .btn-logout:hover {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #dc2626;
+  }
+
+  /* Main Canvas Viewport */
+  .mgmt-canvas {
+    margin-left: var(--sidebar-w);
+    min-width: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .mgmt-canvas.sidebar-collapsed {
+    margin-left: 0;
+  }
+
+  .mgmt-sidebar.collapsed {
+    transform: translateX(-100%);
+  }
+
+  /* Top Command Bar */
+  .top-command-bar {
+    height: var(--topbar-h);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 80;
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.02);
+  }
+
+  .command-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .btn-hamburger {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4.5px;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.15s ease;
+  }
+
+  .btn-hamburger:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+  }
+
+  .hamburger-bar {
+    width: 18px;
+    height: 2px;
+    background: #334155;
+    border-radius: 2px;
+  }
+
+  .breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .portal-root {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .crumb-separator {
+    color: #cbd5e1;
+  }
+
+  .crumb-current {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+    color: var(--navy-dark);
+    font-size: 0.95rem;
+  }
+
+  .command-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .live-facility-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .live-beacon {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10b981;
+    animation: beaconPulse 2s infinite;
+  }
+
+  @keyframes beaconPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.85); }
+  }
+
+  .quick-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.42rem 0.85rem;
+    border-radius: 8px;
+    background: var(--navy-dark);
+    color: #ffffff;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px rgba(10, 17, 40, 0.15);
+  }
+
+  .quick-nav-btn:hover {
+    background: #1e293b;
+  }
+
+  .quick-nav-btn.secondary {
+    background: #ffffff;
+    color: #0a1128;
+    border: 1.5px solid #cbd5e1;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  }
+
+  .quick-nav-btn.secondary:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+  }
+
+  .quick-nav-icon-btn {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    color: #334155;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+
+  .quick-nav-icon-btn:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+  }
+
+  /* Content Region */
+  .mgmt-content {
+    flex: 1;
+    padding: 1.75rem clamp(1rem, 2.5vw, 2.5rem);
+    max-width: 1720px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  /* Mobile Bottom Navigation Bar */
+  .mgmt-mobile-bottom-bar {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 58px;
+    background: #ffffff;
+    border-top: 1px solid var(--border-color);
+    z-index: 70;
+    padding: 0 0.5rem;
+    align-items: center;
+    justify-content: space-around;
+    box-shadow: 0 -2px 10px rgba(15, 23, 42, 0.04);
+  }
+
+  .mobile-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    color: #64748b;
+    text-decoration: none;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 4px 8px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+  }
+
+  .mobile-tab.active {
+    color: var(--orange-action);
+    font-weight: 700;
+  }
+
+  .mobile-tab-icon {
+    font-size: 1.15rem;
+  }
+
+  /* Responsive Breakpoints */
+  @media (max-width: 1024px) {
+    .mgmt-sidebar {
+      transform: translateX(-100%);
+      width: 280px;
+      box-shadow: 10px 0 30px rgba(10, 17, 40, 0.2);
+    }
+
+    .mgmt-sidebar.open {
+      transform: translateX(0);
+    }
+
+    .sidebar-btn-close {
+      display: block;
+    }
+
+    .mgmt-canvas {
+      margin-left: 0 !important;
+    }
+
+    .top-command-bar {
+      padding: 0 1rem;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .portal-root, .crumb-separator {
+      display: none;
+    }
+
+    .live-facility-pill {
+      display: none;
+    }
+
+    .quick-nav-btn {
+      display: none;
+    }
+
+    .mgmt-content {
+      padding: 1.25rem 0.85rem 5rem;
+    }
+
+    .mgmt-mobile-bottom-bar {
+      display: flex;
+    }
+  }
+
+  /* Dark mode overrides */
+  :global(html.dark) {
+    --bg-canvas: #0b1120;
+    --card-bg: #131b2e;
+    --border-color: #1e293b;
+  }
+
+  :global(html.dark) .mgmt-sidebar {
+    background: #0f172a;
+    border-color: #1e293b;
+  }
+
+  :global(html.dark) .sidebar-header {
+    background: #0f172a;
+    border-color: #1e293b;
+  }
+
+  :global(html.dark) .brand-title {
+    color: #f8fafc;
+  }
+
+  :global(html.dark) .sidebar-telemetry {
+    background: #131b2e;
+    border-color: #1e293b;
+    color: #cbd5e1;
+  }
+
+  :global(html.dark) .sidebar-footer {
+    background: #0f172a;
+    border-color: #1e293b;
+  }
+
+  :global(html.dark) .top-command-bar {
+    background: rgba(15, 23, 42, 0.92);
+    border-color: #1e293b;
+  }
+
+  :global(html.dark) .crumb-current {
+    color: #f8fafc;
+  }
+
+  :global(html.dark) .btn-hamburger, :global(html.dark) .quick-nav-icon-btn {
+    background: #1e293b;
+    border-color: #334155;
+    color: #f8fafc;
+  }
+
+  :global(html.dark) .quick-nav-btn.secondary {
+    background: #1e293b;
+    border-color: #334155;
+    color: #f8fafc;
+  }
+
+  :global(html.dark) .mgmt-mobile-bottom-bar {
+    background: #0f172a;
+    border-color: #1e293b;
+  }
 </style>

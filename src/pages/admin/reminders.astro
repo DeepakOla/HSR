@@ -45,99 +45,143 @@ if (env?.DB) {
 }
 ---
 
-<AdminLayout title="Customer Reminders & Notifications" owner={true}>
-  <div style="margin-bottom: 2rem;">
-    <div style="font-size: 0.78rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">
-      Automated WhatsApp & SMS Notifications
-    </div>
-    <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.85rem; font-weight: 800; color: #0a1128; margin: 0;">
-      Customer Reminder Queue
-    </h1>
-    <p style="color: #64748b; font-size: 0.92rem; margin: 0.25rem 0 0;">
-      Monitor booking confirmations, day-before appointment alerts, certificate readiness notifications, and 3-year statutory retest due reminders.
-    </p>
-  </div>
+<AdminLayout title="Customer Reminders & Notifications" owner={true} activeNav="reminders">
+  <div class="admin-app">
+    <!-- Header -->
+    <div class="admin-heading">
+      <div>
+        <p class="admin-eyebrow">AUTOMATED WHATSAPP & SMS NOTIFICATIONS</p>
+        <h1>Customer Retest Reminder Queue</h1>
+        <p class="admin-subtitle">
+          Monitor statutory compliance alerts, day-before appointment reminders, PESO certificate readiness, and 3-year cylinder retest expiry notifications.
+        </p>
+      </div>
 
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
-      <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Queued for Delivery</span>
-      <div style="font-size: 2rem; font-weight: 800; color: #0284c7; margin-top: 0.25rem;">
-        {queueStats.queued}
+      <div class="admin-actions">
+        <a href="/admin/owner/" class="admin-button secondary">
+          ⚙️ Reminder Alert Settings
+        </a>
       </div>
     </div>
-    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
-      <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Successfully Delivered</span>
-      <div style="font-size: 2rem; font-weight: 800; color: #15803d; margin-top: 0.25rem;">
-        {queueStats.sent}
+
+    <!-- Metrics -->
+    <div class="admin-metrics">
+      <div class="admin-card">
+        <div class="admin-metric-label">Queued for Delivery</div>
+        <div class="admin-metric-value text-steel">{queueStats.queued}</div>
+        <div class="admin-metric-note">Scheduled dispatch window</div>
+      </div>
+      <div class="admin-card">
+        <div class="admin-metric-label">Successfully Delivered</div>
+        <div class="admin-metric-value text-pass">{queueStats.sent}</div>
+        <div class="admin-metric-note">Sent via WhatsApp / SMS</div>
+      </div>
+      <div class="admin-card">
+        <div class="admin-metric-label">Delivery Failures</div>
+        <div class="admin-metric-value text-warn">{queueStats.failed}</div>
+        <div class="admin-metric-note">Unreachable phone numbers</div>
       </div>
     </div>
-    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
-      <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Delivery Failures</span>
-      <div style="font-size: 2rem; font-weight: 800; color: #b91c1c; margin-top: 0.25rem;">
-        {queueStats.failed}
-      </div>
-    </div>
-  </div>
 
-  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
-    <h2 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.15rem; font-weight: 700; color: #0a1128; margin: 0 0 1.25rem;">
-      Scheduled Notifications Log
-    </h2>
+    <!-- Log Table -->
+    <section class="admin-card">
+      <h2 class="admin-section-title">Scheduled Notifications Log</h2>
 
-    <div style="overflow-x: auto;">
-      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
-        <thead>
-          <tr style="border-bottom: 1.5px solid #e2e8f0; color: #64748b; font-size: 0.75rem; text-transform: uppercase;">
-            <th style="padding: 0.6rem 0.5rem;">Recipient</th>
-            <th style="padding: 0.6rem 0.5rem;">Vehicle</th>
-            <th style="padding: 0.6rem 0.5rem;">Reminder Type</th>
-            <th style="padding: 0.6rem 0.5rem;">Channel</th>
-            <th style="padding: 0.6rem 0.5rem;">Scheduled For</th>
-            <th style="padding: 0.6rem 0.5rem;">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {reminders.length === 0 ? (
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
             <tr>
-              <td colspan="6" style="text-align: center; padding: 2rem; color: #94a3b8;">
-                No customer reminder notifications scheduled yet.
-              </td>
+              <th>Recipient</th>
+              <th>Vehicle Reg</th>
+              <th>Reminder Type</th>
+              <th>Channel</th>
+              <th>Scheduled For</th>
+              <th>Delivery Status</th>
             </tr>
-          ) : (
-            reminders.map((r) => (
-              <tr style="border-bottom: 1px solid #f1f5f9;">
-                <td style="padding: 0.75rem 0.5rem; font-weight: 700; color: #0a1128;">
-                  {r.customerName || 'Customer'}
-                  <div style="font-size: 0.75rem; color: #64748b; font-weight: normal;">
-                    {r.phone ? `+91 ${r.phone}` : '—'}
-                  </div>
-                </td>
-                <td style="padding: 0.75rem 0.5rem; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #0a1128;">
-                  {r.regNo}
-                </td>
-                <td style="padding: 0.75rem 0.5rem; color: #334155; font-size: 0.82rem;">
-                  {r.reminderType}
-                </td>
-                <td style="padding: 0.75rem 0.5rem; font-weight: 600; color: #0284c7;">
-                  {r.channel}
-                </td>
-                <td style="padding: 0.75rem 0.5rem; color: #64748b; font-size: 0.82rem;">
-                  {r.scheduledFor?.slice(0, 16).replace('T', ' ')}
-                </td>
-                <td style="padding: 0.75rem 0.5rem;">
-                  <span style={`padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; ${
-                    r.status === 'SENT' ? 'background: #dcfce7; color: #15803d;' :
-                    r.status === 'QUEUED' ? 'background: #e0f2fe; color: #0369a1;' :
-                    'background: #fee2e2; color: #b91c1c;'
-                  }`}>
-                    {r.status}
-                  </span>
+          </thead>
+          <tbody>
+            {reminders.length === 0 ? (
+              <tr>
+                <td colspan="6" class="table-empty-cell">
+                  No customer reminder notifications scheduled yet.
                 </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-    </div>
+            ) : (
+              reminders.map((r) => (
+                <tr>
+                  <td>
+                    <strong>{r.customerName || 'Customer'}</strong>
+                    <div class="font-mono-col text-steel">
+                      {r.phone ? `+91 ${r.phone}` : '—'}
+                    </div>
+                  </td>
+                  <td>
+                    <span class="reg-pill">{r.regNo}</span>
+                  </td>
+                  <td>
+                    <span class="admin-tag">{r.reminderType}</span>
+                  </td>
+                  <td class="font-bold text-steel">
+                    {r.channel}
+                  </td>
+                  <td class="font-mono-col">
+                    {r.scheduledFor?.slice(0, 16).replace('T', ' ')}
+                  </td>
+                  <td>
+                    <span class={`admin-status ${
+                      r.status === 'SENT' ? '' :
+                      r.status === 'QUEUED' ? 'pending' : 'error'
+                    }`}>
+                      {r.status}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 </AdminLayout>
+
+<style>
+  .reg-pill {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    background: #0a1128;
+    color: #ffffff;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.82rem;
+    letter-spacing: 0.03em;
+  }
+
+  .font-mono-col {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+  }
+
+  .font-bold {
+    font-weight: 700;
+  }
+
+  .text-steel {
+    color: #0284c7 !important;
+  }
+
+  .text-pass {
+    color: #15803d !important;
+  }
+
+  .text-warn {
+    color: #ea580c !important;
+  }
+
+  .table-empty-cell {
+    text-align: center;
+    padding: 2.5rem 1rem !important;
+    color: #94a3b8;
+  }
+</style>
