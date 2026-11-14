@@ -1,0 +1,166 @@
+---
+import { requireRole } from '../../lib/auth';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+const env = getRuntimeEnv(Astro.locals);
+const auth = await requireRole(Astro.request, env, ['OWNER']);
+if (!auth.ok) return auth.response;
+
+let payments: any[] = [];
+let totals = {
+  totalPaidPaise: 0,
+  upiPaise: 0,
+  cashPaise: 0,
+  verifiedCount: 0,
+  pendingCount: 0,
+};
+
+if (env?.DB) {
+  try {
+    const stats = await env.DB.prepare(`
+      SELECT 
+        SUM(amount_paise) as totalPaid,
+        SUM(CASE WHEN payment_mode = 'UPI_QR' THEN amount_paise ELSE 0 END) as upiTotal,
+        SUM(CASE WHEN payment_mode = 'CASH' THEN amount_paise ELSE 0 END) as cashTotal,
+        SUM(CASE WHEN payment_state = 'VERIFIED' THEN 1 ELSE 0 END) as verifiedCount,
+        SUM(CASE WHEN payment_state = 'PENDING_VERIFICATION' THEN 1 ELSE 0 END) as pendingCount
+      FROM payments
+    `).first<any>();
+
+    if (stats) {
+      totals.totalPaidPaise = stats.totalPaid || 0;
+      totals.upiPaise = stats.upiTotal || 0;
+      totals.cashPaise = stats.cashTotal || 0;
+      totals.verifiedCount = stats.verifiedCount || 0;
+      totals.pendingCount = stats.pendingCount || 0;
+    }
+
+    const rows = await env.DB.prepare(`
+      SELECT p.id, p.booking_group_id as groupId, p.amount_paise as amountPaise,
+             p.payment_mode as mode, p.utr_or_reference as utr, p.payment_state as state,
+             p.paid_at as paidAt, p.verified_at as verifiedAt,
+             b.booking_code as bookingCode,
+             COALESCE(b.display_reg_no, v.registration_display, 'HR-26') as regNo
+      FROM payments p
+      LEFT JOIN bookings b ON b.id = p.booking_id
+      LEFT JOIN vehicles v ON v.id = b.vehicle_id
+      ORDER BY p.paid_at DESC LIMIT 50
+    `).all<any>();
+    payments = rows.results || [];
+  } catch (e) {
+    console.error('Failed to query payments ledger:', e);
+  }
+}
+---
+
+<AdminLayout title="Financial Reconciliation & Ledger" owner={true}>
+  <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <div style="font-size: 0.78rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">
+        Financial Accounting & Counter Reconciliation
+      </div>
+      <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.85rem; font-weight: 800; color: #0a1128; margin: 0;">
+        Payments & Revenue Ledger
+      </h1>
+      <p style="color: #64748b; font-size: 0.92rem; margin: 0.25rem 0 0;">
+        Track cash receipts, 12-digit UPI UTR settlements, and verified advances.
+      </p>
+    </div>
+
+    <a href="/api/admin/exports/bookings.csv" style="display: inline-flex; align-items: center; gap: 0.5rem; background: #ffffff; border: 1.5px solid #cbd5e1; color: #334155; padding: 0.65rem 1.25rem; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 0.9rem;">
+      📥 Export Accounting CSV
+    </a>
+  </div>
+
+  <!-- FINANCIAL SUMMARY CARDS -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+      <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Total Collections</span>
+      <div style="font-size: 2rem; font-weight: 800; color: #0a1128; margin-top: 0.25rem;">
+        ₹{(totals.totalPaidPaise / 100).toLocaleString('en-IN')}
+      </div>
+      <div style="font-size: 0.78rem; color: #15803d; margin-top: 0.25rem;">
+        Verified: {totals.verifiedCount} • Pending: {totals.pendingCount}
+      </div>
+    </div>
+
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+      <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">UPI Collections</span>
+      <div style="font-size: 2rem; font-weight: 800; color: #0284c7; margin-top: 0.25rem;">
+        ₹{(totals.upiPaise / 100).toLocaleString('en-IN')}
+      </div>
+      <div style="font-size: 0.78rem; color: #64748b; margin-top: 0.25rem;">
+        QR & VPA direct payments
+      </div>
+    </div>
+
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+      <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Cash Drawer</span>
+      <div style="font-size: 2rem; font-weight: 800; color: #15803d; margin-top: 0.25rem;">
+        ₹{(totals.cashPaise / 100).toLocaleString('en-IN')}
+      </div>
+      <div style="font-size: 0.78rem; color: #64748b; margin-top: 0.25rem;">
+        Counter cash received
+      </div>
+    </div>
+  </div>
+
+  <!-- PAYMENTS TABLE -->
+  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
+    <h2 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.15rem; font-weight: 700; color: #0a1128; margin: 0 0 1.25rem;">
+      Recent Payment Transactions
+    </h2>
+
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+        <thead>
+          <tr style="border-bottom: 1.5px solid #e2e8f0; color: #64748b; font-size: 0.75rem; text-transform: uppercase;">
+            <th style="padding: 0.6rem 0.5rem;">Date / Time</th>
+            <th style="padding: 0.6rem 0.5rem;">Vehicle</th>
+            <th style="padding: 0.6rem 0.5rem;">Mode</th>
+            <th style="padding: 0.6rem 0.5rem;">Reference / UTR</th>
+            <th style="padding: 0.6rem 0.5rem;">Amount</th>
+            <th style="padding: 0.6rem 0.5rem;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {payments.length === 0 ? (
+            <tr>
+              <td colspan="6" style="text-align: center; padding: 2rem; color: #94a3b8;">
+                No payment transactions recorded yet.
+              </td>
+            </tr>
+          ) : (
+            payments.map((p) => (
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 0.75rem 0.5rem; color: #475569; font-size: 0.82rem;">
+                  {p.paidAt ? new Date(p.paidAt).toLocaleString('en-IN') : '—'}
+                </td>
+                <td style="padding: 0.75rem 0.5rem; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #0a1128;">
+                  {p.regNo || p.bookingCode || '—'}
+                </td>
+                <td style="padding: 0.75rem 0.5rem; font-weight: 600; color: #334155;">
+                  {p.mode}
+                </td>
+                <td style="padding: 0.75rem 0.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: #0284c7;">
+                  {p.utr || '—'}
+                </td>
+                <td style="padding: 0.75rem 0.5rem; font-weight: 700; color: #0a1128;">
+                  ₹{(p.amountPaise / 100).toLocaleString('en-IN')}
+                </td>
+                <td style="padding: 0.75rem 0.5rem;">
+                  <span style={`padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; ${
+                    p.state === 'VERIFIED' ? 'background: #dcfce7; color: #15803d;' : 'background: #fef3c7; color: #b45309;'
+                  }`}>
+                    {p.state}
+                  </span>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</AdminLayout>

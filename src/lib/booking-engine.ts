@@ -1,0 +1,668 @@
+import type { Locale } from './constants';
+import { buildSnapshotScheduleRanges, type SnapshotScheduleVersion } from './schedule-ranges';
+import { getBusinessSettings, queryAll, querySingle } from './db';
+import { addMinutes, generateBookingCode, generateOpaqueToken, normalizePhoneIndian, normalizeUtr, nowIso, sha256 } from './utils';
+import type { SlotAvailability, VehicleCategory } from './types';
+import { findConsecutiveAvailableSlots, markBookableStarts, type OccupiedAppointmentSlot } from './appointment-slots';
+import { calculateBookingPrice, FIXED_GST_RATE_BPS } from './pricing';
+import { validateVehicleRegistration } from './vehicle-registration';
+
+export async function fetchAvailability(
+  db: D1Database,
+  locale: Locale,
+  fromDate: string,
+  days = 45,
+  cylinderCount = 1,
+  includeStaffOnly = false,
+): Promise<SlotAvailability[]> {
+  const endDate = new Date(fromDate + 'T00:00:00Z');
+  endDate.setUTCDate(endDate.getUTCDate() + Math.min(Math.max(days, 1), 60));
+  const end = endDate.toISOString().slice(0, 10);
+  const rows = await queryAll<{
+    slotSnapshotId: number; serviceDate: string; startTime: string; endTime: string;
+    configVersion: number; isClosed: number; isPublic: number; reserved: number;
+    slotLabelEn: string; slotLabelHi: string; dayCapacity: number; dayReserved: number;
+  }>(
+    db,
+    `SELECT
+      dss.id AS slotSnapshotId, dss.service_date AS serviceDate,
+      dss.start_time AS startTime, dss.end_time AS endTime,
+      dss.config_version AS configVersion, dss.is_closed AS isClosed,
+      dss.is_public AS isPublic, dss.slot_label_en AS slotLabelEn,
+      dss.slot_label_hi AS slotLabelHi,
+      CASE WHEN EXISTS (SELECT 1 FROM booking_slot_allocations a WHERE a.slot_snapshot_id = dss.id) THEN 1 ELSE 0 END AS reserved,
+      (SELECT COUNT(*) FROM daily_slot_snapshots ds
+       WHERE ds.service_date = dss.service_date AND ds.is_closed = 0
+         AND (? = 1 OR ds.is_public = 1)) AS dayCapacity,
+      (SELECT COUNT(*) FROM booking_slot_allocations a
+       JOIN daily_slot_snapshots ds ON ds.id = a.slot_snapshot_id
+       WHERE ds.service_date = dss.service_date AND ds.is_closed = 0
+         AND (? = 1 OR ds.is_public = 1)) AS dayReserved
+     FROM daily_slot_snapshots dss
+     WHERE dss.service_date >= ? AND dss.service_date <= ?
+       AND dss.is_closed = 0 AND (? = 1 OR dss.is_public = 1)
+     ORDER BY dss.service_date ASC, dss.start_time ASC`,
+    [includeStaffOnly ? 1 : 0, includeStaffOnly ? 1 : 0, fromDate, end, includeStaffOnly ? 1 : 0]
+  );
+
+  const clock = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date());
+  const clockParts = Object.fromEntries(clock.map((part) => [part.type, part.value]));
+  const today = String(clockParts.year) + '-' + String(clockParts.month) + '-' + String(clockParts.day);
+  const currentTime = String(clockParts.hour) + ':' + String(clockParts.minute);
+  const futureRows = rows.filter((row) => row.serviceDate > today || (row.serviceDate === today && row.startTime > currentTime));
+  const marked = markBookableStarts(futureRows.map((row) => ({
+    slotSnapshotId: row.slotSnapshotId, serviceDate: row.serviceDate,
+    startTime: row.startTime, endTime: row.endTime, configVersion: row.configVersion,
+    isClosed: row.isClosed === 1, isPublic: row.isPublic === 1, reserved: row.reserved === 1,
+  })), cylinderCount, includeStaffOnly);
+  const byId = new Map(futureRows.map((row) => [row.slotSnapshotId, row]));
+  return marked.map((slot) => {
+    const row = byId.get(slot.slotSnapshotId)!;
+    return {
+      slotSnapshotId: slot.slotSnapshotId, serviceDate: slot.serviceDate,
+      slotLabel: locale === 'hi' ? row.slotLabelHi : row.slotLabelEn,
+      startTime: slot.startTime, endTime: slot.endTime,
+      slotCapacity: 1, slotReserved: row.reserved, slotRemaining: row.reserved ? 0 : 1,
+      dayCapacity: row.dayCapacity, dayReserved: row.dayReserved,
+      dayRemaining: Math.max(0, row.dayCapacity - row.dayReserved),
+      isClosed: slot.isClosed, isPublic: slot.isPublic,
+      canStartBooking: slot.canStartBooking, bookingEndTime: slot.bookingEndTime,
+    };
+  });
+}
+export async function fetchVehicleCategories(db: D1Database, locale: Locale): Promise<VehicleCategory[]> {
+  const settings = await getBusinessSettings(db);
+  const rows = await queryAll<{
+    id: number;
+    code: string;
+    nameEn: string;
+    nameHi: string;
+    cylinderCount: number;
+    basePricePaise: number;
+    gstRateBps: number;
+    advancePaise: number | null;
+  }>(
+    db,
+    `SELECT
+      id,
+      code,
+      name_en AS nameEn,
+      name_hi AS nameHi,
+      cylinder_count AS cylinderCount,
+      base_price_paise AS basePricePaise,
+      gst_rate_bps AS gstRateBps,
+      advance_paise AS advancePaise
+    FROM vehicle_categories
+    WHERE is_active = 1
+    ORDER BY sort_order ASC`
+  );
+
+  return rows.map((row) => {
+    const advancePaise = row.advancePaise ?? settings.flat_advance_paise ?? 50000;
+    const price = calculateBookingPrice(row.basePricePaise, advancePaise);
+    return {
+      id: row.id,
+      code: row.code,
+      name: locale === 'hi' ? row.nameHi : row.nameEn,
+      cylinderCount: row.cylinderCount,
+      basePricePaise: row.basePricePaise,
+      gstRateBps: FIXED_GST_RATE_BPS,
+      gstPaise: price.gstAmountPaise,
+      totalPaise: price.totalPricePaise,
+      advancePaise: advancePaise,
+    };
+  });
+}
+
+interface CreateHoldInput {
+  locale: Locale;
+  slotSnapshotId: number;
+  categoryId: number;
+  customerName: string;
+  mobile: string;
+  vehicleRegistration: string;
+  vehicleType: string;
+  source: 'WEB' | 'PHONE' | 'WHATSAPP' | 'WALKIN';
+  idempotencyKey: string;
+  reservationState?: 'HELD' | 'CONFIRMED';
+  paymentState?: 'ADVANCE_PENDING' | 'PAID_AT_COUNTER';
+  paymentCollected?: boolean;
+}
+
+type StoredHoldResult = {
+  bookingCode: string;
+  statusToken: string;
+  holdExpiresAt: string;
+  reservationState: 'HELD' | 'CONFIRMED';
+  paymentState: 'ADVANCE_PENDING' | 'PAID_AT_COUNTER';
+  category: {
+    id: number;
+    code: string;
+    name: string;
+    cylinderCount: number;
+    basePricePaise: number;
+    gstRateBps: number;
+    gstPaise: number;
+    totalPaise: number;
+    advancePaise: number | null;
+  };
+  slot: {
+    id: number;
+    serviceDate: string;
+    slotLabelEn: string;
+    slotLabelHi: string;
+    startTime: string;
+    endTime: string;
+    slotCapacity: number;
+    dayCapacity: number;
+    configVersion: number;
+  };
+  pricing: {
+    basePricePaise: number;
+    gstRateBps: number;
+    gstAmountPaise: number;
+    totalPricePaise: number;
+    advancePaise: number | null;
+    amountPaidPaise: number;
+    balancePaise: number | null;
+  };
+  paymentConfig: {
+    vpaId: string;
+    payeeName: string;
+    r2Enabled: boolean;
+    whatsappNumber: string;
+  };
+};
+
+export async function createHold(db: D1Database, input: CreateHoldInput) {
+  const readIdempotentResult = async () => {
+    const existing = await db.prepare(
+      "SELECT response_json AS responseJson FROM idempotency_keys WHERE idempotency_key = ? AND endpoint = 'create-hold'"
+    ).bind(input.idempotencyKey).first<{ responseJson: string }>();
+    if (!existing) return null;
+
+    const payload = JSON.parse(existing.responseJson) as StoredHoldResult;
+    const booking = await db.prepare(
+      'SELECT id FROM bookings WHERE booking_code = ?'
+    ).bind(payload.bookingCode).first<{ id: number }>();
+    if (!booking) throw new Error('Existing idempotency record has no matching booking');
+    return { ...payload, bookingId: booking.id };
+  };
+
+  const prior = await readIdempotentResult();
+  if (prior) return prior;
+
+  const settings = await getBusinessSettings(db);
+  const normalizedPhone = normalizePhoneIndian(input.mobile);
+  const regResult = validateVehicleRegistration(input.vehicleRegistration, input.locale);
+  if (!regResult.valid) {
+    throw new Error(regResult.error || 'Invalid vehicle registration number');
+  }
+  const normalizedReg = regResult.normalized;
+
+  if (input.source === 'WEB') {
+    const vpaId = settings.vpa_id?.trim();
+    const payeeName = settings.vpa_payee_name?.trim();
+    if (!vpaId || vpaId === 'SETUP_REQUIRED' || !payeeName || payeeName === 'SETUP_REQUIRED') {
+      throw new Error('ONLINE_PAYMENT_UNAVAILABLE: Online payments are currently being configured.');
+    }
+  }
+
+  const slot = await querySingle<{
+    id: number; serviceDate: string; slotLabelEn: string; slotLabelHi: string;
+    startTime: string; endTime: string; slotCapacity: number; dayCapacity: number;
+    configVersion: number; isClosed: number; isPublic: number; intervalMinutes: number;
+  }>(
+    db,
+    `SELECT dss.id, dss.service_date AS serviceDate,
+      dss.slot_label_en AS slotLabelEn, dss.slot_label_hi AS slotLabelHi,
+      dss.start_time AS startTime, dss.end_time AS endTime,
+      dss.slot_capacity AS slotCapacity, dss.daily_capacity AS dayCapacity,
+      dss.config_version AS configVersion, dss.is_closed AS isClosed,
+      dss.is_public AS isPublic, dss.interval_minutes AS intervalMinutes
+     FROM daily_slot_snapshots dss WHERE dss.id = ?`,
+    [input.slotSnapshotId]
+  );
+
+  if (slot.isClosed === 1 || (input.source === 'WEB' && slot.isPublic !== 1)) {
+    throw new Error('This appointment time is not available for this booking channel');
+  }
+
+  const localParts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: settings.timezone || 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(new Date());
+  const local = Object.fromEntries(localParts.map((part) => [part.type, part.value]));
+  const localDate = `${local.year}-${local.month}-${local.day}`;
+  const localTime = `${local.hour}:${local.minute}`;
+  if (slot.serviceDate < localDate || (slot.serviceDate === localDate && slot.startTime <= localTime)) {
+    throw new Error('Selected appointment date or time has already passed');
+  }
+
+  const categoryRow = await querySingle<{
+    id: number;
+    code: string;
+    nameEn: string;
+    nameHi: string;
+    cylinderCount: number;
+    basePricePaise: number;
+    gstRateBps: number;
+    advancePaise: number | null;
+  }>(
+    db,
+    `SELECT
+      id,
+      code,
+      name_en AS nameEn,
+      name_hi AS nameHi,
+      cylinder_count AS cylinderCount,
+      base_price_paise AS basePricePaise,
+      gst_rate_bps AS gstRateBps,
+      advance_paise AS advancePaise
+    FROM vehicle_categories
+    WHERE id = ? AND is_active = 1`,
+    [input.categoryId]
+  );
+
+  if (input.source === 'WEB' && categoryRow.cylinderCount > 6) {
+    throw new Error('PUBLIC_CYLINDER_LIMIT_EXCEEDED: Online self-service booking is limited to a maximum of 6 cylinders.');
+  }
+
+  const advancePaise = input.source === 'WEB'
+    ? (settings.flat_advance_paise ?? 50000)
+    : (categoryRow.advancePaise ?? settings.flat_advance_paise ?? 50000);
+
+  const price = calculateBookingPrice(categoryRow.basePricePaise, advancePaise);
+  const gstAmountPaise = price.gstAmountPaise;
+  const totalPricePaise = price.totalPricePaise;
+  const amountPaidPaise = input.paymentCollected ? totalPricePaise : 0;
+  const balancePaise = input.reservationState === 'CONFIRMED'
+    ? (input.paymentCollected ? 0 : totalPricePaise)
+    : price.balancePaise;
+
+  const candidateSlots = await queryAll<OccupiedAppointmentSlot>(
+    db,
+    `SELECT dss.id AS slotSnapshotId, dss.service_date AS serviceDate,
+      dss.start_time AS startTime, dss.end_time AS endTime,
+      dss.config_version AS configVersion, dss.is_closed AS isClosed,
+      dss.is_public AS isPublic, 0 AS reserved
+     FROM daily_slot_snapshots dss
+     WHERE dss.service_date = ? AND dss.config_version = ?
+       AND dss.start_time >= ? AND dss.is_closed = 0
+       AND (? = 1 OR dss.is_public = 1)
+       AND NOT EXISTS (SELECT 1 FROM booking_slot_allocations a WHERE a.slot_snapshot_id = dss.id)
+     ORDER BY dss.start_time ASC LIMIT ?`,
+    [slot.serviceDate, slot.configVersion, slot.startTime, input.source === 'WEB' ? 0 : 1, categoryRow.cylinderCount]
+  );
+  const selectedRun = findConsecutiveAvailableSlots(candidateSlots, slot.id, categoryRow.cylinderCount, input.source !== 'WEB');
+  if (!selectedRun) throw new Error('This start time no longer has enough consecutive cylinder-work intervals. Choose another time.');
+  const bookingEndTime = selectedRun[selectedRun.length - 1].endTime;
+  const bookingSlotLabel = slot.startTime + ' - ' + bookingEndTime;
+
+  const bookingCode = generateBookingCode();
+  const statusToken = generateOpaqueToken(24);
+  const statusTokenHash = sha256(statusToken);
+  const now = nowIso();
+  const expiresAt = addMinutes(new Date(), settings.hold_minutes).toISOString();
+  const reservationState = input.reservationState ?? 'HELD';
+  const paymentState = input.paymentState ?? 'ADVANCE_PENDING';
+
+  const category = {
+    id: categoryRow.id,
+    code: categoryRow.code,
+    name: input.locale === 'hi' ? categoryRow.nameHi : categoryRow.nameEn,
+    cylinderCount: categoryRow.cylinderCount,
+    basePricePaise: categoryRow.basePricePaise,
+    gstRateBps: FIXED_GST_RATE_BPS,
+    gstPaise: gstAmountPaise,
+    totalPaise: totalPricePaise,
+    advancePaise,
+  };
+
+  const responseSnapshot: StoredHoldResult = {
+    bookingCode,
+    statusToken,
+    holdExpiresAt: expiresAt,
+    reservationState,
+    paymentState,
+    category,
+    slot: {
+      id: slot.id,
+      serviceDate: slot.serviceDate,
+      slotLabelEn: bookingSlotLabel,
+      slotLabelHi: bookingSlotLabel,
+      startTime: slot.startTime,
+      endTime: bookingEndTime,
+      slotCapacity: slot.slotCapacity,
+      dayCapacity: slot.dayCapacity,
+      configVersion: slot.configVersion,
+    },
+    pricing: {
+      basePricePaise: categoryRow.basePricePaise,
+      gstRateBps: FIXED_GST_RATE_BPS,
+      gstAmountPaise,
+      totalPricePaise,
+      advancePaise,
+      amountPaidPaise,
+      balancePaise,
+    },
+    paymentConfig: {
+      vpaId: settings.vpa_id,
+      payeeName: settings.vpa_payee_name,
+      r2Enabled: settings.r2_enabled === 1,
+      whatsappNumber: settings.whatsapp_number,
+    },
+  };
+
+  try {
+    await db.batch([
+      db.prepare(
+        'INSERT INTO customers(name, mobile_e164) VALUES(?, ?) ON CONFLICT(mobile_e164) DO UPDATE SET name = excluded.name'
+      ).bind(input.customerName.trim(), normalizedPhone),
+      db.prepare(
+        'INSERT INTO vehicles(registration_normalized, registration_display, vehicle_type) VALUES(?, ?, ?) ON CONFLICT(registration_normalized) DO UPDATE SET registration_display = excluded.registration_display, vehicle_type = excluded.vehicle_type'
+      ).bind(normalizedReg, input.vehicleRegistration.trim().toUpperCase(), input.vehicleType.trim()),
+      db.prepare(
+        `INSERT INTO bookings(
+          booking_code, status_token_hash, source, reservation_state, payment_state,
+          hold_expires_at, service_date, slot_snapshot_id, customer_id, vehicle_id,
+          category_id, vehicle_type_snapshot, category_name_en_snapshot, category_name_hi_snapshot,
+          cylinder_count_snapshot, base_price_paise_snapshot, gst_rate_bps_snapshot,
+          gst_amount_paise_snapshot, total_price_paise_snapshot, amount_paid_paise, advance_paise_snapshot,
+          balance_paise_snapshot, slot_label_en_snapshot, slot_label_hi_snapshot,
+          slot_start_snapshot, slot_end_snapshot, slot_capacity_snapshot,
+          daily_capacity_snapshot, config_version_snapshot, created_at, updated_at
+        )
+        SELECT ?, ?, ?, ?, ?, ?, ?, ?,
+          (SELECT id FROM customers WHERE mobile_e164 = ?),
+          (SELECT id FROM vehicles WHERE registration_normalized = ?),
+          ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?`
+      ).bind(
+        bookingCode, statusTokenHash, input.source, reservationState, paymentState, expiresAt, slot.serviceDate, slot.id,
+        normalizedPhone, normalizedReg, categoryRow.id, input.vehicleType.trim(), categoryRow.nameEn, categoryRow.nameHi,
+        categoryRow.cylinderCount, categoryRow.basePricePaise, FIXED_GST_RATE_BPS,
+        gstAmountPaise, totalPricePaise, amountPaidPaise, advancePaise, balancePaise,
+        bookingSlotLabel, bookingSlotLabel, slot.startTime, bookingEndTime,
+        1, slot.dayCapacity, slot.configVersion, now, now
+      ),
+      ...selectedRun.map((allocatedSlot, index) => db.prepare(
+        'INSERT INTO booking_slot_allocations(booking_id, slot_snapshot_id, ordinal) SELECT id, ?, ? FROM bookings WHERE booking_code = ?'
+      ).bind(allocatedSlot.slotSnapshotId, index + 1, bookingCode)),
+      db.prepare(
+        `INSERT INTO booking_audit_events(booking_id, event_type, actor_type, actor_id, event_payload_json)
+         SELECT id, 'BOOKING_HELD', 'CUSTOMER', ?, ?
+         FROM bookings WHERE booking_code = ?`
+      ).bind(input.source, JSON.stringify({ locale: input.locale }), bookingCode),
+      db.prepare(
+        'INSERT INTO idempotency_keys(idempotency_key, endpoint, response_json, created_at) VALUES(?, ?, ?, ?)'
+      ).bind(input.idempotencyKey, 'create-hold', JSON.stringify(responseSnapshot), now),
+    ]);
+  } catch (error) {
+    const existing = await readIdempotentResult();
+    if (existing) return existing;
+    throw error;
+  }
+
+  const row = await querySingle<{ id: number }>(
+    db,
+    'SELECT id FROM bookings WHERE booking_code = ?',
+    [bookingCode]
+  );
+
+  // Synchronize into Unified Monolith Tables (0008 Schema)
+  try {
+    const phoneId = `ph_${crypto.randomUUID()}`;
+    const partyId = `pty_${crypto.randomUUID()}`;
+    const bgId = `bg_${bookingCode}`;
+    const displayPhone = normalizedPhone.replace('+91', '');
+    const vehicleCategory = categoryRow.cylinderCount <= 1 ? 'CAR' : (categoryRow.cylinderCount <= 2 ? 'TEMPO_LCV' : 'TRUCK_BUS');
+
+    await db.batch([
+      // 1. Ensure contact phone exists
+      db.prepare(`
+        INSERT INTO contact_phones (id, phone_e164, display_phone)
+        VALUES (?, ?, ?)
+        ON CONFLICT(phone_e164) DO NOTHING
+      `).bind(phoneId, normalizedPhone, displayPhone),
+
+      // 2. Ensure party exists
+      db.prepare(`
+        INSERT INTO parties (id, full_name, party_type)
+        VALUES (?, ?, 'INDIVIDUAL')
+      `).bind(partyId, input.customerName.trim()),
+
+      // 3. Link party to phone
+      db.prepare(`
+        INSERT INTO party_phones (id, party_id, phone_id, relationship_label, is_primary)
+        SELECT ?, ?, id, 'SELF', 1 FROM contact_phones WHERE phone_e164 = ?
+        ON CONFLICT(party_id, phone_id) DO NOTHING
+      `).bind(`pp_${crypto.randomUUID()}`, partyId, normalizedPhone),
+
+      // 4. Link vehicle access
+      db.prepare(`
+        INSERT INTO party_vehicle_access (id, party_id, vehicle_id, access_role)
+        SELECT ?, ?, id, 'OWNER' FROM vehicles WHERE registration_normalized = ?
+        ON CONFLICT(party_id, vehicle_id) DO NOTHING
+      `).bind(`pva_${crypto.randomUUID()}`, partyId, normalizedReg),
+
+      // 5. Create booking group
+      db.prepare(`
+        INSERT INTO booking_groups (
+          id, group_reference, booker_party_id, booker_phone_id, source_channel,
+          total_vehicles, total_cylinders, subtotal_paise, gst_paise, total_payable_paise, payment_status
+        )
+        SELECT ?, ?, ?, id, ?, 1, ?, ?, ?, ?, 'UNPAID'
+        FROM contact_phones WHERE phone_e164 = ?
+      `).bind(
+        bgId, `HSR-${bookingCode}`, partyId,
+        input.source === 'WEB' ? 'WEB_PUBLIC' : 'RECEPTION_PHONE',
+        categoryRow.cylinderCount, categoryRow.basePricePaise, gstAmountPaise, totalPricePaise,
+        normalizedPhone
+      ),
+
+      // 6. Update vehicle and booking with unified columns
+      db.prepare(`
+        UPDATE vehicles
+        SET display_reg_no = ?,
+            normalized_reg_no = ?,
+            vehicle_category = ?
+        WHERE registration_normalized = ?
+      `).bind(
+        input.vehicleRegistration.trim().toUpperCase(),
+        normalizedReg,
+        vehicleCategory,
+        normalizedReg
+      ),
+
+      db.prepare(`
+        UPDATE bookings
+        SET booking_token = ?,
+            booking_group_id = ?,
+            rc_owner_party_id = ?,
+            rc_owner_name_snapshot = ?,
+            slot_date = ?,
+            slot_start_time = ?,
+            booked_cylinder_count = ?,
+            booking_status = ?,
+            testing_status = 'NOT_ARRIVED'
+        WHERE booking_code = ?
+      `).bind(
+        statusToken, bgId, partyId, input.customerName.trim(),
+        slot.serviceDate, slot.startTime, categoryRow.cylinderCount,
+        reservationState === 'CONFIRMED' ? 'CONFIRMED' : 'HOLD',
+        bookingCode
+      )
+    ]);
+  } catch (err) {
+    // Non-blocking sync error logging so legacy booking always succeeds
+    console.warn('[UnifiedSync] Non-blocking synchronization notice:', err);
+  }
+
+  return { ...responseSnapshot, bookingId: row.id };
+}
+
+export async function submitPaymentEvidence(
+  db: D1Database,
+  bookingCode: string,
+  statusToken: string,
+  input: { utr: string; source: 'WEB' | 'PHONE' | 'WHATSAPP' | 'WALKIN' }
+) {
+  const normalizedUtr = normalizeUtr(input.utr);
+  if (normalizedUtr.length < 8) throw new Error('Please enter a valid UTR/reference number');
+
+  const submittedAt = nowIso();
+  const results = await db.batch([
+    db.prepare(
+      `UPDATE bookings
+       SET payment_utr_normalized = ?,
+           payment_submitted_at = ?,
+           payment_state = 'EVIDENCE_SUBMITTED',
+           reservation_state = 'PENDING_VERIFICATION',
+           updated_at = ?
+       WHERE booking_code = ?
+         AND status_token_hash = ?
+         AND reservation_state = 'HELD'
+         AND payment_state = 'ADVANCE_PENDING'
+         AND hold_expires_at > ?`
+    ).bind(normalizedUtr, submittedAt, submittedAt, bookingCode, sha256(statusToken), submittedAt),
+    db.prepare(
+      `INSERT INTO booking_audit_events(booking_id, event_type, actor_type, actor_id, event_payload_json)
+       SELECT id, 'PAYMENT_EVIDENCE_SUBMITTED', 'CUSTOMER', ?, ?
+       FROM bookings
+       WHERE booking_code = ?
+         AND status_token_hash = ?
+         AND reservation_state = 'PENDING_VERIFICATION'
+         AND payment_state = 'EVIDENCE_SUBMITTED'
+         AND payment_submitted_at = ?`
+    ).bind(input.source, JSON.stringify({ utrLast4: normalizedUtr.slice(-4) }), bookingCode, sha256(statusToken), submittedAt),
+  ]);
+
+  if ((results[0]?.meta.changes ?? 0) !== 1) {
+    throw new Error('Booking not found, expired, or no longer accepting payment evidence');
+  }
+
+  // Synchronize payment into Unified Monolith Tables (0008 Schema)
+  try {
+    const payId = `pay_${crypto.randomUUID()}`;
+    await db.batch([
+      db.prepare(`
+        UPDATE bookings
+        SET booking_status = 'CONFIRMED'
+        WHERE booking_code = ?
+      `).bind(bookingCode),
+
+      db.prepare(`
+        UPDATE booking_groups
+        SET payment_status = 'VERIFICATION_PENDING'
+        WHERE id = (SELECT booking_group_id FROM bookings WHERE booking_code = ?)
+      `).bind(bookingCode),
+
+      db.prepare(`
+        INSERT INTO payments (
+          id, booking_group_id, booking_id, amount_paise, payment_mode, utr_or_reference, payment_state, paid_at
+        )
+        SELECT ?, b.booking_group_id, b.id, COALESCE(b.advance_paise_snapshot, 50000), 'UPI_QR', ?, 'PENDING_VERIFICATION', ?
+        FROM bookings b WHERE b.booking_code = ? AND b.booking_group_id IS NOT NULL
+        ON CONFLICT(utr_or_reference) DO NOTHING
+      `).bind(payId, normalizedUtr, submittedAt, bookingCode)
+    ]);
+  } catch (err) {
+    console.warn('[UnifiedPaymentSync] Non-blocking payment sync notice:', err);
+  }
+
+  return { paymentState: 'EVIDENCE_SUBMITTED', reservationState: 'PENDING_VERIFICATION' };
+}
+
+
+function businessDateInIndia() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function addCalendarDays(date: string, days: number) {
+  const value = new Date(`${date}T00:00:00Z`);
+  value.setUTCDate(value.getUTCDate() + days);
+  return value.toISOString().slice(0, 10);
+}
+
+/**
+ * Extends the active schedule version's daily slot snapshots to 45 days ahead.
+ * The first snapshot date is the activation date of the current config version;
+ * this prevents a new schedule from being projected backwards over already-booked dates.
+ */
+export async function extendFutureSnapshots(db: D1Database) {
+  const today = businessDateInIndia();
+  const horizonEnd = addCalendarDays(today, 45);
+  const versionResult = await db.prepare(
+    'SELECT config_version AS configVersion, effective_from AS effectiveFrom FROM schedule_versions ORDER BY effective_from ASC, config_version ASC'
+  ).all<SnapshotScheduleVersion>();
+
+  const versions = versionResult.results ?? [];
+  const ranges = buildSnapshotScheduleRanges(today, horizonEnd, versions);
+  if (!ranges.length) return 0;
+
+  const statements = ranges.map((range) => db.prepare(
+    `WITH RECURSIVE days(service_date) AS (
+       SELECT date(?)
+       UNION ALL
+       SELECT date(service_date, '+1 day') FROM days WHERE service_date < date(?)
+     )
+     INSERT OR IGNORE INTO daily_slot_snapshots(
+       service_date, weekday, slot_template_id, config_version,
+       slot_label_en, slot_label_hi, start_time, end_time,
+       slot_capacity, daily_capacity, is_closed, interval_minutes, is_public
+     )
+     SELECT days.service_date, CAST(strftime('%w', days.service_date) AS INTEGER),
+       st.id, st.config_version, st.slot_label_en, st.slot_label_hi,
+       st.start_time, st.end_time, st.slot_capacity,
+       COALESCE(ov.daily_capacity_override, (
+         SELECT COUNT(*) FROM slot_templates st2
+         WHERE st2.config_version = ws.config_version
+           AND (st2.is_extended = 0 OR ws.extended_hours_enabled = 1)
+       )),
+       COALESCE(ov.is_closed, 0), st.interval_minutes,
+       CASE WHEN st.is_extended = 1 AND ws.extended_hours_public = 0 THEN 0 ELSE 1 END
+     FROM days
+     JOIN weekly_schedule ws
+       ON ws.weekday = CAST(strftime('%w', days.service_date) AS INTEGER)
+      AND ws.config_version = ? AND ws.is_open = 1
+     JOIN slot_templates st ON st.config_version = ?
+      AND (st.is_extended = 0 OR ws.extended_hours_enabled = 1)
+     LEFT JOIN date_overrides ov ON ov.service_date = days.service_date`
+  ).bind(range.startDate, range.endDate, range.configVersion, range.configVersion));
+
+  const results = await db.batch(statements);
+  return results.reduce((sum, result) => sum + (result.meta.changes ?? 0), 0);
+}
+
+export async function expireDueHolds(db: D1Database) {
+  const result = await db
+    .prepare(
+      `UPDATE bookings
+       SET reservation_state = 'EXPIRED',
+           payment_state = CASE WHEN payment_state = 'ADVANCE_PENDING' THEN 'ADVANCE_PENDING' ELSE payment_state END,
+           updated_at = ?
+       WHERE reservation_state = 'HELD'
+         AND payment_state = 'ADVANCE_PENDING'
+         AND hold_expires_at IS NOT NULL
+         AND hold_expires_at <= ?`
+    )
+    .bind(nowIso(), nowIso())
+    .run();
+
+  return result.meta.changes ?? 0;
+}

@@ -1,0 +1,806 @@
+---
+import type { Locale } from '../lib/constants';
+import type { BusinessSettings } from '../lib/types';
+import DueDateChecker from './home/DueDateChecker';
+
+interface Props {
+  locale: Locale;
+  settings: BusinessSettings;
+}
+
+const { locale, settings } = Astro.props;
+const businessName = locale === 'hi' ? settings.business_name_hi : settings.business_name_en;
+const cityReady = settings.city !== 'SETUP_REQUIRED';
+const phoneReady = settings.contact_phone !== 'SETUP_REQUIRED';
+const mapReady = settings.map_url !== 'SETUP_REQUIRED' && settings.map_url.startsWith('https://');
+
+const cityName = cityReady ? settings.city : 'Rewari';
+const heading = locale === 'en'
+  ? 'Government Approved CNG Cylinder Hydro Testing'
+  : 'सरकारी प्रमाणित सीएनजी सिलेंडर हाइड्रो टेस्टिंग';
+const subHeading = locale === 'en'
+  ? `Safe, Reliable & Certified CNG Cylinder Testing in ${cityName}.`
+  : `${cityName} में सुरक्षित, विश्वसनीय एवं प्रमाणित सीएनजी सिलेंडर टेस्टिंग।`;
+---
+
+<!-- SECTION 1: HERO & IDENTITY -->
+<section class="section hero-section" id="hero">
+  <div class="container hero-grid">
+    <div class="hero-content">
+      <div class="trust-badge trust-badge-amber">
+        ⚡ {locale === 'en' ? 'Government Approved Testing Facility (PESO Certified)' : 'सरकारी प्रमाणित टेस्टिंग सुविधा (PESO Certified)'}
+      </div>
+      <p class="hero-brand">{businessName || 'HSR'}</p>
+      <h1 class="hero-title">{heading}</h1>
+      <p class="hero-subtitle-trust" style="font-size: 1.25rem; font-weight: 600; color: var(--color-steel-400); margin: 0.25rem 0 0.75rem;">
+        {subHeading}
+      </p>
+      <p class="hero-description">
+        {locale === 'en'
+          ? 'Mandatory periodic hydrostatic testing and compliance certification for passenger cars, commercial taxis, delivery tempos, and heavy transport trucks. Ensure safe refueling across all City Gas stations.'
+          : 'निजी कारों, टैक्सियों, कमर्शियल टेम्पो और भारी ट्रकों के लिए अनिवार्य वैधानिक हाइड्रोस्टेटिक परीक्षण एवं अनुपालन प्रमाणन। सभी सीएनजी स्टेशनों पर सुरक्षित एवं निर्बाध गैस रिफिलिंग सुनिश्चित करें।'}
+      </p>
+
+      <div class="hero-actions">
+        <a class="btn btn-primary hero-btn-main" href={`/${locale}/book/`}>
+          ⚡ {locale === 'en' ? 'Book Testing Appointment' : 'टेस्टिंग स्लॉट बुक करें'} →
+        </a>
+        {phoneReady && (
+          <a class="btn btn-secondary" href={`tel:${settings.contact_phone}`}>
+            📞 {locale === 'en' ? 'Call Centre' : 'कॉल करें'}
+          </a>
+        )}
+      </div>
+    </div>
+
+    <div class="hero-media">
+      <div class="hero-visual-card">
+        <img
+          src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1200&q=75"
+          alt={locale === 'en' ? 'High-pressure cylinder hydrostatic testing bay' : 'हाई-प्रेशर सिलेंडर हाइड्रोस्टेटिक टेस्टिंग सुविधा'}
+          class="hero-img"
+          loading="eager"
+        />
+        <div class="hero-overlay-badge">
+          <span class="telemetry-dot"></span>
+          <span class="telemetry-text">{locale === 'en' ? 'Calibration & Safety: Certified' : 'कैलिब्रेशन एवं सुरक्षा: प्रमाणित'}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2: INTELLIGENT CNG DUE-DATE CHECKER -->
+<section class="section due-date-section" id="check-due-date" style="background: var(--color-slate-100); padding: 1.75rem 0;">
+  <div class="container">
+    <DueDateChecker
+      client:load
+      locale={locale}
+      bookUrl={`/${locale}/book/`}
+      stationPhone={phoneReady ? settings.contact_phone : undefined}
+    />
+  </div>
+</section>
+
+<!-- SECTION 3: 5-STEP TESTING STANDARDS -->
+<section class="section process-section" id="process">
+  <div class="container">
+    <div class="section-title-wrap">
+      <span class="trust-badge">{locale === 'en' ? 'Testing Methodology' : 'परीक्षण कार्यप्रणाली'}</span>
+      <h2 class="section-heading">
+        {locale === 'en' ? 'Certified 5-Step Hydrostatic Testing Standard' : 'प्रमाणित 5-चरणीय हाइड्रोस्टेटिक टेस्टिंग मानक'}
+      </h2>
+      <p class="section-subtext">
+        {locale === 'en'
+          ? 'Every automotive CNG cylinder is tested to 1.5 times working pressure in accordance with statutory Gas Cylinders Rules and MoRTH safety guidelines.'
+          : 'प्रत्येक सीएनजी सिलेंडर को वैधानिक गैस सिलेंडर नियमों और सुरक्षा दिशानिर्देशों के अनुसार 1.5 गुना कार्यशील दबाव पर परखा जाता है।'}
+      </p>
+    </div>
+
+    <div class="standards-grid">
+      <article class="card standard-card">
+        <span class="step-num">01</span>
+        <h3>{locale === 'en' ? 'Degas & Empty' : 'गैस खाली करना'}</h3>
+        <p>{locale === 'en' ? 'Safely empty leftover gas before filling with water.' : 'पानी भरने से पूर्व बची हुई गैस को सुरक्षित तरीके से खाली करना।'}</p>
+      </article>
+
+      <article class="card standard-card">
+        <span class="step-num">02</span>
+        <h3>{locale === 'en' ? 'Visual & Ultrasonic Check' : 'विजुअल व अल्ट्रासोनिक जांच'}</h3>
+        <p>{locale === 'en' ? 'Inspect cylinder inside and out for corrosion, dents, and wall thickness.' : 'सिलेंडर के अंदर और बाहर जंग, खरोंच व दीवार की मोटाई की सटीक जांच।'}</p>
+      </article>
+
+      <article class="card standard-card">
+        <span class="step-num">03</span>
+        <h3>{locale === 'en' ? '300 Bar Water Pressure Test' : '300 बार वाटर प्रेशर टेस्ट'}</h3>
+        <p>{locale === 'en' ? 'High-pressure water test at 300 bar inside a water jacket to measure expansion and strength.' : 'वाटर जैकेट में 300 बार दबाव पर पानी भरकर मजबूती व फैलाव की जांच।'}</p>
+      </article>
+
+      <article class="card standard-card">
+        <span class="step-num">04</span>
+        <h3>{locale === 'en' ? 'Heat Dry' : 'गर्म हवा से सुखाना'}</h3>
+        <p>{locale === 'en' ? 'Dry inside with hot air to ensure zero moisture or rust remains.' : 'गर्म हवा से अंदरूनी नमी को पूरी तरह सुखाना ताकि जंग न लगे।'}</p>
+      </article>
+
+      <article class="card standard-card">
+        <span class="step-num">05</span>
+        <h3>{locale === 'en' ? 'Brass Plate & Certificate' : 'ब्रास प्लेट व सर्टिफिकेट'}</h3>
+        <p>{locale === 'en' ? 'Stamp test date, fix official brass plate near filler valve, and issue test certificate.' : 'टेस्ट तारीख की मोहर, फिलर वाल्व के पास पीतल की प्लेट लगाना और डिजिटल सर्टिफिकेट जारी करना।'}</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 6: STATUTORY COMPLIANCE & TRUST -->
+<section class="section compliance-section" id="standards">
+  <div class="container">
+    <div class="compliance-box">
+      <div class="compliance-content">
+        <span class="metric-chip metric-cyan">{locale === 'en' ? 'Statutory Regulations' : 'वैधानिक सुरक्षा नियम'}</span>
+        <h2 style="font-size: 1.85rem; margin-top: 0.5rem; margin-bottom: 0.75rem; color: var(--color-navy-900);">
+          {locale === 'en' ? 'Mandatory Testing Every 3 Years Under Gas Cylinders Rules' : 'गैस सिलेंडर नियमों के तहत हर 3 साल में अनिवार्य टेस्टिंग'}
+        </h2>
+        <p style="color: var(--color-slate-600); line-height: 1.6; margin-bottom: 1.25rem;">
+          {locale === 'en'
+            ? 'Under Rule 35 of the Gas Cylinders Rules 2016 and Ministry of Road Transport and Highways (MoRTH) automotive safety directives, all on-board CNG fuel containers must undergo comprehensive hydrostatic stretch testing every three years. Operating without a valid test plate violates Motor Vehicles Act Section 190(2).'
+            : 'गैस सिलेंडर नियम 2016 के नियम 35 और सड़क परिवहन मंत्रालय (MoRTH) के सुरक्षा निर्देशों के अनुसार प्रत्येक वाहन में लगे सीएनजी सिलेंडर की हर 3 साल में हाइड्रोस्टेटिक स्ट्रेच टेस्टिंग अनिवार्य है। वैध प्लेट के बिना वाहन चलाना मोटर वाहन अधिनियम की धारा 190(2) का उल्लंघन है।'}
+        </p>
+
+        <div class="compliance-bullets">
+          <div class="bullet-item">
+            <span class="check-mark">✓</span>
+            <div>
+              <strong>IS 15490 / ISO 11439 Standard:</strong>
+              <span>{locale === 'en' ? 'Rigorous water-jacket volumetric expansion testing standard.' : 'सख्त वाटर-जैकेट वॉल्यूमेट्रिक विस्तार परीक्षण मानक।'}</span>
+            </div>
+          </div>
+          <div class="bullet-item">
+            <span class="check-mark">✓</span>
+            <div>
+              <strong>All CGD Stations Acceptance:</strong>
+              <span>{locale === 'en' ? 'Official brass compliance plate recognized at all pumps across India.' : 'पूरे भारत के सभी सीएनजी पंपों पर आधिकारिक पीतल की प्लेट मान्य।'}</span>
+            </div>
+          </div>
+          <div class="bullet-item">
+            <span class="check-mark">✓</span>
+            <div>
+              <strong>Digital Compliance Certificate:</strong>
+              <span>{locale === 'en' ? 'Downloadable PDF certificate showing hydrostatic expansion logs.' : 'विस्तार परीक्षण लॉग विवरण सहित डिजिटल पीडीएफ प्रमाणपत्र।'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="compliance-sidebar">
+        <div class="plate-spec-card">
+          <div class="plate-header">
+            <strong>{locale === 'en' ? 'Official Compliance Plate Details' : 'आधिकारिक कंप्लायंस प्लेट विवरण'}</strong>
+          </div>
+          <div class="plate-body">
+            <div class="plate-line"><span>Plate Material:</span> <strong>Stamped Solid Brass</strong></div>
+            <div class="plate-line"><span>Mounting Location:</span> <strong>Near CNG Filling Valve</strong></div>
+            <div class="plate-line"><span>Test Pressure:</span> <strong>300 Bar (Hydraulic)</strong></div>
+            <div class="plate-line"><span>Testing Interval:</span> <strong>36 Months (3 Years)</strong></div>
+            <div class="plate-line"><span>Permissible Stretch:</span> <strong>&le; 10% Permanent Expansion</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 7: LOCATION, HOURS & ESSENTIAL FAQS -->
+<section class="section location-faq-section" id="location">
+  <div class="container">
+    <div class="section-title-wrap">
+      <span class="trust-badge">{locale === 'en' ? 'Facility Information' : 'सुविधा एवं केंद्र विवरण'}</span>
+      <h2 class="section-heading">
+        {locale === 'en' ? 'Station Location, Operating Hours & FAQs' : 'स्टेशन का पता, कार्य समय और अक्सर पूछे जाने वाले प्रश्न'}
+      </h2>
+      <p class="section-subtext">
+        {locale === 'en'
+          ? 'Located conveniently in Rewari, Haryana to serve passenger cars, regional taxis, transport fleets, and commercial haulers.'
+          : 'रेवाड़ी, हरियाणा में स्थित केंद्र; यात्री कारों, टैक्सियों और वाणिज्यिक फ्लीट के लिए सुविधाजनक।'}
+      </p>
+    </div>
+
+    <div class="location-grid">
+      <!-- Facility Info Card -->
+      <div class="facility-info-card">
+        <h3 class="facility-card-title">📍 {businessName || 'HSR'} {locale === 'en' ? 'Testing Station' : 'टेस्टिंग केंद्र'}</h3>
+        <p class="facility-address">
+          <strong>{locale === 'en' ? 'Facility Location:' : 'स्थान:'}</strong> {cityName}, Haryana, India
+        </p>
+
+        <div class="facility-meta-list">
+          <div class="facility-meta-item">
+            <span>🕒 {locale === 'en' ? 'Working Hours:' : 'कार्य समय:'}</span>
+            <strong>Monday – Saturday, 09:00 AM – 06:00 PM</strong>
+          </div>
+          <div class="facility-meta-item">
+            <span>⏱️ {locale === 'en' ? 'Turnaround Time:' : 'समय अवधि:'}</span>
+            <strong>2 to 3 Hours per Vehicle</strong>
+          </div>
+          {phoneReady && (
+            <div class="facility-meta-item">
+              <span>📞 {locale === 'en' ? 'Phone Desk:' : 'फ़ोन डेस्क:'}</span>
+              <a href={`tel:${settings.contact_phone}`} style={{ color: 'var(--color-steel-600)', fontWeight: 700 }}>
+                {settings.contact_phone}
+              </a>
+            </div>
+          )}
+          {settings.whatsapp_number !== 'SETUP_REQUIRED' && (
+            <div class="facility-meta-item">
+              <span>💬 WhatsApp:</span>
+              <a
+                href={`https://wa.me/${settings.whatsapp_number.replace(/\D/g, '')}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: '#16a34a', fontWeight: 700 }}
+              >
+                {settings.whatsapp_number}
+              </a>
+            </div>
+          )}
+        </div>
+
+        {mapReady && (
+          <a href={settings.map_url} target="_blank" rel="noreferrer" class="btn btn-outline" style={{ width: '100%', marginTop: '1.25rem' }}>
+            🗺️ {locale === 'en' ? 'Open in Google Maps' : 'गूगल मैप्स में रास्ता देखें'}
+          </a>
+        )}
+      </div>
+
+      <!-- FAQs Column -->
+      <div class="faqs-list" id="faqs">
+        <details class="faq-item" open>
+          <summary class="faq-question">
+            {locale === 'en'
+              ? 'Why is CNG cylinder hydro-testing mandatory every 3 years?'
+              : 'सीएनजी सिलेंडर की हाइड्रो टेस्टिंग हर 3 साल में क्यों अनिवार्य है?'}
+          </summary>
+          <p class="faq-answer">
+            {locale === 'en'
+              ? 'CNG cylinders operate under 200 bar working pressure. Over time, repeated filling cycles, road vibration, and moisture induce metal fatigue. Testing at 300 bar (1.5x working pressure) verifies that cylinder wall expansion remains within safe elastic limits.'
+              : 'सीएनजी सिलेंडर 200 बार के भारी दबाव पर कार्य करते हैं। लगातार गैस भरने, झटकों और नमी से सिलेंडर की धातु में खिंचाव आ सकता है। 300 बार पर परीक्षण यह सुनिश्चित करता है कि सिलेंडर सुरक्षित है और फटने का कोई खतरा नहीं है।'}
+          </p>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-question">
+            {locale === 'en'
+              ? 'Can I refill CNG immediately after the test is completed?'
+              : 'क्या टेस्टिंग के तुरंत बाद सीएनजी भरवाई जा सकती है?'}
+          </summary>
+          <p class="faq-answer">
+            {locale === 'en'
+              ? 'Yes. Upon passing the hydrostatic test, our technicians mount an official stamped brass compliance plate near your filling valve and issue a digital certificate. Pump operators will verify this plate and refill immediately.'
+              : 'हाँ, परीक्षण सफल होने पर फिलर वाल्व के पास आधिकारिक पीतल की प्लेट लगा दी जाती है और प्रमाणपत्र जारी होता है। पंप कर्मी इस प्लेट को देखकर तुरंत गैस भर देंगे।'}
+          </p>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-question">
+            {locale === 'en'
+              ? 'How is payment processed for online booking?'
+              : 'ऑनलाइन बुकिंग के लिए भुगतान प्रक्रिया क्या है?'}
+          </summary>
+          <p class="faq-answer">
+            {locale === 'en'
+              ? 'Online booking collects the statutory hydrostatic testing fee securely via UPI to confirm your dedicated hydraulic bay and technician allocation. Your receipt is verified upon arrival at our facility.'
+              : 'ऑनलाइन बुकिंग के दौरान वैधानिक हाइड्रोस्टेटिक टेस्टिंग शुल्क का भुगतान सुरक्षित UPI द्वारा लिया जाता है जिससे आपकी समर्पित हाइड्रोलिक बे और तकनीशियन का समय सुनिश्चित हो सके। केंद्र पर आगमन पर आपकी रसीद का सत्यापन किया जाता है।'}
+          </p>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-question">
+            {locale === 'en'
+              ? 'What happens if my vehicle cylinder fails the hydro test?'
+              : 'यदि सिलेंडर हाइड्रो टेस्ट में फेल हो जाए तो क्या होता है?'}
+          </summary>
+          <p class="faq-answer">
+            {locale === 'en'
+              ? 'Under statutory Gas Cylinders Rules, if permanent volumetric stretch exceeds 10%, the cylinder cannot safely hold high pressure and must be safely decommissioned to prevent catastrophic ruptures.'
+              : 'यदि सिलेंडर में 10% से अधिक स्थाई खिंचाव पाया जाता है, तो वैधानिक नियमों के अनुसार उसे असुरक्षित घोषित कर नष्ट किया जाता है ताकि जान-माल का नुकसान न हो।'}
+          </p>
+        </details>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Common Section Title Utilities */
+  .section-title-wrap {
+    text-align: center;
+    max-width: 720px;
+    margin: 0 auto 2.5rem;
+  }
+  .section-heading {
+    font-size: clamp(1.75rem, 3.5vw, 2.35rem);
+    color: var(--color-navy-900);
+    margin-top: 0.65rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+  .section-subtext {
+    font-size: 1rem;
+    color: var(--color-slate-600);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* Section 1: Hero Styles */
+  .hero-section {
+    padding-top: 3.5rem;
+    padding-bottom: 3.5rem;
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.25fr 1fr;
+    gap: 3rem;
+    align-items: center;
+  }
+  .hero-brand {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--color-steel-600);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  .hero-title {
+    font-size: clamp(2rem, 4vw, 2.85rem);
+    line-height: 1.15;
+    margin-bottom: 1.25rem;
+    letter-spacing: -0.02em;
+    color: var(--color-navy-900);
+  }
+  .hero-description {
+    font-size: 1.1rem;
+    line-height: 1.65;
+    color: var(--color-slate-600);
+    margin-bottom: 2rem;
+  }
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+    margin-bottom: 2.25rem;
+  }
+  .hero-btn-main {
+    min-height: 48px;
+    padding: 0.65rem 1.5rem;
+    font-size: 1rem;
+  }
+  .hero-specs-row {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-default);
+    flex-wrap: wrap;
+  }
+  .spec-item strong {
+    display: block;
+    font-size: 1.35rem;
+    color: var(--color-navy-900);
+    line-height: 1.1;
+  }
+  .spec-item span {
+    font-size: 0.75rem;
+    color: var(--color-slate-600);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+  }
+  .spec-divider {
+    width: 1px;
+    height: 32px;
+    background-color: var(--border-default);
+  }
+  .hero-visual-card {
+    position: relative;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-default);
+  }
+  .hero-img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 380px;
+    max-height: 440px;
+    object-fit: cover;
+    background-color: var(--color-slate-200);
+  }
+  .hero-overlay-badge {
+    position: absolute;
+    bottom: 1rem;
+    left: 1rem;
+    background: rgba(10, 17, 40, 0.85);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--radius-full);
+    padding: 0.4rem 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .telemetry-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #22c55e;
+    box-shadow: 0 0 8px #22c55e;
+  }
+  .telemetry-text {
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-family: var(--font-mono);
+  }
+
+  /* Section 2: Pump Refusal Styles */
+  .pump-refusal-section {
+    padding-top: 1rem;
+    padding-bottom: 2rem;
+  }
+  .refusal-card {
+    background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%);
+    border: 2px solid #fed7aa;
+    border-radius: var(--radius-lg);
+    padding: 2.25rem;
+    box-shadow: var(--shadow-sm);
+  }
+  .refusal-title {
+    font-size: clamp(1.4rem, 2.5vw, 1.85rem);
+    color: #9a3412;
+    margin: 0.5rem 0 0.5rem;
+    line-height: 1.25;
+  }
+  .refusal-sub {
+    color: var(--color-slate-700);
+    font-size: 0.95rem;
+    margin: 0 0 1.5rem;
+    max-width: 70ch;
+  }
+  .refusal-steps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.75rem;
+  }
+  .refusal-step-box {
+    background: #ffffff;
+    border: 1px solid #fed7aa;
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+  }
+  .refusal-step-num {
+    font-family: var(--font-mono);
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--color-action);
+    margin-bottom: 0.35rem;
+  }
+  .refusal-step-box h3 {
+    font-size: 1.05rem;
+    color: var(--color-navy-900);
+    margin-bottom: 0.35rem;
+  }
+  .refusal-step-box p {
+    font-size: 0.88rem;
+    color: var(--color-slate-600);
+    margin: 0;
+    line-height: 1.5;
+  }
+  .refusal-cta-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  /* Section 4: Pricing Table */
+  .pricing-section {
+    background: var(--color-slate-50);
+    padding: 4rem 0;
+  }
+  .pricing-table-wrap {
+    overflow-x: auto;
+    background: #ffffff;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-default);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 1.75rem;
+  }
+  .industrial-pricing-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.92rem;
+  }
+  .industrial-pricing-table th {
+    background: var(--color-navy-900);
+    color: #ffffff;
+    padding: 1rem 1.25rem;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .industrial-pricing-table td {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--color-slate-800);
+  }
+  .industrial-pricing-table tr:last-child td {
+    border-bottom: none;
+  }
+  .industrial-pricing-table tr:hover td {
+    background-color: var(--color-steel-50);
+  }
+  .highlight-cost {
+    color: var(--color-steel-600);
+    font-size: 1.05rem;
+  }
+  .pricing-disclaimer-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+  .disclaimer-item {
+    background: #ffffff;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+  }
+  .disclaimer-item strong {
+    display: block;
+    margin-bottom: 0.4rem;
+    color: var(--color-navy-900);
+    font-size: 0.95rem;
+  }
+  .disclaimer-item p {
+    font-size: 0.88rem;
+    color: var(--color-slate-600);
+    line-height: 1.55;
+    margin: 0;
+  }
+
+  /* Section 5: Standards Grid */
+  .standards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 1.25rem;
+  }
+  .standard-card {
+    position: relative;
+    padding: 1.75rem 1.25rem;
+    border-top: 4px solid var(--color-navy-800);
+    transition: transform 0.15s ease;
+  }
+  .standard-card:hover {
+    transform: translateY(-2px);
+    border-top-color: var(--color-action);
+  }
+  .step-num {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--color-steel-600);
+    margin-bottom: 0.5rem;
+  }
+  .standard-card h3 {
+    font-size: 1.15rem;
+    margin-bottom: 0.5rem;
+    color: var(--color-navy-900);
+  }
+  .standard-card p {
+    font-size: 0.88rem;
+    color: var(--color-slate-600);
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  /* Section 6: Compliance Box */
+  .compliance-section {
+    padding-top: 1rem;
+    padding-bottom: 3.5rem;
+  }
+  .compliance-box {
+    display: grid;
+    grid-template-columns: 1.35fr 1fr;
+    gap: 2.5rem;
+    background: #ffffff;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem;
+    box-shadow: var(--shadow-sm);
+  }
+  .compliance-bullets {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+  .bullet-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .check-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #dcfce7;
+    color: #166534;
+    font-weight: 800;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .bullet-item div strong {
+    display: block;
+    font-size: 0.92rem;
+    color: var(--color-navy-900);
+  }
+  .bullet-item div span {
+    font-size: 0.85rem;
+    color: var(--color-slate-600);
+  }
+  .plate-spec-card {
+    background: var(--color-slate-50);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .plate-header {
+    background: var(--color-navy-900);
+    color: #ffffff;
+    padding: 0.85rem 1.25rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+  .plate-body {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+  .plate-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    border-bottom: 1px dashed var(--border-subtle);
+    padding-bottom: 0.4rem;
+  }
+  .plate-line:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+  .plate-line span {
+    color: var(--color-slate-600);
+  }
+  .plate-line strong {
+    color: var(--color-navy-900);
+  }
+
+  /* Section 7: Location & FAQ */
+  .location-faq-section {
+    background: var(--color-slate-50);
+    padding: 4rem 0;
+  }
+  .location-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.35fr;
+    gap: 2.5rem;
+    align-items: flex-start;
+  }
+  .facility-info-card {
+    background: #ffffff;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    box-shadow: var(--shadow-sm);
+  }
+  .facility-card-title {
+    font-size: 1.25rem;
+    color: var(--color-navy-900);
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+  }
+  .facility-address {
+    font-size: 0.95rem;
+    color: var(--color-slate-700);
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .facility-meta-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .facility-meta-item {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.85rem;
+    color: var(--color-slate-600);
+  }
+  .facility-meta-item strong {
+    font-size: 0.95rem;
+    color: var(--color-navy-900);
+    margin-top: 0.15rem;
+  }
+  .faqs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+  .faq-item {
+    background: #ffffff;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 1.15rem 1.35rem;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.15s ease;
+  }
+  .faq-item[open] {
+    border-color: var(--color-steel-600);
+  }
+  .faq-question {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--color-navy-900);
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .faq-question::-webkit-details-marker {
+    display: none;
+  }
+  .faq-question::after {
+    content: '+';
+    font-size: 1.25rem;
+    color: var(--color-action);
+    font-weight: 800;
+  }
+  .faq-item[open] .faq-question::after {
+    content: '−';
+  }
+  .faq-answer {
+    margin-top: 0.75rem;
+    margin-bottom: 0;
+    font-size: 0.9rem;
+    color: var(--color-slate-600);
+    line-height: 1.6;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 0.75rem;
+  }
+
+  @media (max-width: 960px) {
+    .hero-grid {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+    .compliance-box {
+      grid-template-columns: 1fr;
+    }
+    .location-grid {
+      grid-template-columns: 1fr;
+    }
+    .pricing-disclaimer-card {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

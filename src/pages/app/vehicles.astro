@@ -1,0 +1,169 @@
+---
+import CustomerLayout from '../../layouts/CustomerLayout.astro';
+import { getCustomerSessionFromCookie } from '../../lib/customer-auth';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+
+const env = getRuntimeEnv(Astro.locals);
+const session = await getCustomerSessionFromCookie(Astro.request, env);
+
+let vehicles: any[] = [];
+if (env?.DB && session) {
+  try {
+    const res = await env.DB.prepare(
+      `SELECT v.id, 
+              COALESCE(v.display_reg_no, v.registration_display, 'HR-26-XX-0000') as displayRegNo,
+              COALESCE(v.vehicle_category, 'CAR') as vehicleCategory,
+              v.make_model as makeModel,
+              COALESCE(v.default_cylinder_count, 1) as cylinderCount,
+              v.last_test_date as lastTestDate,
+              v.next_test_due_date as nextTestDueDate
+       FROM vehicles v
+       JOIN party_vehicle_access pva ON pva.vehicle_id = v.id
+       WHERE pva.party_id = ? AND v.is_active = 1
+       ORDER BY v.created_at DESC`
+    )
+      .bind(session.partyId)
+      .all<any>();
+    vehicles = res.results || [];
+  } catch (e) {
+    // Graceful fallback
+  }
+}
+---
+
+<CustomerLayout title="My Vehicles | HSR Technical Services" activeNav="vehicles" breadcrumb="My vehicles">
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem;">
+    <div>
+      <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.8rem; font-weight: 800; color: #0a1128; margin: 0 0 0.25rem;">
+        My Vehicles
+      </h1>
+      <p style="color: #64748b; font-size: 0.92rem; margin: 0;">
+        Manage your registered vehicles and stay compliant with statutory 3-year hydro testing.
+      </p>
+    </div>
+    <button type="button" onclick="document.getElementById('modal-add-vehicle').style.display='flex'" style="background: #166534; color: #fff; padding: 0.55rem 1rem; border-radius: 8px; font-weight: 700; font-size: 0.85rem; border: none; cursor: pointer;">
+      + Add New Vehicle
+    </button>
+  </div>
+
+  {vehicles.length > 0 ? (
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem;">
+      {vehicles.map((v) => (
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 1.25rem; font-weight: 700; color: #0a1128;">
+                {v.displayRegNo}
+              </span>
+              <span style="background: #f1f5f9; color: #475569; font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.5rem; border-radius: 6px;">
+                {v.vehicleCategory}
+              </span>
+            </div>
+            <div style="font-size: 0.85rem; color: #64748b; margin-bottom: 0.5rem;">
+              Cylinders: <strong>{v.cylinderCount}</strong> {v.makeModel && `• ${v.makeModel}`}
+            </div>
+            <div style="font-size: 0.82rem; color: #64748b; margin-bottom: 1rem;">
+              {v.nextTestDueDate ? (
+                <span>Next Retest Due: <strong style="color: #b45309;">{v.nextTestDueDate}</strong></span>
+              ) : (
+                <span style="color: #ea580c;">⚠️ Test Certificate Pending</span>
+              )}
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; border-top: 1px solid #f1f5f9; padding-top: 1rem;">
+            <a href={`/en/book/?reg=${v.displayRegNo}`} style="flex: 1; text-align: center; background: #0a1128; color: #fff; padding: 0.5rem; border-radius: 6px; font-size: 0.82rem; font-weight: 700; text-decoration: none;">
+              ⚡ Book Retest
+            </a>
+            <a href={`/api/public/due-date-lookup/?regNumber=${v.displayRegNo}`} target="_blank" style="padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.82rem; font-weight: 600; color: #334155; text-decoration: none;">
+              Check Due
+            </a>
+          </div>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div style="background: #ffffff; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 3.5rem 2rem; text-align: center;">
+      <div style="font-size: 2.5rem; margin-bottom: 1rem;">🚗</div>
+      <div style="font-weight: 700; font-size: 1.1rem; color: #0a1128; margin-bottom: 0.35rem;">No vehicles registered yet</div>
+      <div style="font-size: 0.88rem; color: #64748b; margin-bottom: 1.5rem; max-width: 400px; margin-left: auto; margin-right: auto;">
+        Register your car, tempo, or truck plate to track upcoming statutory retest dates and download past certificates.
+      </div>
+      <button type="button" onclick="document.getElementById('modal-add-vehicle').style.display='flex'" style="background: #166534; color: #fff; padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 700; font-size: 0.9rem; border: none; cursor: pointer;">
+        + Add a Vehicle
+      </button>
+    </div>
+  )}
+
+  <!-- Add Vehicle Modal -->
+  <div id="modal-add-vehicle" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; padding: 1rem;">
+    <div style="background: #fff; border-radius: 12px; max-width: 460px; width: 100%; padding: 2rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+      <h3 style="margin-top: 0; margin-bottom: 1rem; font-size: 1.25rem; font-family: 'Plus Jakarta Sans', sans-serif; color: #0a1128;">
+        Register Vehicle
+      </h3>
+      <form id="form-new-vehicle" onsubmit="submitNewVehicle(event)">
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.35rem; color: #334155;">
+            Registration Plate (e.g. HR-26-AB-1234)
+          </label>
+          <input type="text" id="add-reg" required placeholder="HR26AB1234" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 1rem; text-transform: uppercase;" />
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.35rem; color: #334155;">
+            Vehicle Category
+          </label>
+          <select id="add-category" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;">
+            <option value="CAR">Car / Taxi (1 Cylinder)</option>
+            <option value="TEMPO_LCV">Tempo / LCV (2 Cylinders)</option>
+            <option value="TRUCK_BUS">Commercial Heavy Truck / Bus (4+ Cylinders)</option>
+          </select>
+        </div>
+        <div style="margin-bottom: 1.5rem;">
+          <label style="display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.35rem; color: #334155;">
+            Cylinder Count
+          </label>
+          <input type="number" id="add-cylinders" min="1" max="24" value="1" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem;" />
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+          <button type="button" onclick="document.getElementById('modal-add-vehicle').style.display='none'" style="padding: 0.6rem 1rem; border: 1px solid #cbd5e1; background: #fff; border-radius: 6px; font-weight: 600; cursor: pointer;">
+            Cancel
+          </button>
+          <button type="submit" id="btn-save-vehicle" style="padding: 0.6rem 1.25rem; background: #166534; color: #fff; border: none; border-radius: 6px; font-weight: 700; cursor: pointer;">
+            Save Vehicle
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script is:inline>
+    async function submitNewVehicle(e) {
+      e.preventDefault();
+      const reg = document.getElementById('add-reg').value.trim();
+      const category = document.getElementById('add-category').value;
+      const cylinderCount = document.getElementById('add-cylinders').value;
+      const btn = document.getElementById('btn-save-vehicle');
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+
+      try {
+        const res = await fetch('/api/customer/vehicles/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ registration: reg, category, cylinderCount }),
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+          alert(json?.error?.message || 'Failed to add vehicle');
+          return;
+        }
+        window.location.reload();
+      } catch (err) {
+        alert('Network error adding vehicle');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Save Vehicle';
+      }
+    }
+  </script>
+</CustomerLayout>

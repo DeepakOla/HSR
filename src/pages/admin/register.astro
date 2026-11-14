@@ -1,0 +1,12 @@
+---
+import { requireRole } from '../../lib/auth';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import RegisterConsole from '../../components/admin/RegisterConsole';
+
+const auth = await requireRole(Astro.request, getRuntimeEnv(Astro.locals), ['OWNER', 'RECEPTIONIST']);
+if (!auth.ok) return auth.response;
+---
+<AdminLayout title="Cylinder register" owner={auth.staff.role === 'OWNER'}>
+  <RegisterConsole client:load />
+</AdminLayout>

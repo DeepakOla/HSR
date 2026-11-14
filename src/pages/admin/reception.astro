@@ -1,0 +1,12 @@
+---
+import { requireRole } from '../../lib/auth';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import ReceptionDashboard from '../../components/admin/ReceptionDashboard';
+
+const auth = await requireRole(Astro.request, getRuntimeEnv(Astro.locals), ['OWNER', 'RECEPTIONIST']);
+if (!auth.ok) return auth.response;
+---
+<AdminLayout title="Reception desk" owner={auth.staff.role === 'OWNER'}>
+  <ReceptionDashboard client:load />
+</AdminLayout>

@@ -1,0 +1,379 @@
+---
+import CustomerLayout from '../../layouts/CustomerLayout.astro';
+import { getCustomerSessionFromCookie } from '../../lib/customer-auth';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+
+const env = getRuntimeEnv(Astro.locals);
+const session = await getCustomerSessionFromCookie(Astro.request, env);
+const customerName = session?.fullName || 'Deepak';
+const firstName = customerName.split(' ')[0];
+
+// Format date like Sugam reference: SATURDAY, 14 NOVEMBER 2026
+const todayFormatted = new Intl.DateTimeFormat('en-IN', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+}).format(new Date()).toUpperCase();
+
+let overviewData: any = {
+  metrics: { registeredVehiclesCount: 0, testsDueSoonCount: 0, completedTestsCount: 0 },
+  upcomingAppointments: [],
+  recentActivity: [],
+};
+
+if (env?.DB && session) {
+  try {
+    const vCount = await env.DB.prepare(
+      'SELECT COUNT(*) as count FROM party_vehicle_access WHERE party_id = ?'
+    )
+      .bind(session.partyId)
+      .first<{ count: number }>();
+
+    const dueCount = await env.DB.prepare(
+      `SELECT COUNT(*) as count FROM vehicles v
+       JOIN party_vehicle_access pva ON pva.vehicle_id = v.id
+       WHERE pva.party_id = ?
+         AND v.next_test_due_date IS NOT NULL
+         AND v.next_test_due_date <= date('now', '+90 days')`
+    )
+      .bind(session.partyId)
+      .first<{ count: number }>();
+
+    const compCount = await env.DB.prepare(
+      `SELECT COUNT(*) as count FROM bookings b
+       JOIN booking_groups bg ON bg.id = b.booking_group_id
+       WHERE (bg.booker_party_id = ? OR b.rc_owner_party_id = ?)
+         AND b.booking_status = 'COMPLETED'`
+    )
+      .bind(session.partyId, session.partyId)
+      .first<{ count: number }>();
+
+    const upcoming = await env.DB.prepare(
+      `SELECT b.id as bookingId, b.booking_token as bookingToken, bg.group_reference as groupReference,
+              COALESCE(b.display_reg_no, v.display_reg_no, v.registration_display, 'HR-26-XX-0000') as displayRegNo,
+              COALESCE(b.vehicle_category, v.vehicle_category, 'CAR') as vehicleCategory,
+              COALESCE(b.booked_cylinder_count, b.cylinder_count_snapshot, 1) as cylinderCount,
+              COALESCE(b.slot_date, b.service_date) as slotDate,
+              COALESCE(b.slot_start_time, b.slot_start_snapshot, '09:00') as slotStartTime,
+              b.booking_status as bookingStatus,
+              b.testing_status as testingStatus,
+              sr.resource_name as assignedBayName
+       FROM bookings b
+       LEFT JOIN booking_groups bg ON bg.id = b.booking_group_id
+       LEFT JOIN vehicles v ON v.id = b.vehicle_id
+       LEFT JOIN station_resources sr ON sr.id = b.assigned_bay_id
+       WHERE (bg.booker_party_id = ? OR b.rc_owner_party_id = ?)
+         AND b.booking_status IN ('HOLD', 'CONFIRMED', 'CHECKED_IN', 'IN_PROGRESS')
+       ORDER BY b.slot_date ASC, b.slot_start_time ASC
+       LIMIT 5`
+    )
+      .bind(session.partyId, session.partyId)
+      .all<any>();
+
+    overviewData.metrics = {
+      registeredVehiclesCount: vCount?.count || 0,
+      testsDueSoonCount: dueCount?.count || 0,
+      completedTestsCount: compCount?.count || 0,
+    };
+    overviewData.upcomingAppointments = upcoming.results || [];
+  } catch (e) {
+    // Graceful fallback to default overview metrics
+  }
+}
+---
+
+<CustomerLayout title={`Overview | ${customerName} | HSR Technical Services`} activeNav="overview" breadcrumb="Overview">
+  <style>
+    .welcome-date {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      margin-bottom: 0.25rem;
+    }
+    .welcome-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: clamp(1.8rem, 3.5vw, 2.25rem);
+      font-weight: 800;
+      color: #0a1128;
+      margin: 0 0 0.4rem;
+      letter-spacing: -0.02em;
+    }
+    .welcome-subtitle {
+      color: #64748b;
+      font-size: 0.95rem;
+      margin: 0 0 2rem;
+    }
+    /* Metric KPI Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    .kpi-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    .kpi-card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .kpi-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 0.6rem;
+    }
+    .kpi-value {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 2.25rem;
+      font-weight: 800;
+      color: #0a1128;
+      line-height: 1;
+      margin-bottom: 0.4rem;
+    }
+    .kpi-subtext {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+    .kpi-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+    }
+    .badge-green { background: #dcfce7; color: #15803d; }
+    .badge-amber { background: #fef3c7; color: #b45309; }
+    .badge-blue { background: #e0f2fe; color: #0284c7; }
+
+    /* Section Styling */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 1rem;
+    }
+    .section-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #0a1128;
+      margin: 0 0 0.2rem;
+    }
+    .section-desc {
+      color: #64748b;
+      font-size: 0.85rem;
+      margin: 0;
+    }
+    .section-link {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #0284c7;
+      text-decoration: none;
+    }
+    .section-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Empty State Box (Sugam Reference) */
+    .empty-card {
+      background: #ffffff;
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      padding: 3.5rem 2rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 2.5rem;
+    }
+    .empty-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: #f1f5f9;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .empty-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #1e293b;
+      margin-bottom: 0.25rem;
+    }
+    .empty-desc {
+      font-size: 0.85rem;
+      color: #64748b;
+      max-width: 360px;
+      margin: 0 auto 1.25rem;
+    }
+    .btn-add-vehicle {
+      background: #166534;
+      color: #ffffff;
+      padding: 0.55rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background 0.12s ease;
+    }
+    .btn-add-vehicle:hover {
+      background: #14532d;
+    }
+
+    /* Appointments Table / Cards */
+    .appointments-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 2.5rem;
+    }
+    .appt-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .appt-reg {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #0a1128;
+    }
+    .appt-meta {
+      font-size: 0.82rem;
+      color: #64748b;
+      margin-top: 0.2rem;
+    }
+    .appt-status-badge {
+      display: inline-block;
+      padding: 0.3rem 0.65rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .status-confirmed { background: #dcfce7; color: #15803d; }
+    .status-in-bay { background: #e0f2fe; color: #0284c7; }
+    .status-testing { background: #fef3c7; color: #b45309; }
+
+    @media (max-width: 768px) {
+      .kpi-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+
+  <!-- Greeting Header -->
+  <div class="welcome-date">{todayFormatted}</div>
+  <h1 class="welcome-title">Welcome, {firstName}</h1>
+  <p class="welcome-subtitle">Stay ahead of your vehicle cylinder testing, all in one place.</p>
+
+  <!-- 3 Top Metric Cards (Sugam Reference) -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div>
+        <div class="kpi-label">Registered vehicles</div>
+        <div class="kpi-value">{overviewData.metrics.registeredVehiclesCount}</div>
+        <div class="kpi-subtext">Vehicles in your account</div>
+      </div>
+      <div class="kpi-badge badge-green">🚗</div>
+    </div>
+
+    <div class="kpi-card">
+      <div>
+        <div class="kpi-label">Tests due soon</div>
+        <div class="kpi-value">{overviewData.metrics.testsDueSoonCount}</div>
+        <div class="kpi-subtext">Due within the next 90 days</div>
+      </div>
+      <div class="kpi-badge badge-amber">⏱</div>
+    </div>
+
+    <div class="kpi-card">
+      <div>
+        <div class="kpi-label">Completed tests</div>
+        <div class="kpi-value">{overviewData.metrics.completedTestsCount}</div>
+        <div class="kpi-subtext">Certificates in your history</div>
+      </div>
+      <div class="kpi-badge badge-blue">✓</div>
+    </div>
+  </div>
+
+  <!-- Upcoming Testing Section -->
+  <div class="section-header">
+    <div>
+      <h2 class="section-title">Upcoming testing</h2>
+      <p class="section-desc">Keep your vehicle documentation up to date.</p>
+    </div>
+    <a href="/app/vehicles" class="section-link">All vehicles →</a>
+  </div>
+
+  {overviewData.upcomingAppointments.length > 0 ? (
+    <div class="appointments-list">
+      {overviewData.upcomingAppointments.map((appt: any) => (
+        <div class="appt-card">
+          <div>
+            <div class="appt-reg">{appt.displayRegNo}</div>
+            <div class="appt-meta">
+              {appt.vehicleCategory} • {appt.cylinderCount} Cylinder(s) • Slot: {appt.slotDate} at {appt.slotStartTime}
+              {appt.assignedBayName && ` • Bay: ${appt.assignedBayName}`}
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <span class={`appt-status-badge ${appt.testingStatus === 'IN_BAY_INTAKE' ? 'status-in-bay' : (appt.testingStatus === 'HYDRO_TESTING' ? 'status-testing' : 'status-confirmed')}`}>
+              {appt.testingStatus !== 'NOT_ARRIVED' ? appt.testingStatus : appt.bookingStatus}
+            </span>
+            <a href={`/booking-status/${appt.bookingToken}`} style="padding: 0.4rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.8rem; font-weight: 600; color: #334155; text-decoration: none;">
+              Track Live ↗
+            </a>
+          </div>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div class="empty-card">
+      <div class="empty-icon">🚗</div>
+      <div class="empty-title">No vehicles added yet</div>
+      <div class="empty-desc">Add a vehicle to book its cylinder testing appointment.</div>
+      <a href="/app/vehicles" class="btn-add-vehicle">+ Add a vehicle</a>
+    </div>
+  )}
+
+  <!-- Recent Activity Section -->
+  <div class="section-header">
+    <div>
+      <h2 class="section-title">Recent activity</h2>
+      <p class="section-desc">Your latest testing and payment updates.</p>
+    </div>
+    <a href="/app/history" class="section-link">View history →</a>
+  </div>
+
+  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
+    <div style="display: flex; align-items: flex-start; gap: 1rem;">
+      <div style="width: 32px; height: 32px; border-radius: 8px; background: #f0fdf4; color: #16a34a; display: flex; align-items: center; justify-content: center; font-weight: 700;">✓</div>
+      <div>
+        <div style="font-weight: 700; font-size: 0.92rem; color: #0a1128;">Profile Active on HSR CNG Testing System</div>
+        <div style="font-size: 0.82rem; color: #64748b; margin-top: 0.2rem;">All historical test certificates and reminder schedules are synchronized under Rewari station compliance.</div>
+      </div>
+    </div>
+  </div>
+</CustomerLayout>

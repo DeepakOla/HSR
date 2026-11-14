@@ -1,0 +1,234 @@
+---
+import { requireRole } from '../../lib/auth';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+const env = getRuntimeEnv(Astro.locals);
+const auth = await requireRole(Astro.request, env, ['OWNER', 'RECEPTIONIST']);
+if (!auth.ok) return auth.response;
+
+const isOwner = auth.staff.role === 'OWNER';
+
+let vehicles: any[] = [];
+let parties: any[] = [];
+let cylinders: any[] = [];
+let documents: any[] = [];
+
+if (env?.DB) {
+  try {
+    const vRows = await env.DB.prepare(`
+      SELECT id, registration_normalized as regNorm, registration_display as regDisplay,
+             vehicle_type as vehicleType, COALESCE(vehicle_category, 'CAR') as category,
+             COALESCE(default_cylinder_count, 1) as cylCount,
+             last_test_date as lastTestDate, next_test_due_date as nextDueDate
+      FROM vehicles
+      ORDER BY id DESC LIMIT 50
+    `).all<any>();
+    vehicles = vRows.results || [];
+
+    const pRows = await env.DB.prepare(`
+      SELECT p.id, p.full_name as fullName, p.email, p.party_type as partyType,
+             cp.display_phone as phone
+      FROM parties p
+      LEFT JOIN party_phones pp ON pp.party_id = p.id
+      LEFT JOIN contact_phones cp ON cp.id = pp.phone_id
+      ORDER BY p.created_at DESC LIMIT 50
+    `).all<any>();
+    parties = pRows.results || [];
+
+    const cRows = await env.DB.prepare(`
+      SELECT id, serial_number as serialNo, manufacturer, water_capacity_liters as capacity,
+             original_tare_weight_kg as tareWeight, current_status as status, next_retest_due_date as nextDue
+      FROM cylinders
+      ORDER BY created_at DESC LIMIT 50
+    `).all<any>();
+    cylinders = cRows.results || [];
+
+    const dRows = await env.DB.prepare(`
+      SELECT id, booking_id as bookingId, doc_type as docType, file_name as fileName,
+             created_at as uploadedAt
+      FROM documents
+      ORDER BY created_at DESC LIMIT 50
+    `).all<any>();
+    documents = dRows.results || [];
+  } catch (e) {
+    console.error('Failed to query master records:', e);
+  }
+}
+---
+
+<AdminLayout title="Master Records Registry" owner={isOwner}>
+  <div style="margin-bottom: 2rem;">
+    <div style="font-size: 0.78rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">
+      Unified Database Registry
+    </div>
+    <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.85rem; font-weight: 800; color: #0a1128; margin: 0;">
+      Master Station Records
+    </h1>
+    <p style="color: #64748b; font-size: 0.92rem; margin: 0.25rem 0 0;">
+      Central registry of vehicles, customer parties, shared mobile links, physical cylinder serials, and statutory PESO certificates.
+    </p>
+  </div>
+
+  <!-- TAB NAVIGATION -->
+  <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.75rem;">
+    <button onclick="switchTab('vehicles')" class="tab-btn active" id="btn-vehicles" style="padding: 0.5rem 1rem; border-radius: 6px; font-weight: 700; font-size: 0.88rem; cursor: pointer; border: 1.5px solid #0a1128; background: #0a1128; color: #ffffff;">
+      🚗 Vehicles ({vehicles.length})
+    </button>
+    <button onclick="switchTab('parties')" class="tab-btn" id="btn-parties" style="padding: 0.5rem 1rem; border-radius: 6px; font-weight: 700; font-size: 0.88rem; cursor: pointer; border: 1.5px solid #cbd5e1; background: #ffffff; color: #334155;">
+      👥 Customers & Phones ({parties.length})
+    </button>
+    <button onclick="switchTab('cylinders')" class="tab-btn" id="btn-cylinders" style="padding: 0.5rem 1rem; border-radius: 6px; font-weight: 700; font-size: 0.88rem; cursor: pointer; border: 1.5px solid #cbd5e1; background: #ffffff; color: #334155;">
+      🛢️ Cylinders ({cylinders.length})
+    </button>
+    <button onclick="switchTab('documents')" class="tab-btn" id="btn-documents" style="padding: 0.5rem 1rem; border-radius: 6px; font-weight: 700; font-size: 0.88rem; cursor: pointer; border: 1.5px solid #cbd5e1; background: #ffffff; color: #334155;">
+      📜 PESO Certificates ({documents.length})
+    </button>
+  </div>
+
+  <!-- SECTION 1: VEHICLES -->
+  <div id="pane-vehicles" class="tab-pane" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
+    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+      <thead>
+        <tr style="border-bottom: 1.5px solid #e2e8f0; color: #64748b; font-size: 0.75rem; text-transform: uppercase;">
+          <th style="padding: 0.6rem 0.5rem;">Registration</th>
+          <th style="padding: 0.6rem 0.5rem;">Category</th>
+          <th style="padding: 0.6rem 0.5rem;">Cylinders</th>
+          <th style="padding: 0.6rem 0.5rem;">Last Test</th>
+          <th style="padding: 0.6rem 0.5rem;">Next Due Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {vehicles.length === 0 ? (
+          <tr><td colspan="5" style="text-align: center; padding: 2rem; color: #94a3b8;">No vehicle records found.</td></tr>
+        ) : (
+          vehicles.map((v) => (
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 0.75rem 0.5rem; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #0a1128;">
+                {v.regDisplay || v.regNorm}
+              </td>
+              <td style="padding: 0.75rem 0.5rem; color: #475569;">{v.category || v.vehicleType}</td>
+              <td style="padding: 0.75rem 0.5rem; color: #475569;">{v.cylCount} Cyl</td>
+              <td style="padding: 0.75rem 0.5rem; color: #64748b;">{v.lastTestDate || '—'}</td>
+              <td style="padding: 0.75rem 0.5rem; font-weight: 600; color: #15803d;">{v.nextDueDate || '—'}</td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 2: CUSTOMERS & PHONES -->
+  <div id="pane-parties" class="tab-pane" style="display: none; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
+    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+      <thead>
+        <tr style="border-bottom: 1.5px solid #e2e8f0; color: #64748b; font-size: 0.75rem; text-transform: uppercase;">
+          <th style="padding: 0.6rem 0.5rem;">Customer Name</th>
+          <th style="padding: 0.6rem 0.5rem;">Phone</th>
+          <th style="padding: 0.6rem 0.5rem;">Type</th>
+          <th style="padding: 0.6rem 0.5rem;">Email</th>
+        </tr>
+      </thead>
+      <tbody>
+        {parties.length === 0 ? (
+          <tr><td colspan="4" style="text-align: center; padding: 2rem; color: #94a3b8;">No customer profiles recorded yet.</td></tr>
+        ) : (
+          parties.map((p) => (
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 0.75rem 0.5rem; font-weight: 700; color: #0a1128;">{p.fullName}</td>
+              <td style="padding: 0.75rem 0.5rem; font-family: 'JetBrains Mono', monospace; color: #0284c7;">
+                {p.phone ? `+91 ${p.phone}` : '—'}
+              </td>
+              <td style="padding: 0.75rem 0.5rem; color: #475569;">{p.partyType}</td>
+              <td style="padding: 0.75rem 0.5rem; color: #64748b;">{p.email || '—'}</td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 3: CYLINDERS -->
+  <div id="pane-cylinders" class="tab-pane" style="display: none; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
+    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+      <thead>
+        <tr style="border-bottom: 1.5px solid #e2e8f0; color: #64748b; font-size: 0.75rem; text-transform: uppercase;">
+          <th style="padding: 0.6rem 0.5rem;">Serial No</th>
+          <th style="padding: 0.6rem 0.5rem;">Manufacturer</th>
+          <th style="padding: 0.6rem 0.5rem;">Capacity (L)</th>
+          <th style="padding: 0.6rem 0.5rem;">Tare Wt (Kg)</th>
+          <th style="padding: 0.6rem 0.5rem;">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {cylinders.length === 0 ? (
+          <tr><td colspan="5" style="text-align: center; padding: 2rem; color: #94a3b8;">No cylinder records found.</td></tr>
+        ) : (
+          cylinders.map((c) => (
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 0.75rem 0.5rem; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #0a1128;">{c.serialNo}</td>
+              <td style="padding: 0.75rem 0.5rem; color: #475569;">{c.manufacturer}</td>
+              <td style="padding: 0.75rem 0.5rem; color: #475569;">{c.capacity || '—'} L</td>
+              <td style="padding: 0.75rem 0.5rem; color: #475569;">{c.tareWeight || '—'} Kg</td>
+              <td style="padding: 0.75rem 0.5rem;">
+                <span style={`padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; ${
+                  c.status === 'ACTIVE' ? 'background: #dcfce7; color: #15803d;' : 'background: #fee2e2; color: #b91c1c;'
+                }`}>
+                  {c.status}
+                </span>
+              </td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SECTION 4: DOCUMENTS -->
+  <div id="pane-documents" class="tab-pane" style="display: none; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
+    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+      <thead>
+        <tr style="border-bottom: 1.5px solid #e2e8f0; color: #64748b; font-size: 0.75rem; text-transform: uppercase;">
+          <th style="padding: 0.6rem 0.5rem;">Document Name</th>
+          <th style="padding: 0.6rem 0.5rem;">Type</th>
+          <th style="padding: 0.6rem 0.5rem;">Booking ID</th>
+          <th style="padding: 0.6rem 0.5rem;">Uploaded At</th>
+        </tr>
+      </thead>
+      <tbody>
+        {documents.length === 0 ? (
+          <tr><td colspan="4" style="text-align: center; padding: 2rem; color: #94a3b8;">No documents uploaded yet.</td></tr>
+        ) : (
+          documents.map((d) => (
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 0.75rem 0.5rem; font-weight: 700; color: #0284c7;">{d.fileName}</td>
+              <td style="padding: 0.75rem 0.5rem; color: #475569;">{d.docType}</td>
+              <td style="padding: 0.75rem 0.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: #64748b;">{d.bookingId}</td>
+              <td style="padding: 0.75rem 0.5rem; color: #64748b;">{d.uploadedAt?.slice(0, 10)}</td>
+            </tr>
+          ))
+        )}
+      </tbody>
+    </table>
+  </div>
+
+  <script is:inline>
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.tab-btn').forEach(el => {
+        el.style.background = '#ffffff';
+        el.style.borderColor = '#cbd5e1';
+        el.style.color = '#334155';
+      });
+
+      const pane = document.getElementById(`pane-${tabId}`);
+      const btn = document.getElementById(`btn-${tabId}`);
+      if (pane) pane.style.display = 'block';
+      if (btn) {
+        btn.style.background = '#0a1128';
+        btn.style.borderColor = '#0a1128';
+        btn.style.color = '#ffffff';
+      }
+    }
+  </script>
+</AdminLayout>

@@ -1,0 +1,13 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import HomePage from '../../components/HomePage.astro';
+import { getDb, getBusinessSettings } from '../../lib/db';
+import { getSeoMeta } from '../../lib/content';
+
+const db = getDb(Astro);
+const [settings, seo] = await Promise.all([getBusinessSettings(db), getSeoMeta(db, 'hi')]);
+---
+
+<BaseLayout locale="hi" title={seo.title} description={seo.description} canonicalPath="/hi/" businessName={settings.business_name_hi} settings={settings}>
+  <HomePage locale="hi" settings={settings} />
+</BaseLayout>

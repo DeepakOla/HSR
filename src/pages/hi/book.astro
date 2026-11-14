@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import InlineBooking from '../../components/booking/InlineBooking';
+import { getDb, getBusinessSettings } from '../../lib/db';
+import { getSeoMeta } from '../../lib/content';
+
+const db = getDb(Astro);
+const [settings, seo] = await Promise.all([getBusinessSettings(db), getSeoMeta(db, 'hi')]);
+const cityName = settings.city !== 'SETUP_REQUIRED' ? settings.city : 'रेवाड़ी';
+---
+
+<BaseLayout locale="hi" title="अपॉइंटमेंट बुक करें" description={seo.description} canonicalPath="/hi/book/" businessName={settings.business_name_hi} settings={settings}>
+  <section class="section" style="padding-top: 2.5rem;">
+    <div class="container">
+      <div style="text-align: center; max-width: 720px; margin: 0 auto 2rem;">
+        <span class="trust-badge trust-badge-amber">⚡ प्रमाणित हाइड्रोस्टेटिक टेस्टिंग बे</span>
+        <h1 style="font-size: clamp(1.85rem, 3.5vw, 2.4rem); color: var(--color-navy-900); margin: 0.65rem 0 0.5rem; letter-spacing: -0.02em;">
+          सीएनजी सिलेंडर हाइड्रो टेस्टिंग अपॉइंटमेंट बुक करें
+        </h1>
+        <p style="color: var(--color-slate-600); margin: 0; font-size: 1.05rem;">
+          अपनी समर्पित टेस्टिंग बे त्वरित पुष्टि के साथ सुरक्षित करें। {cityName}, हरियाणा में 2 से 3 घंटे में त्वरित सेवा।
+        </p>
+      </div>
+      <InlineBooking client:load locale="hi" stationPhone={settings.contact_phone} stationCity={cityName} />
+    </div>
+  </section>
+</BaseLayout>

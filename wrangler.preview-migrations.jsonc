@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hsr-preview-migrations",
+  "d1_databases": [
+    {
+      "binding": "PREVIEW_DB",
+      "database_name": "hsr_green_energy_preview",
+      "database_id": "3220c6e5-64ff-4874-9d5d-0e237f5af9ad",
+      "migrations_dir": "migrations"
+    }
+  ]
+}

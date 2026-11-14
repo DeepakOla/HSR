@@ -1,0 +1,36 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import CustomerStatusView from '../../../components/status/CustomerStatusView';
+import { getDb, getBusinessSettings } from '../../../lib/db';
+
+const db = getDb(Astro);
+const settings = await getBusinessSettings(db);
+const booking = Astro.url.searchParams.get('booking') ?? '';
+const token = Astro.url.searchParams.get('token') ?? '';
+let data: any = null;
+if (booking && token) {
+  const url = new URL(`/api/status/${encodeURIComponent(booking)}?token=${encodeURIComponent(token)}`, Astro.url.origin);
+  const res = await fetch(url, { headers: { cookie: Astro.request.headers.get('cookie') ?? '' } });
+  if (res.ok) {
+    const payload: any = await res.json();
+    data = payload.data;
+  }
+}
+const cityName = settings.city !== 'SETUP_REQUIRED' ? settings.city : 'Rewari';
+---
+
+<BaseLayout locale="en" title="Booking & Cylinder Status" description="Track your CNG cylinder hydro testing appointment, testing progress, and compliance certificate." canonicalPath="/en/status/" businessName={settings.business_name_en} settings={settings}>
+  <section class="section" style="padding-top: 1.5rem;">
+    <CustomerStatusView
+      client:load
+      locale="en"
+      initialBooking={booking}
+      initialToken={token}
+      initialData={data}
+      stationCity={cityName}
+      stationPhone={settings.contact_phone}
+      stationAddress={settings.address_line !== 'SETUP_REQUIRED' ? settings.address_line : 'HSR Green Energy, Rewari, Haryana'}
+      stationMapUrl={settings.map_url !== 'SETUP_REQUIRED' ? settings.map_url : '#'}
+    />
+  </section>
+</BaseLayout>

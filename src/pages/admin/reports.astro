@@ -1,0 +1,9 @@
+---
+import { requireRole } from '../../lib/auth';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+
+const auth = await requireRole(Astro.request, getRuntimeEnv(Astro.locals), ['OWNER', 'RECEPTIONIST']);
+if (!auth.ok) return auth.response;
+---
+
+<!doctype html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width,initial-scale=1" /><title>Reports</title></head><body><main style="max-width:900px;margin:2rem auto;font-family:system-ui,sans-serif"><h1>Booking reports</h1><p>CSV exports are available through <code>/api/admin/exports/bookings.csv</code>.</p></main></body></html>

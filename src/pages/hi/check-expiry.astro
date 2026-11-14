@@ -1,0 +1,40 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getDb, getBusinessSettings } from '../../lib/db';
+import { getSeoMeta } from '../../lib/content';
+import { calculateNextRetestDate, isValidIsoDate, todayInIndia } from '../../lib/expiry';
+
+const db = getDb(Astro);
+const [settings, seo] = await Promise.all([getBusinessSettings(db), getSeoMeta(db, 'hi')]);
+const lastPeriodicTestDate = Astro.url.searchParams.get('lastPeriodicTestDate') ?? '';
+const today = todayInIndia();
+let nextDueDate: string | null = null;
+let error: string | null = null;
+
+if (lastPeriodicTestDate) {
+  if (isValidIsoDate(lastPeriodicTestDate) && lastPeriodicTestDate <= today) {
+    nextDueDate = calculateNextRetestDate(lastPeriodicTestDate);
+  } else {
+    error = 'वास्तविक टेस्ट तारीख दर्ज करें; भविष्य की तारीख स्वीकार नहीं है।';
+  }
+}
+---
+
+<BaseLayout locale="hi" title="सीएनजी टेस्ट एक्सपायरी जाँचें" description={seo.description} canonicalPath="/hi/check-expiry/" businessName={settings.business_name_hi} settings={settings}>
+  <section class="section">
+    <div class="container card">
+      <h1>सीएनजी सिलेंडर रिटेस्ट रिमाइंडर</h1>
+      <p>सिलेंडर मार्किंग या आधिकारिक रिकॉर्ड में दर्ज अंतिम पीरियॉडिक टेस्ट तारीख डालें।</p>
+      <form method="get">
+        <label for="lastPeriodicTestDate">अंतिम पीरियॉडिक टेस्ट तारीख</label>
+        <input id="lastPeriodicTestDate" name="lastPeriodicTestDate" type="date" required max={today} value={lastPeriodicTestDate} style="display:block;min-height:56px;padding:.5rem;border:1px solid var(--border);border-radius:var(--radius);margin:.5rem 0 1rem" />
+        <button class="cta cta-primary" type="submit">अगली देय तारीख देखें</button>
+      </form>
+      {error && <p role="alert" style="color:#8b0000">{error}</p>}
+      {nextDueDate && <p><strong>अगली देय तारीख:</strong> {nextDueDate}</p>}
+      <p style="color:var(--muted)">
+        यह केवल जानकारी हेतु रिमाइंडर है। अंतिम वैधता के लिए आधिकारिक मार्किंग, प्रमाणपत्र और लागू मानक ही मान्य हैं।
+      </p>
+    </div>
+  </section>
+</BaseLayout>

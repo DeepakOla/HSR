@@ -1,0 +1,781 @@
+---
+import type { Locale } from '../lib/constants';
+import type { BusinessSettings } from '../lib/types';
+import { localizePath, otherLocale, t } from '../lib/i18n';
+import { buildLocalBusinessSchema } from '../lib/seo';
+import FeedbackModal from '../components/FeedbackModal';
+import '../styles/design-tokens.css';
+
+interface Props {
+  locale: Locale;
+  title: string;
+  description: string;
+  canonicalPath: string;
+  businessName: string;
+  settings?: BusinessSettings;
+}
+
+const { locale, title, description, canonicalPath, businessName, settings } = Astro.props;
+const copy = t(locale);
+const alternate = otherLocale(locale);
+const path = canonicalPath.endsWith('/') ? canonicalPath : `${canonicalPath}/`;
+const canonical = new URL(path, Astro.url.origin);
+const alternateHref = new URL(localizePath(path, alternate), Astro.url.origin);
+
+const currentPath = Astro.url.pathname;
+const isHome = currentPath === `/${locale}/` || currentPath === `/${locale}`;
+const getAnchor = (id: string) => isHome ? `#${id}` : `/${locale}/#${id}`;
+
+const effectiveSettings = settings ?? ({
+  business_name_en: businessName || 'HSR',
+  business_name_hi: businessName || 'HSR',
+  city: 'Rewari',
+  address_line: 'SETUP_REQUIRED',
+  contact_phone: '+919910055355',
+  whatsapp_number: '+919910055355',
+  contact_email: 'SETUP_REQUIRED',
+  map_url: 'SETUP_REQUIRED',
+  seo_title_en: title,
+  seo_title_hi: title,
+  seo_desc_en: description,
+  seo_desc_hi: description,
+} as any);
+
+const schema = buildLocalBusinessSchema({
+  settings: effectiveSettings,
+  locale,
+  currentUrl: canonical.toString(),
+});
+---
+
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical.toString()} />
+    <link rel="alternate" hreflang={alternate} href={alternateHref.toString()} />
+    <link rel="alternate" hreflang={locale} href={canonical.toString()} />
+
+    <!-- Google Fonts for Plus Jakarta Sans & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical.toString()} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:locale" content={locale === 'hi' ? 'hi_IN' : 'en_IN'} />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content={canonical.toString()} />
+    <meta property="twitter:title" content={title} />
+    <meta property="twitter:description" content={description} />
+
+    <!-- Schema.org JSON-LD -->
+    <script type="application/ld+json" set:html={JSON.stringify(schema)} />
+  </head>
+  <body>
+    <!-- Animated Announcement Ticker Bar (Moving Right to Left) -->
+    <aside class="announcement-ticker-bar demo-banner" role="status" aria-label={locale === 'en' ? 'Station Announcements' : 'स्टेशन सूचना'}>
+      <div class="ticker-track-container">
+        <div class="ticker-track">
+          <span class="ticker-item">
+            <span class="ticker-badge demo-tag">⚡ {locale === 'en' ? 'GOVERNMENT APPROVED' : 'सरकारी प्रमाणित'}</span>
+            <span class="demo-text">{locale === 'en' ? 'Government Approved Testing Facility (PESO Certified) — Rewari, Haryana' : 'सरकारी प्रमाणित टेस्टिंग सुविधा (PESO Certified) — रेवाड़ी, हरियाणा'}</span>
+          </span>
+          <span class="ticker-item">
+            <span class="ticker-badge">⏱️ {locale === 'en' ? 'FAST' : 'त्वरित'}</span>
+            <span>{locale === 'en' ? '2 to 3 Hour Express Turnaround | Avoid Fuel Pump Refusal' : '2 से 3 घंटे में एक्सप्रेस टेस्टिंग | पंप पर गैस रिफिलिंग इंकार से बचें'}</span>
+          </span>
+          <span class="ticker-item">
+            <span class="ticker-badge">🛡️ {locale === 'en' ? 'COMPLIANCE' : 'अनुपालन'}</span>
+            <span>{locale === 'en' ? '300 Bar Water Jacket Test | Stamped Brass Compliance Plate & Certificate' : 'प्रमाणित 300 बार वाटर जैकेट टेस्ट | मोहरबंद पीतल प्लेट एवं प्रमाणपत्र'}</span>
+          </span>
+          <!-- Duplicate for seamless loop -->
+          <span class="ticker-item">
+            <span class="ticker-badge demo-tag">⚡ {locale === 'en' ? 'GOVERNMENT APPROVED' : 'सरकारी प्रमाणित'}</span>
+            <span class="demo-text">{locale === 'en' ? 'Government Approved Testing Facility (PESO Certified) — Rewari, Haryana' : 'सरकारी प्रमाणित टेस्टिंग सुविधा (PESO Certified) — रेवाड़ी, हरियाणा'}</span>
+          </span>
+          <span class="ticker-item">
+            <span class="ticker-badge">⏱️ {locale === 'en' ? 'FAST' : 'त्वरित'}</span>
+            <span>{locale === 'en' ? '2 to 3 Hour Express Turnaround | Avoid Fuel Pump Refusal' : '2 से 3 घंटे में एक्सप्रेस टेस्टिंग | पंप पर गैस रिफिलिंग इंकार से बचें'}</span>
+          </span>
+        </div>
+      </div>
+      <div class="ticker-feedback-dock">
+        <button type="button" class="ticker-feedback-btn" id="open-feedback-btn">
+          💬 {locale === 'en' ? 'Feedback' : 'प्रतिक्रिया'}
+        </button>
+      </div>
+    </aside>
+
+    <header class="app-header">
+      <div class="container topbar">
+        <a href={`/${locale}/`} class="brand-link">
+          <span class="brand-logo-text">{businessName || 'HSR'}</span>
+          <span class="brand-subtext">{locale === 'en' ? 'CNG Hydro Testing' : 'सीएनजी हाइड्रो टेस्टिंग'}</span>
+        </a>
+
+        <!-- Desktop Navigation: Services, Book, Blog, Contact, Login -->
+        <nav aria-label={locale === 'en' ? 'Primary navigation' : 'मुख्य नेविगेशन'} class="primary-nav">
+          <ul class="nav-list">
+            <li><a href={`/${locale}/services/`}>{locale === 'en' ? 'Services' : 'सेवाएँ'}</a></li>
+            <li><a href={`/${locale}/book/`}>{locale === 'en' ? 'Book' : 'बुक करें'}</a></li>
+            <li><a href={`/${locale}/blog/`}>{locale === 'en' ? 'Blog' : 'ब्लॉग'}</a></li>
+            <li><a href={`/${locale}/contact/`}>{locale === 'en' ? 'Contact' : 'संपर्क'}</a></li>
+            <li>
+              <a href="/admin/login/" class="nav-login-btn" style="color: var(--color-steel-600); font-weight: 700;">
+                🔐 {locale === 'en' ? 'Login' : 'लॉगिन'}
+              </a>
+            </li>
+          </ul>
+        </nav>
+
+        <div class="header-actions">
+          <a class="lang-pill" href={localizePath(Astro.url.pathname, alternate)} aria-label="Change language">
+            {alternate === 'hi' ? 'हिंदी' : 'English'}
+          </a>
+          <a href={`/${locale}/book/`} class="btn btn-primary nav-book-btn">
+            {copy.actions.book}
+          </a>
+        </div>
+
+        <!-- Mobile Navigation Toggle -->
+        <button
+          type="button"
+          class="mobile-nav-toggle"
+          id="mobile-nav-toggle"
+          aria-expanded="false"
+          aria-controls="mobile-nav-drawer"
+          aria-label={locale === 'en' ? 'Toggle navigation menu' : 'नेविगेशन मेनू खोलें/बंद करें'}
+        >
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+      </div>
+
+      <!-- Mobile Navigation Drawer Overlay -->
+      <div class="mobile-nav-drawer" id="mobile-nav-drawer" hidden>
+        <div class="mobile-nav-backdrop" id="mobile-nav-backdrop"></div>
+        <div class="mobile-nav-panel">
+          <div class="mobile-nav-header">
+            <div>
+              <strong class="mobile-brand-title">{businessName || 'HSR'}</strong>
+              <span class="mobile-brand-sub">{locale === 'en' ? 'Rewari Station' : 'रेवाड़ी केंद्र'}</span>
+            </div>
+            <button type="button" class="mobile-nav-close" id="mobile-nav-close" aria-label="Close navigation">✕</button>
+          </div>
+
+          <nav aria-label={locale === 'en' ? 'Mobile navigation' : 'मोबाइल नेविगेशन'} class="mobile-nav-links">
+            <a href={`/${locale}/book/`} class="mobile-nav-item mobile-book-cta">
+              ⚡ {locale === 'en' ? 'Book Testing Bay' : 'स्लॉट बुक करें'}
+            </a>
+            <a href={`/${locale}/services/`} class="mobile-nav-item">
+              🔬 {locale === 'en' ? 'Our Services' : 'हमारी सेवाएँ'}
+            </a>
+            <a href={`/${locale}/blog/`} class="mobile-nav-item">
+              📖 {locale === 'en' ? 'Blog & Advice' : 'ब्लॉग व सलाह'}
+            </a>
+            <a href={`/${locale}/contact/`} class="mobile-nav-item">
+              📍 {locale === 'en' ? 'Contact & Facility' : 'संपर्क व केंद्र'}
+            </a>
+            <a href="/admin/login/" class="mobile-nav-item" style="border-top: 1px solid var(--border-subtle); margin-top: 0.5rem; padding-top: 1rem; color: var(--color-steel-600); font-weight: 700;">
+              🔐 {locale === 'en' ? 'Login Portal (Staff / Admin / Customer)' : 'लॉगिन पोर्टल (कर्मचारी / एडमिन / ग्राहक)'}
+            </a>
+          </nav>
+
+          <div class="mobile-nav-footer">
+            <a class="lang-pill mobile-lang-pill" href={localizePath(Astro.url.pathname, alternate)}>
+              🌐 {alternate === 'hi' ? 'हिंदी में बदलें' : 'Switch to English'}
+            </a>
+            <a href="/admin/login/" class="staff-login-link mobile-staff-link">
+              🔒 {locale === 'en' ? 'Staff Login' : 'कर्मचारी लॉगिन'}
+            </a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <slot />
+    </main>
+
+    <footer class="app-footer">
+      <div class="container footer-content">
+        <div class="footer-top">
+          <div class="footer-brand-col">
+            <strong class="footer-brand-title">{businessName || 'HSR'}</strong>
+            <span class="footer-badge-tag">{locale === 'en' ? 'Precision Hydro Test Station' : 'प्रमाणित हाइड्रो टेस्टिंग स्टेशन'}</span>
+          </div>
+
+          <div class="footer-links-col">
+            <strong class="footer-heading">{locale === 'en' ? 'Customer Services' : 'ग्राहक सेवाएँ'}</strong>
+            <ul class="footer-nav-list">
+              <li><a href={getAnchor('booking')}>{copy.actions.book}</a></li>
+              <li><a href={getAnchor('refused-cng')}>{locale === 'en' ? 'Refused at CNG Pump?' : 'पंप पर मना किया?'}</a></li>
+              <li><a href={getAnchor('pricing')}>{locale === 'en' ? 'Transparent Pricing' : 'पारदर्शी शुल्क'}</a></li>
+              <li><a href={getAnchor('process')}>{locale === 'en' ? '5-Step Testing Methodology' : '5-चरणीय परीक्षण विधि'}</a></li>
+              <li><a href={getAnchor('standards')}>{locale === 'en' ? 'Statutory Standards' : 'वैधानिक सुरक्षा मानक'}</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-links-col">
+            <strong class="footer-heading">{locale === 'en' ? 'Quick Tools' : 'त्वरित साधन'}</strong>
+            <ul class="footer-nav-list">
+              <li><a href={`/${locale}/check-expiry/`}>{copy.nav.expiry}</a></li>
+              <li><a href={`/${locale}/blog/`}>{copy.nav.blog}</a></li>
+              <li><a href={getAnchor('location')}>{locale === 'en' ? 'Station Location & Map' : 'स्टेशन का पता व नक्शा'}</a></li>
+              <li><a href={getAnchor('faqs')}>{locale === 'en' ? 'Frequently Asked Questions' : 'अक्सर पूछे जाने वाले प्रश्न'}</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-links-col">
+            <strong class="footer-heading">{locale === 'en' ? 'Station Details' : 'स्टेशन विवरण'}</strong>
+            <p class="footer-contact-item">
+              <strong>{locale === 'en' ? 'Facility:' : 'स्थान:'}</strong> {effectiveSettings.city !== 'SETUP_REQUIRED' ? effectiveSettings.city : 'Rewari'}, Haryana
+            </p>
+            <p class="footer-contact-item">
+              <strong>{locale === 'en' ? 'Hours:' : 'कार्य समय:'}</strong> Mon–Sat 09:00–18:00
+            </p>
+            {effectiveSettings.contact_phone !== 'SETUP_REQUIRED' && (
+              <p class="footer-contact-item">
+                <strong>{locale === 'en' ? 'Phone:' : 'फ़ोन:'}</strong> <a href={`tel:${effectiveSettings.contact_phone}`}>{effectiveSettings.contact_phone}</a>
+              </p>
+            )}
+            {effectiveSettings.whatsapp_number !== 'SETUP_REQUIRED' && (
+              <p class="footer-contact-item">
+                <strong>WhatsApp:</strong> <a href={`https://wa.me/${effectiveSettings.whatsapp_number.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">{effectiveSettings.whatsapp_number}</a>
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <p class="footer-disclaimer">
+            {locale === 'en'
+              ? 'Owner-managed business details and accreditations may be marked SETUP_REQUIRED until officially verified by facility management.'
+              : 'मालिक द्वारा प्रबंधित जानकारी और प्रमाणपत्र विवरण आधिकारिक सत्यापन तक SETUP_REQUIRED के रूप में चिह्नित हो सकते हैं।'}
+          </p>
+          <div class="footer-staff-login">
+            <a href="/admin/login/" class="staff-login-link">
+              {locale === 'en' ? 'Staff / Admin Login' : 'कर्मचारी / एडमिन लॉगिन'}
+            </a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Interactive Feedback Component (React Island) -->
+    <FeedbackModal client:load locale={locale} />
+
+    <!-- Accessible Mobile Navigation Toggle Script -->
+    <script is:inline>
+      (function() {
+        const toggle = document.getElementById('mobile-nav-toggle');
+        const drawer = document.getElementById('mobile-nav-drawer');
+        const backdrop = document.getElementById('mobile-nav-backdrop');
+        const closeBtn = document.getElementById('mobile-nav-close');
+
+        if (!toggle || !drawer) return;
+
+        function openDrawer() {
+          drawer.removeAttribute('hidden');
+          toggle.setAttribute('aria-expanded', 'true');
+          document.body.style.overflow = 'hidden';
+        }
+
+        function closeDrawer() {
+          drawer.setAttribute('hidden', '');
+          toggle.setAttribute('aria-expanded', 'false');
+          document.body.style.overflow = '';
+        }
+
+        toggle.addEventListener('click', function(e) {
+          e.preventDefault();
+          const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+          if (isExpanded) {
+            closeDrawer();
+          } else {
+            openDrawer();
+          }
+        });
+
+        if (backdrop) backdrop.addEventListener('click', closeDrawer);
+        if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+
+        drawer.querySelectorAll('a').forEach(function(link) {
+          link.addEventListener('click', closeDrawer);
+        });
+
+        window.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && !drawer.hasAttribute('hidden')) {
+            closeDrawer();
+          }
+        });
+
+        // Header Pin on Scroll (only shows sticky when scrolled past hero)
+        const header = document.querySelector('.app-header');
+        if (header) {
+          window.addEventListener('scroll', function() {
+            if (window.scrollY > 250) {
+              header.classList.add('scrolled-pinned');
+            } else {
+              header.classList.remove('scrolled-pinned');
+            }
+          }, { passive: true });
+        }
+      })();
+    </script>
+  </body>
+</html>
+
+<style>
+  /* Demo Preview Banner */
+  .demo-banner {
+    background-color: var(--color-navy-950, #050b18);
+    color: #f8fafc;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    border-bottom: 2px solid var(--color-action, #ea580c);
+  }
+  .demo-banner-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .demo-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .demo-tag {
+    background-color: var(--color-action, #ea580c);
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 0.72rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--radius-sm, 4px);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .demo-text {
+    color: #e2e8f0;
+    font-size: 0.82rem;
+    margin: 0;
+  }
+  .demo-feedback-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full, 9999px);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+  }
+  .demo-feedback-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #ffffff;
+  }
+
+  /* Header & Navigation Bar */
+  .app-header {
+    background: #ffffff;
+    border-bottom: 1px solid var(--border-default);
+    position: relative;
+    z-index: 50;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .app-header.scrolled-pinned {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    box-shadow: 0 4px 14px rgba(10, 17, 40, 0.08);
+    animation: slideDownHeader 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes slideDownHeader {
+    from {
+      transform: translateY(-100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+  .topbar {
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+  }
+  .brand-link {
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+  .brand-logo-text {
+    font-family: var(--font-heading);
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--color-navy-900);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+  .brand-subtext {
+    font-size: 0.68rem;
+    color: var(--color-slate-600);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Desktop Navigation */
+  .primary-nav {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    justify-content: center;
+  }
+  .nav-list {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0;
+    margin: 0;
+  }
+  .nav-list a {
+    text-decoration: none;
+    color: var(--color-slate-700);
+    font-weight: 600;
+    font-size: 0.88rem;
+    padding: 0.35rem 0.55rem;
+    border-radius: var(--radius-sm);
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .nav-list a:hover {
+    color: var(--color-steel-600);
+    background-color: var(--color-steel-50);
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+  }
+  .lang-pill {
+    border: 1px solid var(--border-default);
+    background: var(--color-slate-100);
+    border-radius: var(--radius-full);
+    padding: 0.35rem 0.75rem;
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-slate-700);
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .lang-pill:hover {
+    background: #ffffff;
+    border-color: var(--color-steel-600);
+    color: var(--color-steel-600);
+  }
+  .nav-book-btn {
+    min-height: 38px;
+    padding: 0.4rem 0.95rem;
+    font-size: 0.88rem;
+    white-space: nowrap;
+  }
+
+  /* Mobile Hamburger Toggle */
+  .mobile-nav-toggle {
+    display: none;
+    background: transparent;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 0.45rem;
+    cursor: pointer;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    width: 42px;
+    height: 42px;
+  }
+  .hamburger-bar {
+    display: block;
+    width: 20px;
+    height: 2px;
+    background-color: var(--color-navy-900);
+    border-radius: 1px;
+    transition: all 0.2s ease;
+  }
+
+  /* Mobile Drawer Overlay */
+  .mobile-nav-drawer {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+  }
+  .mobile-nav-drawer[hidden] {
+    display: none;
+  }
+  .mobile-nav-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 17, 40, 0.6);
+    backdrop-filter: blur(3px);
+  }
+  .mobile-nav-panel {
+    position: relative;
+    width: min(340px, 85vw);
+    background: #ffffff;
+    height: 100%;
+    margin-left: auto;
+    display: flex;
+    flex-direction: column;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.2);
+    overflow-y: auto;
+  }
+  .mobile-nav-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--color-slate-50);
+  }
+  .mobile-brand-title {
+    font-family: var(--font-heading);
+    font-size: 1.25rem;
+    color: var(--color-navy-900);
+    display: block;
+    line-height: 1.1;
+  }
+  .mobile-brand-sub {
+    font-size: 0.72rem;
+    color: var(--color-slate-600);
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .mobile-nav-close {
+    background: transparent;
+    border: none;
+    font-size: 1.35rem;
+    line-height: 1;
+    color: var(--color-slate-600);
+    cursor: pointer;
+    padding: 0.35rem 0.6rem;
+    border-radius: var(--radius-sm);
+  }
+  .mobile-nav-close:hover {
+    background-color: var(--color-slate-200);
+    color: var(--color-navy-900);
+  }
+  .mobile-nav-links {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+  }
+  .mobile-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-md);
+    color: var(--color-slate-800);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: background 0.15s ease;
+  }
+  .mobile-nav-item:hover {
+    background-color: var(--color-steel-50);
+    color: var(--color-steel-600);
+  }
+  .mobile-book-cta {
+    background-color: var(--color-action);
+    color: #ffffff !important;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  .mobile-book-cta:hover {
+    background-color: var(--color-action-hover);
+  }
+  .mobile-nav-footer {
+    padding: 1.25rem;
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    background: var(--color-slate-50);
+  }
+  .mobile-lang-pill {
+    text-align: center;
+    padding: 0.6rem 1rem;
+    background: #ffffff;
+    border-color: var(--border-default);
+  }
+  .mobile-staff-link {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--color-slate-600);
+  }
+
+  /* Footer Styling */
+  .app-footer {
+    border-top: 1px solid var(--border-default);
+    background: #ffffff;
+    margin-top: 4rem;
+    padding: 3.5rem 0 2rem;
+  }
+  .footer-top {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1.2fr;
+    gap: 2.5rem;
+    margin-bottom: 2.5rem;
+  }
+  .footer-brand-title {
+    font-family: var(--font-heading);
+    font-size: 1.3rem;
+    color: var(--color-navy-900);
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+  .footer-badge-tag {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--color-action);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+  }
+  .footer-brand-desc {
+    color: var(--color-slate-600);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    max-width: 52ch;
+    margin-bottom: 1.25rem;
+  }
+  .trust-badge-group {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+  .footer-heading {
+    display: block;
+    margin-bottom: 0.85rem;
+    color: var(--color-navy-900);
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .footer-nav-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.55rem;
+  }
+  .footer-nav-list a {
+    color: var(--color-slate-600);
+    text-decoration: none;
+    font-size: 0.88rem;
+    transition: color 0.15s ease;
+  }
+  .footer-nav-list a:hover {
+    color: var(--color-steel-600);
+    text-decoration: underline;
+  }
+  .footer-contact-item {
+    font-size: 0.88rem;
+    color: var(--color-slate-600);
+    margin: 0 0 0.5rem 0;
+    line-height: 1.5;
+  }
+  .footer-contact-item a {
+    color: var(--color-steel-600);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .footer-contact-item a:hover {
+    text-decoration: underline;
+  }
+  .footer-bottom {
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .footer-disclaimer {
+    font-size: 0.82rem;
+    color: var(--color-slate-600);
+    margin: 0;
+    max-width: 70ch;
+  }
+  .staff-login-link {
+    color: var(--color-slate-600);
+    font-size: 0.85rem;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .staff-login-link:hover {
+    text-decoration: underline;
+    color: var(--color-navy-900);
+  }
+
+  /* Responsive Rules */
+  @media (max-width: 1120px) {
+    .primary-nav,
+    .header-actions {
+      display: none;
+    }
+    .mobile-nav-toggle {
+      display: flex;
+    }
+    .footer-top {
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .demo-banner-inner {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    .footer-top {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+    .footer-bottom {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>

@@ -1,0 +1,12 @@
+---
+import { requireRole } from '../../lib/auth';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import OwnerSettings from '../../components/admin/OwnerSettings';
+
+const auth = await requireRole(Astro.request, getRuntimeEnv(Astro.locals), ['OWNER']);
+if (!auth.ok) return auth.response;
+---
+<AdminLayout title="Owner settings" owner>
+  <OwnerSettings client:load />
+</AdminLayout>

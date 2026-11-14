@@ -1,0 +1,76 @@
+---
+import CustomerLayout from '../../layouts/CustomerLayout.astro';
+import { getCustomerSessionFromCookie } from '../../lib/customer-auth';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+
+const env = getRuntimeEnv(Astro.locals);
+const session = await getCustomerSessionFromCookie(Astro.request, env);
+
+let documents: any[] = [];
+if (env?.DB && session) {
+  try {
+    const res = await env.DB.prepare(
+      `SELECT d.id, d.file_name as fileName, d.doc_type as docType, d.created_at as createdAt,
+              COALESCE(b.display_reg_no, v.display_reg_no, v.registration_display, 'HR-26-XX-0000') as displayRegNo
+       FROM documents d
+       JOIN bookings b ON b.id = d.booking_id
+       LEFT JOIN booking_groups bg ON bg.id = b.booking_group_id
+       LEFT JOIN vehicles v ON v.id = b.vehicle_id
+       WHERE bg.booker_party_id = ? OR b.rc_owner_party_id = ?
+       ORDER BY d.created_at DESC`
+    )
+      .bind(session.partyId, session.partyId)
+      .all<any>();
+    documents = res.results || [];
+  } catch (e) {
+    // Graceful fallback
+  }
+}
+---
+
+<CustomerLayout title="Documents | HSR Technical Services" activeNav="documents" breadcrumb="Documents">
+  <div style="margin-bottom: 1.5rem;">
+    <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.8rem; font-weight: 800; color: #0a1128; margin: 0 0 0.25rem;">
+      Certificates & Compliance Vault
+    </h1>
+    <p style="color: #64748b; font-size: 0.92rem; margin: 0;">
+      Download official PESO compliance certificates, testing slips, and GST invoices.
+    </p>
+  </div>
+
+  {documents.length > 0 ? (
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.25rem;">
+      {documents.map((d) => (
+        <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <span style="font-size: 0.75rem; font-weight: 700; color: #15803d; background: #dcfce7; padding: 0.25rem 0.5rem; border-radius: 6px; text-transform: uppercase;">
+              {d.docType}
+            </span>
+            <div style="font-weight: 700; font-size: 1.05rem; color: #0a1128; margin-top: 0.5rem;">
+              {d.fileName}
+            </div>
+            <div style="font-size: 0.82rem; color: #64748b; margin-top: 0.25rem;">
+              Vehicle: <strong>{d.displayRegNo}</strong>
+            </div>
+          </div>
+          <div style="margin-top: 1rem; border-top: 1px solid #f1f5f9; padding-top: 0.75rem;">
+            <button type="button" style="width: 100%; background: #0a1128; color: #fff; padding: 0.5rem; border: none; border-radius: 6px; font-weight: 700; font-size: 0.82rem; cursor: pointer;">
+              Download Document ↓
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div style="background: #ffffff; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 3.5rem 2rem; text-align: center;">
+      <div style="font-size: 2.5rem; margin-bottom: 1rem;">📄</div>
+      <div style="font-weight: 700; font-size: 1.1rem; color: #0a1128; margin-bottom: 0.35rem;">No certificates uploaded yet</div>
+      <div style="font-size: 0.88rem; color: #64748b; margin-bottom: 1.5rem; max-width: 440px; margin-left: auto; margin-right: auto;">
+        As soon as the PESO hydro-testing certificate and brass plate stamping are completed, the signed PDF document will be archived here for instant download.
+      </div>
+      <a href="/en/book" style="background: #166534; color: #fff; padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 700; font-size: 0.9rem; text-decoration: none;">
+        Schedule Hydro Test
+      </a>
+    </div>
+  )}
+</CustomerLayout>

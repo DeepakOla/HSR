@@ -1,0 +1,316 @@
+---
+import type { Locale } from '../lib/constants';
+import { parsePageContent } from '../lib/content';
+
+interface ContactDetails {
+  phone: string;
+  whatsappNumber: string;
+  email: string;
+  address: string;
+  mapUrl: string;
+}
+
+interface Props {
+  title: string;
+  body: string;
+  locale: Locale;
+  contact?: ContactDetails;
+}
+
+const { title, body, locale, contact } = Astro.props;
+const content = parsePageContent(body);
+
+const phoneReady = contact && contact.phone !== 'SETUP_REQUIRED';
+const whatsappReady = contact && contact.whatsappNumber !== 'SETUP_REQUIRED';
+const emailReady = contact && contact.email !== 'SETUP_REQUIRED';
+const addressReady = contact && contact.address !== 'SETUP_REQUIRED';
+const mapReady = contact && contact.mapUrl !== 'SETUP_REQUIRED' && contact.mapUrl.startsWith('https://');
+const whatsappLink = contact && whatsappReady ? `https://wa.me/${contact.whatsappNumber.replace(/\D/g, '')}` : null;
+---
+
+<section class="section" style="padding-top: 2.5rem;">
+  <div class="container card content-page-card">
+    <div class="content-header-badge">
+      <span class="trust-badge trust-badge-amber">⚡ {locale === 'en' ? 'Certified Testing Standard' : 'प्रमाणित टेस्टिंग मानक'}</span>
+    </div>
+    <h1 class="page-title">{title}</h1>
+
+    {content.isStructured ? (
+      <div class="structured-content">
+        {content.summary && <p class="content-summary">{content.summary}</p>}
+        {content.sections.map((section) => (
+          <div class="content-section">
+            {section.heading && <h2 class="content-heading">{section.heading}</h2>}
+            {section.subheading && <h3 class="content-subheading">{section.subheading}</h3>}
+            {section.paragraphs && section.paragraphs.map((para) => (
+              <p class="content-para">{para}</p>
+            ))}
+            {section.bullets && section.bullets.length > 0 && (
+              <ul class="content-bullets">
+                {section.bullets.map((bullet) => (
+                  <li>{bullet}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))}
+      </div>
+    ) : content.isConfigured ? (
+      <div class="plain-content">
+        {content.paragraphs.map((para) => (
+          <p class="content-para">{para}</p>
+        ))}
+      </div>
+    ) : (
+      <div class="default-service-overview">
+        <p class="lead-text">
+          {locale === 'en'
+            ? 'High-precision CNG cylinder hydrostatic stretch testing up to 300 bar pressure. Fully certified under statutory Gas Cylinders Rules 2016 and MoRTH automotive safety directives in Rewari, Haryana.'
+            : '300 बार दबाव तक उच्च-सटीक सीएनजी सिलेंडर हाइड्रोस्टेटिक स्ट्रेच टेस्टिंग। वैधानिक गैस सिलेंडर नियमों और सड़क परिवहन मंत्रालय सुरक्षा निर्देशों के तहत पूर्णतः प्रमाणित।'}
+        </p>
+
+        <div class="overview-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin: 1.5rem 0;">
+          <div class="overview-box" style="background: #ffffff; border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 1.5rem;">
+            <h3>🚗 {locale === 'en' ? 'Passenger Cars & Taxis' : 'यात्री कारें एवं टैक्सियाँ'}</h3>
+            <p>
+              {locale === 'en'
+                ? 'Certified hydrostatic testing for 1 and 2 cylinder cars (WagonR, Dzire, Aura, Ertiga, private cars and cabs). Fast 2-hour turnaround.'
+                : '1 और 2 सिलेंडर कारों के लिए प्रमाणित हाइड्रोस्टेटिक टेस्टिंग। 2 घंटे में त्वरित सेवा।'}
+            </p>
+            <a href={`/${locale}/book/`} class="btn btn-outline" style="margin-top: 0.75rem; display: inline-flex;">
+              ⚡ {locale === 'en' ? 'Book Car Testing →' : 'कार स्लॉट बुक करें →'}
+            </a>
+          </div>
+
+          <div class="overview-box" style="background: #ffffff; border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 1.5rem;">
+            <h3>🚐 {locale === 'en' ? 'Commercial Vans & Tempos' : 'कमर्शियल वैन एवं टेम्पो'}</h3>
+            <p>
+              {locale === 'en'
+                ? 'Dedicated bay testing for delivery tempos, logistics vans, and light commercial vehicles (1 to 4 cylinders). Complete transport compliance certificate.'
+                : 'डिलीवरी टेम्पो, वैन और छोटे कमर्शियल वाहनों (1 से 4 सिलेंडर) के लिए विशेष बे टेस्टिंग।'}
+            </p>
+            <a href={`/${locale}/book/`} class="btn btn-outline" style="margin-top: 0.75rem; display: inline-flex;">
+              ⚡ {locale === 'en' ? 'Book Tempo Slot →' : 'टेम्पो स्लॉट बुक करें →'}
+            </a>
+          </div>
+
+          <div class="overview-box" style="background: #ffffff; border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 1.5rem;">
+            <h3>🚛 {locale === 'en' ? 'Heavy Commercial Trucks & Buses' : 'भारी कमर्शियल ट्रक एवं बसें'}</h3>
+            <p>
+              {locale === 'en'
+                ? 'Multi-cylinder cascade testing for heavy transport haulers, chassis mounts, and city transport buses (4 to 6 cylinders).'
+                : 'भारी मालवाहक ट्रकों, 6-सिलेंडर चेसिस और बसों के लिए मल्टी-सिलेंडर कैस्केड टेस्टिंग।'}
+            </p>
+            <a href={`/${locale}/book/`} class="btn btn-outline" style="margin-top: 0.75rem; display: inline-flex;">
+              ⚡ {locale === 'en' ? 'Book Truck Bay →' : 'ट्रक स्लॉट बुक करें →'}
+            </a>
+          </div>
+
+          <div class="overview-box" style="background: #ffffff; border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 1.5rem;">
+            <h3>🔧 {locale === 'en' ? 'Valve Inspection & Plate Stamping' : 'वाल्व निरीक्षण एवं प्लेट स्टैम्पिंग'}</h3>
+            <p>
+              {locale === 'en'
+                ? 'High-pressure valve overhaul, burst disc safety inspection, ultrasonic neck thread scan, and official stamped brass compliance plate mounting.'
+                : 'वाल्व ओवरहाल, बर्स्ट डिस्क सुरक्षा निरीक्षण, थ्रेड जांच और आधिकारिक पीतल की कंप्लायंस प्लेट फिटिंग।'}
+            </p>
+            <a href={`/${locale}/book/`} class="btn btn-outline" style="margin-top: 0.75rem; display: inline-flex;">
+              ⚡ {locale === 'en' ? 'Book Inspection →' : 'जाँच स्लॉट बुक करें →'}
+            </a>
+          </div>
+        </div>
+      </div>
+    )}
+
+    <!-- Direct Quick Conversion Jump Banner -->
+    <div class="content-action-banner">
+      <div class="action-banner-text">
+        <strong>{locale === 'en' ? 'Need an urgent certified testing appointment?' : 'तुरंत टेस्टिंग अपॉइंटमेंट की आवश्यकता है?'}</strong>
+        <span>{locale === 'en' ? 'Book your slot online. Fast 2 to 3 hours express turnaround in Rewari.' : 'ऑनलाइन स्लॉट बुक करें। रेवाड़ी में 2 से 3 घंटे में त्वरित सेवा।'}</span>
+      </div>
+      <a href={`/${locale}/book/`} class="btn btn-primary">
+        ⚡ {locale === 'en' ? 'Reserve Testing Bay' : 'स्लॉट बुक करें'}
+      </a>
+    </div>
+
+    {contact && (phoneReady || whatsappReady || emailReady || addressReady || mapReady) && (
+      <section aria-label={locale === 'en' ? 'Business contact details' : 'व्यवसाय संपर्क विवरण'} class="contact-details">
+        <h2>{locale === 'en' ? 'Facility Contact & Support' : 'स्टेशन संपर्क एवं सहायता'}</h2>
+        {addressReady && <p class="contact-address">{contact.address}</p>}
+        <div class="contact-links">
+          {phoneReady && (
+            <a href={`tel:${contact.phone}`} class="contact-link call-link">
+              <strong>📞 {locale === 'en' ? 'Call' : 'कॉल करें'}:</strong> {contact.phone}
+            </a>
+          )}
+          {whatsappLink && (
+            <a href={whatsappLink} target="_blank" rel="noreferrer" class="contact-link whatsapp-link">
+              <strong>💬 WhatsApp:</strong> {contact.whatsappNumber}
+            </a>
+          )}
+          {emailReady && (
+            <a href={`mailto:${contact.email}`} class="contact-link email-link">
+              <strong>✉️ Email:</strong> {contact.email}
+            </a>
+          )}
+          {mapReady && (
+            <a href={contact.mapUrl} target="_blank" rel="noreferrer" class="contact-link map-link">
+              📍 {locale === 'en' ? 'Get directions →' : 'रास्ता देखें →'}
+            </a>
+          )}
+        </div>
+      </section>
+    )}
+  </div>
+</section>
+
+<style>
+  .content-page-card {
+    padding: 2.5rem 2rem;
+  }
+  .content-header-badge {
+    margin-bottom: 0.75rem;
+  }
+  .page-title {
+    font-size: clamp(1.85rem, 3.5vw, 2.35rem);
+    font-weight: 800;
+    margin-top: 0;
+    margin-bottom: 1.25rem;
+    color: var(--color-navy-900);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+  .content-summary {
+    font-size: 1.15rem;
+    line-height: 1.6;
+    color: var(--color-slate-600);
+    margin-bottom: 2rem;
+    font-weight: 500;
+  }
+  .lead-text {
+    font-size: 1.1rem;
+    line-height: 1.65;
+    color: var(--color-slate-700);
+    margin-bottom: 2rem;
+  }
+  .overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .overview-box {
+    background: var(--color-slate-50);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+  }
+  .overview-box h3 {
+    font-size: 1.15rem;
+    color: var(--color-navy-900);
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+  }
+  .overview-box p {
+    font-size: 0.9rem;
+    color: var(--color-slate-600);
+    line-height: 1.55;
+    margin-bottom: 1rem;
+  }
+  .text-link {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--color-steel-600);
+    text-decoration: underline;
+  }
+  .content-action-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: var(--radius-md);
+    padding: 1.25rem 1.5rem;
+    margin: 2rem 0;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .action-banner-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .action-banner-text strong {
+    color: var(--color-navy-900);
+    font-size: 1rem;
+  }
+  .action-banner-text span {
+    color: var(--color-slate-700);
+    font-size: 0.88rem;
+  }
+  .content-section {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+  }
+  .content-heading {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--color-navy-900);
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 0.4rem;
+  }
+  .content-subheading {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    color: var(--color-slate-600);
+  }
+  .content-para {
+    line-height: 1.7;
+    margin-bottom: 1rem;
+    color: var(--color-slate-800);
+  }
+  .content-bullets {
+    margin: 0.75rem 0 1.25rem 1.5rem;
+    padding-left: 0.5rem;
+    line-height: 1.7;
+    color: var(--color-slate-800);
+  }
+  .content-bullets li {
+    margin-bottom: 0.35rem;
+  }
+  .contact-details {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .contact-details h2 {
+    font-size: 1.25rem;
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    color: var(--color-navy-900);
+  }
+  .contact-address {
+    margin-bottom: 1rem;
+    line-height: 1.5;
+    color: var(--color-slate-700);
+  }
+  .contact-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+  }
+  .contact-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    text-decoration: none;
+    color: var(--color-steel-600);
+    font-size: 0.95rem;
+  }
+  .contact-link:hover {
+    text-decoration: underline;
+  }
+</style>

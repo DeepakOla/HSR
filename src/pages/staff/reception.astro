@@ -1,0 +1,10 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import ReceptionDashboard from '../../components/admin/ReceptionDashboard';
+---
+
+<StaffLayout title="Reception Desk & Queue | HSR Operations" activeTab="reception">
+  <div style="margin-bottom: 1rem;">
+    <ReceptionDashboard client:load />
+  </div>
+</StaffLayout>

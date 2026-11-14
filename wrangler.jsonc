@@ -1,0 +1,62 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hsr",
+  "main": "./src/worker.ts",
+  "compatibility_date": "2026-11-12",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "workers_dev": true,
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "hsr_green_energy_prod",
+      "database_id": "2167157a-4c00-4063-b183-c0a5bd12ed5d",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "EVIDENCE_BUCKET",
+      "bucket_name": "hsr-prod"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "*/5 * * * *",
+      "35 18 * * *"
+    ]
+  },
+  "vars": {
+    "APP_BASE_URL": "https://SETUP_REQUIRED.example",
+    "ACCESS_AUDIENCE": "SETUP_REQUIRED",
+    "ACCESS_TEAM_DOMAIN": "SETUP_REQUIRED.cloudflareaccess.com",
+    "R2_MAX_EVIDENCE_BYTES": "1048576"
+  },
+  "env": {
+    "preview": {
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "hsr_green_energy_preview",
+          "database_id": "3220c6e5-64ff-4874-9d5d-0e237f5af9ad",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "vars": {
+        "APP_BASE_URL": "https://SETUP_REQUIRED.example",
+        "ACCESS_AUDIENCE": "SETUP_REQUIRED",
+        "ACCESS_TEAM_DOMAIN": "SETUP_REQUIRED.cloudflareaccess.com",
+        "R2_MAX_EVIDENCE_BYTES": "1048576"
+      }
+    }
+  }
+}
