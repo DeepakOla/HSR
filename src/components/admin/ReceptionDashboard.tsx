@@ -109,6 +109,21 @@ export default function ReceptionDashboard() {
   const [paymentCollected, setPaymentCollected] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+
+  const filteredBookings = bookings.filter((b) => {
+    if (statusFilter !== 'ALL' && b.reservationState !== statusFilter) return false;
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      b.bookingCode.toLowerCase().includes(q) ||
+      b.customerName.toLowerCase().includes(q) ||
+      b.mobile.includes(q) ||
+      b.vehicleRegistration.toLowerCase().includes(q)
+    );
+  });
+
   const category = categories.find((item) => item.cylinderCount === cylinderCount);
   const vehicleDescription = vehicleType === 'Other'
     ? vehicleModel.trim()
@@ -259,6 +274,9 @@ export default function ReceptionDashboard() {
       <div className="admin-heading">
         <div><p className="admin-eyebrow">{t.eyebrow}</p><h1>{t.title}</h1><p className="admin-subtitle">{t.sub}</p></div>
         <div className="admin-actions">
+          <a href="/admin/register/" className="admin-button secondary" style={{ textDecoration: 'none' }}>
+            🛢️ {locale === 'hi' ? 'सिलेंडर रजिस्टर' : 'Cylinder Register'}
+          </a>
           <button className="admin-lang" onClick={() => setLocale(locale === 'en' ? 'hi' : 'en')}>{t.language}</button>
           <label className="admin-inline"><span className="admin-note">{t.date}</span><input className="admin-control" type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label>
           <button className="admin-button secondary" onClick={() => void load()} disabled={loading}>{loading ? t.reload : t.refresh}</button>
@@ -331,12 +349,38 @@ export default function ReceptionDashboard() {
           </div>
 
           <section className="admin-card">
-            <h2 className="admin-section-title">{t.bookings}</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+              <h2 className="admin-section-title" style={{ margin: 0 }}>{t.bookings} ({filteredBookings.length})</h2>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
+                <input
+                  type="search"
+                  placeholder={locale === 'hi' ? 'वाहन, नाम या कोड से खोजें...' : 'Search by vehicle, customer or code...'}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="admin-input"
+                  style={{ maxWidth: '280px' }}
+                />
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="admin-select"
+                  style={{ width: 'auto', minWidth: '160px' }}
+                >
+                  <option value="ALL">{locale === 'hi' ? 'सभी स्थितियाँ' : 'All Statuses'}</option>
+                  <option value="PENDING_VERIFICATION">{locale === 'hi' ? 'सत्यापन लंबित' : 'Pending Verification'}</option>
+                  <option value="CONFIRMED">{locale === 'hi' ? 'कन्फर्म' : 'Confirmed'}</option>
+                  <option value="CHECKED_IN">{locale === 'hi' ? 'चेक-इन' : 'Checked In'}</option>
+                  <option value="IN_PROGRESS">{locale === 'hi' ? 'कार्य जारी' : 'In Progress'}</option>
+                  <option value="COMPLETED">{locale === 'hi' ? 'पूर्ण' : 'Completed'}</option>
+                </select>
+              </div>
+            </div>
+
             <div className="admin-table-wrap">
               <table className="admin-table">
                 <thead><tr><th>{t.code}</th><th>{t.customer}</th><th>{t.vehicleCol}</th><th>{t.timeCol}</th><th>{t.cylinders}</th><th>{t.status}</th><th>{t.paymentStatus}</th><th>{t.actions}</th></tr></thead>
                 <tbody>
-                  {bookings.length ? bookings.map((booking) => (
+                  {filteredBookings.length ? filteredBookings.map((booking) => (
                     <tr key={booking.bookingCode}>
                       <td><strong>{booking.bookingCode}</strong><div className="admin-note">{booking.source}</div></td>
                       <td>{booking.customerName}<div className="admin-note">{booking.mobile}</div></td>

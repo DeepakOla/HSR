@@ -160,7 +160,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
       setSelectedHour('');
       try {
         const [availRes, catRes] = await Promise.all([
-          fetch(`/api/public/availability/?locale=${locale}&fromDate=${encodeURIComponent(todayInIndia())}&days=14&cylinderCount=${cylinderCount}`),
+          fetch(`/api/public/availability/?locale=${locale}&fromDate=${encodeURIComponent(todayInIndia())}&days=30&cylinderCount=${cylinderCount}`),
           fetch(`/api/public/vehicle-categories/?locale=${locale}`),
         ]);
         const availData: any = await readApiJson(availRes);
@@ -223,11 +223,11 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
     return selectedHour ? (hoursWithSlots.get(selectedHour) || []) : [];
   }, [hoursWithSlots, selectedHour]);
 
-  // Next 5 days quick date buttons
+  // Next 4 quick date buttons
   const quickDates = useMemo(() => {
     const dates = [];
     const today = todayInIndia();
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 4; i++) {
       const d = addDays(today, i);
       const dateObj = new Date(d + 'T00:00:00Z');
       const dayName = i === 0 ? (hindi ? 'आज' : 'Today') : i === 1 ? (hindi ? 'कल' : 'Tomorrow') : dateObj.toLocaleDateString(hindi ? 'hi-IN' : 'en-IN', { weekday: 'short', timeZone: 'UTC' });
@@ -469,23 +469,26 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                         {qd.label}
                       </button>
                     ))}
-                  </div>
-
-                  <div className="calendar-picker-box">
-                    <label htmlFor="booking-date-picker" className="calendar-picker-label">
-                      📅 {hindi ? 'कैलेंडर (30 दिन):' : 'Calendar (30 Days):'}
+                    <label
+                      className={`date-pill calendar-pill-btn ${!quickDates.some((q) => q.dateStr === serviceDate) ? 'selected' : ''}`}
+                      title={hindi ? 'कैलेंडर से तारीख चुनें (30 दिन)' : 'Choose date from calendar (30 days)'}
+                    >
+                      <span className="cal-btn-icon">📅</span>
+                      <span className="cal-btn-text">
+                        {!quickDates.some((q) => q.dateStr === serviceDate) ? serviceDate : (hindi ? 'कैलेंडर...' : 'Calendar...')}
+                      </span>
+                      <input
+                        id="booking-date-picker"
+                        type="date"
+                        min={todayInIndia()}
+                        max={addDays(todayInIndia(), 30)}
+                        value={serviceDate}
+                        onChange={(e) => {
+                          if (e.target.value) setServiceDate(e.target.value);
+                        }}
+                        className="calendar-hidden-input"
+                      />
                     </label>
-                    <input
-                      id="booking-date-picker"
-                      type="date"
-                      min={todayInIndia()}
-                      max={addDays(todayInIndia(), 30)}
-                      value={serviceDate}
-                      onChange={(e) => {
-                        if (e.target.value) setServiceDate(e.target.value);
-                      }}
-                      className="form-input calendar-date-input font-mono-num"
-                    />
                   </div>
                 </div>
 
@@ -1175,6 +1178,23 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
           background: var(--color-navy-900);
           border-color: var(--color-navy-900);
           color: #ffffff;
+        }
+
+        .calendar-pill-btn {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          border-style: dashed;
+        }
+
+        .calendar-hidden-input {
+          position: absolute;
+          inset: 0;
+          opacity: 0;
+          cursor: pointer;
+          width: 100%;
+          height: 100%;
         }
 
         .loading-slots-notice {

@@ -14,16 +14,21 @@ const { title, owner = false } = Astro.props;
     <title>{title} | HSR Green Energy</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/styles/design-tokens.css" />
   </head>
   <body>
     <header class="staff-header">
-      <a class="staff-brand" href="/admin/reception"><span class="staff-mark">HSR</span><span><strong>HSR Green Energy</strong><small>Operations desk</small></span></a>
+      <a class="staff-brand" href="/admin/reception">
+        <span class="staff-mark">HSR</span>
+        <span><strong>HSR CNG Testing</strong><small>Staff & Operations Portal</small></span>
+      </a>
       <nav>
-        <a href="/admin/reception">Reception</a>
-        <a href="/admin/register">Cylinder register</a>
-        {owner && <a href="/admin/owner">Owner settings</a>}
-        <a href="/en/">Public website</a>
+        <a href="/admin/reception" class="nav-link">📋 Reception Desk</a>
+        <a href="/admin/register" class="nav-link">🛢️ Cylinder Register</a>
+        {owner && <a href="/admin/owner" class="nav-link">⚙️ Owner Settings</a>}
+        <a href="/en/status/" class="nav-link">🔍 Customer Portal</a>
+        <a href="/en/" class="nav-link public-link">🌐 Public Site →</a>
       </nav>
     </header>
     <main class="staff-content"><slot /></main>
@@ -31,16 +36,18 @@ const { title, owner = false } = Astro.props;
 </html>
 <style>
   :global(*) { box-sizing:border-box }
-  :global(body) { margin:0; background:#f4f6f5; color:#18231e; font-family:"DM Sans",system-ui,sans-serif }
-  .staff-header { min-height:72px; padding:0 clamp(18px,4vw,54px); background:#fff; border-bottom:1px solid #e1e7e3; display:flex; align-items:center; justify-content:space-between; gap:20px }
-  .staff-brand { display:flex; gap:12px; align-items:center; color:inherit; text-decoration:none }
-  .staff-mark { width:42px;height:42px;border-radius:12px;background:#0e4937;color:#fff;display:grid;place-items:center;font-family:Manrope,sans-serif;font-weight:800;letter-spacing:-1px }
+  :global(body) { margin:0; background:#f8fafc; color:#0f172a; font-family:'Inter',system-ui,sans-serif }
+  .staff-header { min-height:68px; padding:0 clamp(18px,4vw,48px); background:#ffffff; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between; gap:20px; box-shadow:0 1px 3px rgba(0,0,0,0.03); }
+  .staff-brand { display:flex; gap:12px; align-items:center; color:#0a1128; text-decoration:none }
+  .staff-mark { width:42px;height:42px;border-radius:8px;background:#0a1128;color:#ffffff;display:grid;place-items:center;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:16px;letter-spacing:-0.5px }
   .staff-brand strong,.staff-brand small { display:block }
-  .staff-brand strong { font-family:Manrope,sans-serif;font-size:15px }
-  .staff-brand small { color:#64736a;font-size:11px;margin-top:2px }
-  nav { display:flex;gap:20px;align-items:center;flex-wrap:wrap }
-  nav a { color:#45554b;text-decoration:none;font-size:13px;font-weight:600 }
-  nav a:hover { color:#0e4937 }
-  .staff-content { max-width:1360px;margin:0 auto;padding:28px clamp(16px,3vw,36px) 56px }
-  @media(max-width:640px) { .staff-header { align-items:flex-start;padding:14px 16px;flex-direction:column;gap:12px } nav { width:100%;gap:16px } .staff-content { padding:18px 14px 40px } }
+  .staff-brand strong { font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;color:#0a1128;font-weight:700 }
+  .staff-brand small { color:#64748b;font-size:11px;margin-top:2px;text-transform:uppercase;letter-spacing:0.04em }
+  nav { display:flex;gap:18px;align-items:center;flex-wrap:wrap }
+  nav a { color:#334155;text-decoration:none;font-size:13.5px;font-weight:600;padding:6px 10px;border-radius:6px;transition:all 0.15s ease }
+  nav a:hover { color:#0a1128;background:#f1f5f9 }
+  nav a.public-link { color:#0284c7;background:rgba(2,132,199,0.08) }
+  nav a.public-link:hover { background:rgba(2,132,199,0.15) }
+  .staff-content { max-width:1440px;margin:0 auto;padding:24px clamp(16px,3vw,36px) 56px }
+  @media(max-width:768px) { .staff-header { align-items:flex-start;padding:14px 16px;flex-direction:column;gap:12px } nav { width:100%;gap:10px } .staff-content { padding:16px 12px 36px } }
 </style>

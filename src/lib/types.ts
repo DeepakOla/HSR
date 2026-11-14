@@ -11,6 +11,7 @@ export interface BusinessSettings {
   vpa_payee_name: string;
   hold_minutes: number;
   flat_advance_paise: number;
+  enable_public_reminders?: number;
   r2_enabled: number;
   evidence_budget_bytes: number;
   timezone: string;

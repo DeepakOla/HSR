@@ -3,16 +3,19 @@ import { getDb, getBusinessSettings } from '../../lib/db';
 
 const db = getDb(Astro);
 const settings = await getBusinessSettings(db);
-const businessName = settings.business_name_en || 'HSR';
+const rawLocale = Astro.url.searchParams.get('locale');
+const locale = rawLocale === 'hi' ? 'hi' : 'en';
+const hindi = locale === 'hi';
+const businessName = hindi ? (settings.business_name_hi || settings.business_name_en || 'HSR') : (settings.business_name_en || 'HSR');
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={locale}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex,nofollow" />
-    <title>Authentication & Access Portal | {businessName}</title>
+    <title>{hindi ? `साइन-इन एवं एक्सेस पोर्टल | ${businessName}` : `Authentication & Access Portal | ${businessName}`}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
@@ -32,6 +35,26 @@ const businessName = settings.business_name_en || 'HSR';
         margin: 3rem auto;
         padding: 0 1.5rem;
         flex: 1;
+      }
+      .login-top-bar {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 1rem;
+      }
+      .lang-switch-btn {
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #0284c7;
+        text-decoration: none;
+        transition: all 0.15s ease;
+      }
+      .lang-switch-btn:hover {
+        background: #eff6ff;
+        border-color: #0284c7;
       }
       .login-header {
         text-align: center;
@@ -79,7 +102,7 @@ const businessName = settings.business_name_en || 'HSR';
         transition: all 0.2s ease;
       }
       .portal-card:hover {
-        border-color: #2563eb;
+        border-color: #0284c7;
         transform: translateY(-2px);
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
       }
@@ -126,10 +149,10 @@ const businessName = settings.business_name_en || 'HSR';
         background: #ea580c;
       }
       .portal-btn-secondary {
-        background: #2563eb;
+        background: #0284c7;
       }
       .portal-btn-secondary:hover {
-        background: #1d4ed8;
+        background: #0369a1;
       }
       .security-notice-box {
         background: #ffffff;
@@ -143,19 +166,30 @@ const businessName = settings.business_name_en || 'HSR';
       .back-home-link {
         display: inline-block;
         margin-top: 1.5rem;
-        color: #2563eb;
+        color: #0284c7;
         text-decoration: none;
         font-weight: 600;
+      }
+      .back-home-link:hover {
+        text-decoration: underline;
       }
     </style>
   </head>
   <body>
     <main class="login-container">
+      <div class="login-top-bar">
+        <a href={hindi ? '/admin/login/?locale=en' : '/admin/login/?locale=hi'} class="lang-switch-btn">
+          🌐 {hindi ? 'English' : 'हिंदी'}
+        </a>
+      </div>
+
       <div class="login-header">
-        <span class="login-brand-tag">⚡ {businessName} Access Portal</span>
-        <h1 class="login-title">Sign in to HSR Systems</h1>
+        <span class="login-brand-tag">⚡ {businessName} {hindi ? 'एक्सेस पोर्टल' : 'Access Portal'}</span>
+        <h1 class="login-title">{hindi ? 'एचएसआर सिस्टम में साइन-इन करें' : 'Sign in to HSR Systems'}</h1>
         <p class="login-subtitle">
-          Select your destination portal below. Staff and administrative systems are secured with Cloudflare Access zero-trust identity verification.
+          {hindi
+            ? 'नीचे अपना गंतव्य पोर्टल चुनें। स्टाफ एवं एडमिनिस्ट्रेटिव सिस्टम क्लाउडफ्लेयर एक्सेस सुरक्षा द्वारा सुरक्षित हैं।'
+            : 'Select your destination portal below. Staff and administrative systems are secured with Cloudflare Access zero-trust identity verification.'}
         </p>
       </div>
 
@@ -163,53 +197,63 @@ const businessName = settings.business_name_en || 'HSR';
         <!-- Portal 1: Customer Portal -->
         <div class="portal-card">
           <div>
-            <span class="portal-badge badge-customer">🚗 Customer Self-Service</span>
-            <h2 class="portal-name">Customer Portal</h2>
+            <span class="portal-badge badge-customer">🚗 {hindi ? 'ग्राहक स्वयं-सेवा' : 'Customer Self-Service'}</span>
+            <h2 class="portal-name">{hindi ? 'ग्राहक पोर्टल' : 'Customer Portal'}</h2>
             <p class="portal-desc">
-              Check your vehicle cylinder testing status, view upcoming appointments, track booking progress, or download compliance certificates using your vehicle registration number.
+              {hindi
+                ? 'अपने वाहन सिलेंडर टेस्टिंग की लाइव स्थिति देखें, अपॉइंटमेंट ट्रैक करें या रजिस्ट्रेशन नंबर से प्रमाणपत्र विवरण प्राप्त करें।'
+                : 'Check your vehicle cylinder testing status, view upcoming appointments, track booking progress, or view certificate records using your vehicle registration number.'}
             </p>
           </div>
-          <a href="/en/status/" class="portal-btn">
-            🔍 Check Booking & Vehicle Status →
+          <a href={hindi ? '/hi/status/' : '/en/status/'} class="portal-btn">
+            🔍 {hindi ? 'बुकिंग एवं वाहन स्थिति जाँचें →' : 'Check Booking & Vehicle Status →'}
           </a>
         </div>
 
         <!-- Portal 2: Staff Console (Receptionist & Inspection Desk) -->
         <div class="portal-card">
           <div>
-            <span class="portal-badge badge-staff">📋 Staff & Operations</span>
-            <h2 class="portal-name">Staff Desk (Reception)</h2>
+            <span class="portal-badge badge-staff">📋 {hindi ? 'स्टाफ एवं संचालन' : 'Staff & Operations'}</span>
+            <h2 class="portal-name">{hindi ? 'स्टाफ डेस्क (रिसेप्शन)' : 'Staff Desk (Reception)'}</h2>
             <p class="portal-desc">
-              Manage vehicle arrivals, register cylinders into the official test register, verify customer UTR payment references, and allocate testing bays.
+              {hindi
+                ? 'वाहनों का आगमन, सिलेंडर रजिस्टर में प्रविष्टि, ऑनलाइन यूटीआर भुगतान सत्यापन एवं टेस्टिंग बे का आवंटन करें।'
+                : 'Manage vehicle arrivals, register cylinders into the official test register, verify customer UTR payment references, and allocate testing bays.'}
             </p>
           </div>
           <a href="/admin/reception/" class="portal-btn portal-btn-secondary">
-            📋 Open Reception Desk →
+            📋 {hindi ? 'रिसेप्शन डेस्क खोलें →' : 'Open Reception Desk →'}
           </a>
         </div>
 
         <!-- Portal 3: Admin Console (Owner Settings & Schedules) -->
         <div class="portal-card">
           <div>
-            <span class="portal-badge badge-admin">⚙️ Management & Settings</span>
-            <h2 class="portal-name">Owner Console</h2>
+            <span class="portal-badge badge-admin">⚙️ {hindi ? 'प्रबंधन एवं सेटिंग्स' : 'Management & Settings'}</span>
+            <h2 class="portal-name">{hindi ? 'ओनर कंसोल' : 'Owner Console'}</h2>
             <p class="portal-desc">
-              Configure business details, per-cylinder pricing rates, weekly bay schedule capacity, date overrides, staff user permissions, and audit logs.
+              {hindi
+                ? 'व्यवसाय विवरण, प्रति-सिलेंडर दरें, साप्ताहिक बे क्षमता, तारीख अवकाश, स्टाफ अनुमतियाँ व रीटेस्ट रिमाइंडर प्रबंधित करें।'
+                : 'Configure business details, per-cylinder pricing rates, weekly bay schedule capacity, date overrides, staff user permissions, and retest reminders.'}
             </p>
           </div>
           <a href="/admin/owner/" class="portal-btn">
-            ⚙️ Open Owner Console →
+            ⚙️ {hindi ? 'ओनर कंसोल खोलें →' : 'Open Owner Console →'}
           </a>
         </div>
       </div>
 
       <div class="security-notice-box">
-        <strong>🛡️ Zero-Trust Security Architecture:</strong>
-        Staff and Administrator accounts require authenticated email verification through Cloudflare Access. If you are a staff technician or manager and cannot access your console, please contact the station owner to ensure your email is enrolled in the staff user directory.
+        <strong>🛡️ {hindi ? 'जीरो-ट्रस्ट सुरक्षा प्रणाली:' : 'Zero-Trust Security Architecture:'}</strong>{' '}
+        {hindi
+          ? 'स्टाफ और प्रशासक खातों को क्लाउडफ्लेयर एक्सेस के माध्यम से ईमेल सत्यापन की आवश्यकता होती है। यदि आप अधिकृत कर्मचारी हैं और प्रवेश नहीं कर पा रहे हैं, तो कृपया स्टेशन स्वामी से संपर्क करें।'
+          : 'Staff and Administrator accounts require authenticated email verification through Cloudflare Access. If you are a staff technician or manager and cannot access your console, please contact the station owner to ensure your email is enrolled in the staff user directory.'}
       </div>
 
       <div style="text-align: center;">
-        <a href="/en/" class="back-home-link">← Return to Public Homepage</a>
+        <a href={hindi ? '/hi/' : '/en/'} class="back-home-link">
+          ← {hindi ? 'मुख्य पृष्ठ पर वापस जाएँ' : 'Return to Public Homepage'}
+        </a>
       </div>
     </main>
   </body>

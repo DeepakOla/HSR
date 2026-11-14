@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { Locale } from '../../lib/constants';
 
 interface DueDateRecord {
@@ -31,6 +31,58 @@ export default function DueDateChecker({ locale, bookUrl = `/${locale}/book/`, s
   const [results, setResults] = useState<DueDateRecord[] | null>(null);
   const [notFoundMsg, setNotFoundMsg] = useState<string>('');
 
+  // Option B: Retest Reminder Notification state
+  const [remindersEnabled, setRemindersEnabled] = useState<boolean>(true);
+  const [reminderMobile, setReminderMobile] = useState<string>('');
+  const [reminderChannel, setReminderChannel] = useState<'WHATSAPP' | 'SMS'>('WHATSAPP');
+  const [reminderSubmitting, setReminderSubmitting] = useState<boolean>(false);
+  const [reminderStatus, setReminderStatus] = useState<{ [reg: string]: { success?: boolean; message?: string } }>({});
+
+  useEffect(() => {
+    fetch('/api/public/config/')
+      .then((res) => res.json())
+      .then((data: any) => {
+        if (data?.data && typeof data.data.enablePublicReminders === 'boolean') {
+          setRemindersEnabled(data.data.enablePublicReminders);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSetReminder = async (e: React.SyntheticEvent<HTMLFormElement>, reg: string, dueDate: string, lastDate?: string | null) => {
+    e.preventDefault();
+    const phone = reminderMobile.trim().replace(/\D/g, '');
+    if (phone.length !== 10) {
+      setReminderStatus((prev) => ({ ...prev, [reg]: { success: false, message: hindi ? 'कृपया 10-अंकों का मान्य मोबाइल नंबर दर्ज करें।' : 'Please enter a valid 10-digit mobile number.' } }));
+      return;
+    }
+
+    setReminderSubmitting(true);
+    try {
+      const res = await fetch('/api/public/retest-reminder/', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          vehicleRegistration: reg,
+          mobile: phone,
+          lastTestDate: lastDate || undefined,
+          dueDate,
+          reminderChannel,
+          locale,
+        }),
+      });
+      const data: any = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error?.message || (hindi ? 'रिमाइंडर सेट करने में त्रुटि' : 'Could not schedule reminder'));
+      }
+      setReminderStatus((prev) => ({ ...prev, [reg]: { success: true, message: data.message || (hindi ? 'रिमाइंडर सफलतापूर्वक दर्ज!' : 'Reminder registered!') } }));
+    } catch (err: any) {
+      setReminderStatus((prev) => ({ ...prev, [reg]: { success: false, message: err.message } }));
+    } finally {
+      setReminderSubmitting(false);
+    }
+  };
+
   const handleLookup = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
@@ -60,9 +112,10 @@ export default function DueDateChecker({ locale, bookUrl = `/${locale}/book/`, s
     setLoading(true);
     try {
       const res = await fetch(`/api/public/due-date-lookup/?${queryParams.toString()}`);
-      const data: any = await res.json();
+      const raw: any = await res.json();
+      const data = raw?.data ?? raw;
       if (!res.ok) {
-        throw new Error(data?.error?.message || (hindi ? 'जाँच करने में त्रुटि' : 'Error checking status'));
+        throw new Error(raw?.error?.message || (hindi ? 'जाँच करने में त्रुटि' : 'Error checking status'));
       }
 
       if (data.found && Array.isArray(data.records) && data.records.length > 0) {
@@ -98,14 +151,16 @@ export default function DueDateChecker({ locale, bookUrl = `/${locale}/book/`, s
       }
 
       const res = await fetch(`/api/public/due-date-lookup/?${queryParams.toString()}`);
-      const data: any = await res.json();
+      const raw: any = await res.json();
+      const data = raw?.data ?? raw;
       if (!res.ok) {
-        throw new Error(data?.error?.message || (hindi ? 'तारीख गणना में त्रुटि' : 'Date calculation error'));
+        throw new Error(raw?.error?.message || (hindi ? 'तारीख गणना में त्रुटि' : 'Date calculation error'));
       }
 
       if (data.found && Array.isArray(data.records)) {
         setResults(data.records);
         setNotFoundMsg('');
+        setShowManualDateFallback(false);
       }
     } catch (err: any) {
       setError(err.message || (hindi ? 'गणना में त्रुटि' : 'Calculation error'));
@@ -335,6 +390,53 @@ export default function DueDateChecker({ locale, bookUrl = `/${locale}/book/`, s
                       </div>
                     )}
                   </div>
+
+                  {/* Option B: Retest Reminder Alert Sign-up */}
+                  {remindersEnabled && (
+                    <div className="retest-reminder-box">
+                      <div className="reminder-header">
+                        <span className="reminder-icon">🔔</span>
+                        <div className="reminder-text">
+                          <strong>{hindi ? 'रीटेस्ट रिमाइंडर अलर्ट प्राप्त करें' : 'Get Free Expiry & Retest Reminder Alert'}</strong>
+                          <p>{hindi ? 'अंतिम तारीख से 30 दिन पहले WhatsApp या SMS द्वारा सूचना प्राप्त करें।' : 'Receive timely WhatsApp / SMS alerts 30 days before statutory expiry to prevent pump refusal.'}</p>
+                        </div>
+                      </div>
+
+                      {reminderStatus[rec.registration]?.success ? (
+                        <div className="reminder-success-msg" role="status">
+                          ✅ {reminderStatus[rec.registration].message}
+                        </div>
+                      ) : (
+                        <form onSubmit={(e) => handleSetReminder(e, rec.registration, rec.nextDueDate, rec.lastTestDate)} className="reminder-inline-form">
+                          <input
+                            type="tel"
+                            placeholder={hindi ? '10-अंकों का मोबाइल नंबर' : '10-digit mobile number'}
+                            maxLength={10}
+                            value={reminderMobile}
+                            onChange={(e) => setReminderMobile(e.target.value.replace(/\D/g, ''))}
+                            required
+                            className="reminder-input"
+                          />
+                          <select
+                            value={reminderChannel}
+                            onChange={(e) => setReminderChannel(e.target.value as any)}
+                            className="reminder-channel-select"
+                          >
+                            <option value="WHATSAPP">WhatsApp</option>
+                            <option value="SMS">SMS</option>
+                          </select>
+                          <button type="submit" className="btn btn-secondary reminder-submit-btn" disabled={reminderSubmitting}>
+                            {reminderSubmitting ? '...' : (hindi ? 'रिमाइंडर सेट करें' : 'Set Retest Alert')}
+                          </button>
+                        </form>
+                      )}
+                      {reminderStatus[rec.registration]?.success === false && (
+                        <div className="reminder-error-msg" role="alert">
+                          ⚠️ {reminderStatus[rec.registration].message}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}

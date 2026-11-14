@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import CustomerStatusView from '../../../components/status/CustomerStatusView';
 import { getDb, getBusinessSettings } from '../../../lib/db';
 
 const db = getDb(Astro);
@@ -15,24 +16,21 @@ if (booking && token) {
     data = payload.data;
   }
 }
+const cityName = settings.city !== 'SETUP_REQUIRED' ? settings.city : 'रेवाड़ी';
 ---
 
-<BaseLayout locale="hi" title="बुकिंग स्थिति" description="सुरक्षित बुकिंग स्थिति" canonicalPath="/hi/status/" businessName={settings.business_name_hi}>
-  <section class="section">
-    <div class="container card">
-      <h1>बुकिंग स्थिति</h1>
-      {data ? (
-        <ul>
-          <li>बुकिंग कोड: {data.bookingCode}</li>
-          <li>बुकिंग स्थिति: {data.reservationState}</li>
-          <li>भुगतान स्थिति: {data.paymentState}</li>
-          <li>तारीख: {data.serviceDate}</li>
-          <li>स्लॉट: {data.slotLabel}</li>
-          <li>सिलेंडर: {data.cylinderCount}</li>
-        </ul>
-      ) : (
-        <p>बुकिंग कन्फर्मेशन में मिले सुरक्षित लिंक का उपयोग करें।</p>
-      )}
-    </div>
+<BaseLayout locale="hi" title="बुकिंग एवं सिलेंडर स्थिति" description="अपनी सीएनजी सिलेंडर टेस्टिंग अपॉइंटमेंट, परीक्षण प्रक्रिया और अनुपालन प्रमाणपत्र ट्रैक करें।" canonicalPath="/hi/status/" businessName={settings.business_name_hi} settings={settings}>
+  <section class="section" style="padding-top: 1.5rem;">
+    <CustomerStatusView
+      client:load
+      locale="hi"
+      initialBooking={booking}
+      initialToken={token}
+      initialData={data}
+      stationCity={cityName}
+      stationPhone={settings.contact_phone}
+      stationAddress={settings.address_line !== 'SETUP_REQUIRED' ? settings.address_line : 'एचएसआर ग्रीन एनर्जी, रेवाड़ी, हरियाणा'}
+      stationMapUrl={settings.map_url !== 'SETUP_REQUIRED' ? settings.map_url : '#'}
+    />
   </section>
 </BaseLayout>

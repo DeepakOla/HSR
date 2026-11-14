@@ -16,6 +16,7 @@ export const GET: APIRoute = async ({ locals }) => {
     timezone: settings.timezone,
     holdMinutes: settings.hold_minutes,
     flatAdvancePaise: settings.flat_advance_paise,
+    enablePublicReminders: settings.enable_public_reminders !== 0,
     paymentConfigured:
       !!settings.vpa_id &&
       settings.vpa_id.trim() !== '' &&

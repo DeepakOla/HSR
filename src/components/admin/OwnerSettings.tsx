@@ -6,7 +6,18 @@ type Locale = 'en' | 'hi';
 type Profile = {
   business_name_en:string; business_name_hi:string; city:string; address_line:string; map_url:string;
   contact_phone:string; whatsapp_number:string; contact_email:string; vpa_id:string; vpa_payee_name:string;
-  hold_minutes:number; seo_title_en:string; seo_title_hi:string; seo_desc_en:string; seo_desc_hi:string;
+  hold_minutes:number; flat_advance_paise?:number; enable_public_reminders?:number; seo_title_en:string; seo_title_hi:string; seo_desc_en:string; seo_desc_hi:string;
+};
+type RetestReminder = {
+  id: number;
+  vehicle_registration: string;
+  mobile: string;
+  last_test_date: string | null;
+  due_date: string;
+  reminder_channel: string;
+  status: 'PENDING' | 'SENT' | 'CANCELLED' | 'BOOKED';
+  locale: string;
+  created_at: string;
 };
 type Category = {
   code:string; sortOrder:number; nameEn:string; nameHi:string; cylinderCount:number;
@@ -63,6 +74,21 @@ const labels = {
       'how-it-works':'How It Works',
       contact:'Contact',
     },
+    remindersSection: 'Retest Reminders & Notifications',
+    remindersIntro: 'Manage customer cylinder retest reminder subscriptions, view due dates, and control public checker alert sign-up.',
+    enableReminders: 'Enable public retest reminder alert form on website',
+    remindersTotal: 'Total alerts',
+    remindersPending: 'Pending',
+    remindersSent: 'Sent',
+    regNum: 'Vehicle Registration',
+    mobileNum: 'Mobile',
+    dueDate: 'Retest Due Date',
+    channel: 'Channel',
+    status: 'Status',
+    markSent: 'Mark Sent',
+    markBooked: 'Mark Booked',
+    exportCsv: 'Export Reminders CSV',
+    noReminders: 'No customer retest reminder requests found yet.',
   },
   hi: {
     title:'मालिक की सेटिंग्स',intro:'व्यवसाय की जानकारी, ग्राहक कीमतें, कार्य समय और वेबसाइट सामग्री बदलें।',
@@ -100,6 +126,21 @@ const labels = {
       'how-it-works':'प्रक्रिया (How It Works)',
       contact:'संपर्क (Contact)',
     },
+    remindersSection: 'रीटेस्ट रिमाइंडर और सूचनाएँ',
+    remindersIntro: 'ग्राहक सीएनजी सिलेंडर रीटेस्ट रिमाइंडर सदस्यता देखें और प्रबंधित करें।',
+    enableReminders: 'वेबसाइट पर सार्वजनिक रीटेस्ट रिमाइंडर फ़ॉर्म सक्षम करें',
+    remindersTotal: 'कुल अलर्ट',
+    remindersPending: 'लंबित',
+    remindersSent: 'भेजे गए',
+    regNum: 'वाहन रजिस्ट्रेशन',
+    mobileNum: 'मोबाइल',
+    dueDate: 'रीटेस्ट देय तिथि',
+    channel: 'माध्यम',
+    status: 'स्थिति',
+    markSent: 'भेजा गया चिह्नित करें',
+    markBooked: 'बुक हुआ चिह्नित करें',
+    exportCsv: 'CSV डाउनलोड करें',
+    noReminders: 'अभी तक कोई रीटेस्ट रिमाइंडर अनुरोध नहीं मिला है।',
   }
 };
 
@@ -116,6 +157,8 @@ export default function OwnerSettings(){
   const [contentItems,setContentItems]=useState<ContentRecord[]>([]);
   const [selectedPage,setSelectedPage]=useState<string>('about');
   const [contentLang,setContentLang]=useState<Locale>('en');
+  const [reminders,setReminders]=useState<RetestReminder[]>([]);
+  const [remindersSummary,setRemindersSummary]=useState<{total:number;pending:number;sent:number;booked:number}>({total:0,pending:0,sent:0,booked:0});
 
   const [loading,setLoading]=useState(true);
   const [busy,setBusy]=useState(false);
@@ -126,11 +169,12 @@ export default function OwnerSettings(){
   const load=useCallback(async()=>{
     setLoading(true);setError('');
     try{
-      const [pr,cr,sr,ctr]=await Promise.all([
+      const [pr,cr,sr,ctr,remr]=await Promise.all([
         fetch('/api/admin/settings/'),
         fetch('/api/admin/categories/'),
         fetch('/api/admin/schedule/'),
         fetch('/api/admin/content/'),
+        fetch('/api/admin/reminders/').catch(()=>null),
       ]);
       const [p,c,s,ct]=await Promise.all([readApiJson(pr),readApiJson(cr),readApiJson(sr),readApiJson(ctr)]) as any[];
       if(!pr.ok||!cr.ok||!sr.ok||!ctr.ok)throw new Error(p.error?.message??c.error?.message??s.error?.message??ct.error?.message??t.error);
@@ -138,6 +182,12 @@ export default function OwnerSettings(){
       setCategories((c.data.categories??[]).map((x:any)=>({...x,isActive:x.isActive===1||x.isActive===true})));
       setSchedule({...s.data,breakStart:s.data.breakStart??'',breakEnd:s.data.breakEnd??'',slotIntervalMinutes:s.data.slotIntervalMinutes===15?15:20,extendedHoursEnabled:!!s.data.extendedHoursEnabled,extendedHoursPublic:!!s.data.extendedHoursPublic,extendedMinutes:60});
       setContentItems(ct.data?.content??[]);
+
+      if(remr&&remr.ok){
+        const remData:any=await readApiJson(remr);
+        setReminders(remData.data?.reminders??[]);
+        setRemindersSummary(remData.data?.summary??{total:0,pending:0,sent:0,booked:0});
+      }
     }catch(e){setError(e instanceof Error?e.message:t.error);}
     finally{setLoading(false);}
   },[]);
@@ -149,11 +199,49 @@ export default function OwnerSettings(){
     if(!profile)return;
     setBusy(true);setError('');setMessage('');
     try{
-      const r=await fetch('/api/admin/settings/',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...profile,hold_minutes:Number(profile.hold_minutes)})});
+      const r=await fetch('/api/admin/settings/',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...profile,hold_minutes:Number(profile.hold_minutes),enable_public_reminders:profile.enable_public_reminders?1:0})});
       const data:any=await readApiJson(r);if(!r.ok)throw new Error(data.error?.message??t.saveError);
       setMessage(t.profileSaved);
     }catch(e){setError(e instanceof Error?e.message:t.saveError);}
     finally{setBusy(false);}
+  };
+
+  const updateReminderStatus = async (id: number, newStatus: string) => {
+    try {
+      const res = await fetch('/api/admin/reminders/', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'UPDATE_STATUS', id, status: newStatus }),
+      });
+      if (res.ok) {
+        setReminders((prev) => prev.map((r) => (r.id === id ? { ...r, status: newStatus as any } : r)));
+        setMessage(`${t.remindersSection}: ${newStatus}`);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const exportRemindersCsv = () => {
+    if (!reminders.length) return;
+    const headers = ['Vehicle Registration', 'Mobile', 'Last Test Date', 'Due Date', 'Channel', 'Status', 'Registered At'];
+    const rows = reminders.map((r) => [
+      r.vehicle_registration,
+      r.mobile,
+      r.last_test_date || '',
+      r.due_date,
+      r.reminder_channel,
+      r.status,
+      r.created_at,
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `hsr_retest_reminders_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const saveCategories=async()=>{
@@ -469,6 +557,94 @@ export default function OwnerSettings(){
         </div>
         <h3 className="owner-preview-title">{currentContentItem.title || 'Untitled Page'}</h3>
         <div className="owner-preview-body">{renderPreview()}</div>
+      </div>
+    </section>
+
+    <section className="admin-card owner-section">
+      <div className="owner-section-head">
+        <div>
+          <p className="admin-eyebrow">05 / RETEST REMINDERS</p>
+          <h2 className="admin-section-title">{t.remindersSection}</h2>
+          <p className="admin-subtitle" style={{ margin: '4px 0 0 0', fontSize: '13px' }}>{t.remindersIntro}</p>
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button className="admin-button secondary" disabled={!reminders.length} onClick={exportRemindersCsv}>{t.exportCsv}</button>
+          <button className="admin-button" disabled={busy} onClick={saveProfile}>{t.saveProfile}</button>
+        </div>
+      </div>
+
+      <div style={{ margin: '1rem 0' }}>
+        <label className="admin-check" style={{ fontSize: '14px', fontWeight: 600 }}>
+          <input
+            type="checkbox"
+            checked={profile?.enable_public_reminders !== 0}
+            onChange={(e) => setProfile((p) => p ? ({ ...p, enable_public_reminders: e.target.checked ? 1 : 0 }) : p)}
+          />
+          {t.enableReminders}
+        </label>
+      </div>
+
+      <div className="admin-metrics" style={{ margin: '1rem 0' }}>
+        <div className="admin-card">
+          <div className="admin-metric-label">{t.remindersTotal}</div>
+          <div className="admin-metric-value">{remindersSummary.total}</div>
+        </div>
+        <div className="admin-card">
+          <div className="admin-metric-label">{t.remindersPending}</div>
+          <div className="admin-metric-value">{remindersSummary.pending}</div>
+        </div>
+        <div className="admin-card">
+          <div className="admin-metric-label">{t.remindersSent}</div>
+          <div className="admin-metric-value">{remindersSummary.sent}</div>
+        </div>
+      </div>
+
+      <div className="admin-table-wrap">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>{t.regNum}</th>
+              <th>{t.mobileNum}</th>
+              <th>{t.dueDate}</th>
+              <th>{t.channel}</th>
+              <th>{t.status}</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {reminders.length ? reminders.map((r) => (
+              <tr key={r.id}>
+                <td><strong>{r.vehicle_registration}</strong></td>
+                <td>{r.mobile}</td>
+                <td>{r.due_date}</td>
+                <td><span className="admin-tag">{r.reminder_channel}</span></td>
+                <td>
+                  <span className={`admin-status ${r.status === 'PENDING' ? 'pending' : ''}`}>
+                    {r.status}
+                  </span>
+                </td>
+                <td>
+                  <div className="admin-row-actions">
+                    {r.status === 'PENDING' && (
+                      <button className="admin-button secondary" onClick={() => void updateReminderStatus(r.id, 'SENT')}>
+                        {t.markSent}
+                      </button>
+                    )}
+                    {r.status !== 'BOOKED' && (
+                      <button className="admin-button" onClick={() => void updateReminderStatus(r.id, 'BOOKED')}>
+                        {t.markBooked}
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            )) : (
+              <tr>
+                <td colSpan={6} className="admin-empty">{t.noReminders}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </section>
   </div>;

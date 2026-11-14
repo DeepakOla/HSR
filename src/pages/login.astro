@@ -1,0 +1,6 @@
+---
+// Clean canonical redirect to authentication & portal directory
+const url = new URL(Astro.request.url);
+const search = url.search;
+return Astro.redirect(`/admin/login/${search}`, 302);
+---

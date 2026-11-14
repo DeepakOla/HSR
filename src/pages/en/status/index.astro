@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import CustomerStatusView from '../../../components/status/CustomerStatusView';
 import { getDb, getBusinessSettings } from '../../../lib/db';
 
 const db = getDb(Astro);
@@ -15,24 +16,21 @@ if (booking && token) {
     data = payload.data;
   }
 }
+const cityName = settings.city !== 'SETUP_REQUIRED' ? settings.city : 'Rewari';
 ---
 
-<BaseLayout locale="en" title="Booking status" description="Secure booking status" canonicalPath="/en/status/" businessName={settings.business_name_en}>
-  <section class="section">
-    <div class="container card">
-      <h1>Booking status</h1>
-      {data ? (
-        <ul>
-          <li>Booking code: {data.bookingCode}</li>
-          <li>Reservation state: {data.reservationState}</li>
-          <li>Payment state: {data.paymentState}</li>
-          <li>Date: {data.serviceDate}</li>
-          <li>Slot: {data.slotLabel}</li>
-          <li>Cylinders: {data.cylinderCount}</li>
-        </ul>
-      ) : (
-        <p>Use your secure status link from booking confirmation.</p>
-      )}
-    </div>
+<BaseLayout locale="en" title="Booking & Cylinder Status" description="Track your CNG cylinder hydro testing appointment, testing progress, and compliance certificate." canonicalPath="/en/status/" businessName={settings.business_name_en} settings={settings}>
+  <section class="section" style="padding-top: 1.5rem;">
+    <CustomerStatusView
+      client:load
+      locale="en"
+      initialBooking={booking}
+      initialToken={token}
+      initialData={data}
+      stationCity={cityName}
+      stationPhone={settings.contact_phone}
+      stationAddress={settings.address_line !== 'SETUP_REQUIRED' ? settings.address_line : 'HSR Green Energy, Rewari, Haryana'}
+      stationMapUrl={settings.map_url !== 'SETUP_REQUIRED' ? settings.map_url : '#'}
+    />
   </section>
 </BaseLayout>
