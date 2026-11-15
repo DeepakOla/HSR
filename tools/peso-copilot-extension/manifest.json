@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "PESO GCT Portal Copilot — HSR Green Energy",
+  "version": "1.0.0",
+  "description": "Auto-fills and validates CNG cylinder hydrostatic test readings into the PESO Online GCT portal with Rule 35 statutory safety checks.",
+  "permissions": [
+    "activeTab",
+    "clipboardRead"
+  ],
+  "host_permissions": [
+    "*://online.peso.gov.in/*",
+    "*://*.peso.gov.in/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://online.peso.gov.in/*",
+        "*://*.peso.gov.in/*"
+      ],
+      "js": ["content-script.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

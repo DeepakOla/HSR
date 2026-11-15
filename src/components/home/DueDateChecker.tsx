@@ -326,9 +326,19 @@ export default function DueDateChecker({ locale, bookUrl = `/${locale}/book/`, s
                             ? (hindi ? '⚠️ आपका सिलेंडर रीटेस्ट ओवरड्यू है। सीएनजी पंप पर गैस भरने से इंकार किया जा सकता है।' : '⚠️ Your cylinder testing is overdue. CNG fuel stations may refuse refilling.')
                             : (hindi ? '💡 आपका परीक्षण जल्द ही देय है। पंप पर असुविधा से बचने के लिए समय पूर्व बुक करें।' : '💡 Testing is due shortly. Book in advance to avoid refilling disruption.')}
                         </span>
-                        <a href={bookUrl} className="btn btn-primary result-book-btn">
-                          ⚡ {hindi ? 'तुरंत स्लॉट बुक करें' : 'Book Testing Appointment'}
-                        </a>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem', alignItems: 'center' }}>
+                          <a href={bookUrl} className="btn btn-primary result-book-btn">
+                            ⚡ {hindi ? 'तुरंत स्लॉट बुक करें' : 'Book Testing Appointment'}
+                          </a>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => (window as any).openComplianceModal?.()}
+                            style={{ fontSize: '0.8rem', padding: '0.45rem 0.85rem' }}
+                          >
+                            📋 {hindi ? 'नियम 35 नोटिस देखें' : 'View Rule 35 Notice'}
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <div className="valid-safe-bar">

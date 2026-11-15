@@ -25,5 +25,12 @@ export const GET: APIRoute = async ({ locals }) => {
       settings.vpa_payee_name.trim() !== '' &&
       settings.vpa_payee_name !== 'SETUP_REQUIRED',
     r2UploadEnabled: settings.r2_enabled === 1,
+    promoCode: settings.promo_code || null,
+    promoDiscountType: settings.promo_discount_type || 'FLAT',
+    promoDiscountValue: settings.promo_discount_value || 0,
+    promoBannerText: settings.promo_banner_text || null,
+    promoBannerActive: settings.promo_banner_active !== 0,
+    promoAutoApply: settings.promo_auto_apply !== 0,
+    whatsappMode: settings.whatsapp_mode || 'STANDARD',
   });
 };

@@ -75,7 +75,7 @@ const derivedBreadcrumb = breadcrumb || (
       <!-- Brand & Facility Lockup -->
       <div class="sidebar-header">
         <a class="brand-lockup" href="/admin/">
-          <div class="brand-badge">HSR</div>
+          <img src="/images/hsr-gauge-logo.jpg" alt="HSR Logo" class="sidebar-logo-img" />
           <div class="brand-info">
             <span class="brand-title">HSR CNG Testing</span>
             <span class="brand-tag">⚡ Management Portal</span>
@@ -412,6 +412,16 @@ const derivedBreadcrumb = breadcrumb || (
     place-items: center;
     border: 1.5px solid #1e293b;
     box-shadow: 0 1px 2px rgba(10, 17, 40, 0.15);
+  }
+
+  .sidebar-logo-img {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid var(--safety-orange);
+    box-shadow: 0 2px 6px rgba(234, 88, 12, 0.2);
+    flex-shrink: 0;
   }
 
   .brand-info {

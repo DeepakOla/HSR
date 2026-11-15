@@ -4,6 +4,7 @@ import type { BusinessSettings } from '../lib/types';
 import { localizePath, otherLocale, t } from '../lib/i18n';
 import { buildLocalBusinessSchema } from '../lib/seo';
 import FeedbackModal from '../components/FeedbackModal';
+import FloatingWhatsApp from '../components/FloatingWhatsApp.astro';
 import '../styles/design-tokens.css';
 
 interface Props {
@@ -46,6 +47,10 @@ const schema = buildLocalBusinessSchema({
   locale,
   currentUrl: canonical.toString(),
 });
+
+const customPromoBanner = (effectiveSettings.promo_banner_active !== 0 && effectiveSettings.promo_banner_text)
+  ? effectiveSettings.promo_banner_text
+  : null;
 ---
 
 <!doctype html>
@@ -55,6 +60,7 @@ const schema = buildLocalBusinessSchema({
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <link rel="icon" type="image/jpeg" href="/images/hsr-gauge-logo.jpg" />
     <link rel="canonical" href={canonical.toString()} />
     <link rel="alternate" hreflang={alternate} href={alternateHref.toString()} />
     <link rel="alternate" hreflang={locale} href={canonical.toString()} />
@@ -85,6 +91,12 @@ const schema = buildLocalBusinessSchema({
     <aside class="announcement-ticker-bar demo-banner" role="status" aria-label={locale === 'en' ? 'Station Announcements' : 'स्टेशन सूचना'}>
       <div class="ticker-track-container">
         <div class="ticker-track">
+          {customPromoBanner && (
+            <span class="ticker-item ticker-promo-item">
+              <span class="ticker-badge promo-tag">🎉 {locale === 'en' ? 'SPECIAL OFFER' : 'विशेष ऑफ़र'}</span>
+              <strong class="promo-text">{customPromoBanner}</strong>
+            </span>
+          )}
           <span class="ticker-item">
             <span class="ticker-badge demo-tag">⚡ {locale === 'en' ? 'GOVERNMENT APPROVED' : 'सरकारी प्रमाणित'}</span>
             <span class="demo-text">{locale === 'en' ? 'Government Approved Testing Facility (PESO Certified) — Rewari, Haryana' : 'सरकारी प्रमाणित टेस्टिंग सुविधा (PESO Certified) — रेवाड़ी, हरियाणा'}</span>
@@ -98,6 +110,12 @@ const schema = buildLocalBusinessSchema({
             <span>{locale === 'en' ? '300 Bar Water Jacket Test | Stamped Brass Compliance Plate & Certificate' : 'प्रमाणित 300 बार वाटर जैकेट टेस्ट | मोहरबंद पीतल प्लेट एवं प्रमाणपत्र'}</span>
           </span>
           <!-- Duplicate for seamless loop -->
+          {customPromoBanner && (
+            <span class="ticker-item ticker-promo-item">
+              <span class="ticker-badge promo-tag">🎉 {locale === 'en' ? 'SPECIAL OFFER' : 'विशेष ऑफ़र'}</span>
+              <strong class="promo-text">{customPromoBanner}</strong>
+            </span>
+          )}
           <span class="ticker-item">
             <span class="ticker-badge demo-tag">⚡ {locale === 'en' ? 'GOVERNMENT APPROVED' : 'सरकारी प्रमाणित'}</span>
             <span class="demo-text">{locale === 'en' ? 'Government Approved Testing Facility (PESO Certified) — Rewari, Haryana' : 'सरकारी प्रमाणित टेस्टिंग सुविधा (PESO Certified) — रेवाड़ी, हरियाणा'}</span>
@@ -118,8 +136,11 @@ const schema = buildLocalBusinessSchema({
     <header class="app-header">
       <div class="container topbar">
         <a href={`/${locale}/`} class="brand-link">
-          <span class="brand-logo-text">{businessName || 'HSR'}</span>
-          <span class="brand-subtext">{locale === 'en' ? 'CNG Hydro Testing' : 'सीएनजी हाइड्रो टेस्टिंग'}</span>
+          <img src="/images/hsr-gauge-logo.jpg" alt="HSR CNG" class="brand-logo-img" />
+          <div class="brand-text-col">
+            <span class="brand-logo-text">{businessName || 'HSR'}</span>
+            <span class="brand-subtext">{locale === 'en' ? 'CNG Hydro Testing' : 'सीएनजी हाइड्रो टेस्टिंग'}</span>
+          </div>
         </a>
 
         <!-- Desktop Navigation: Services, Book, Blog, Contact, Login -->
@@ -333,6 +354,12 @@ const schema = buildLocalBusinessSchema({
         }
       })();
     </script>
+    <FloatingWhatsApp
+      whatsappNumber={effectiveSettings.whatsapp_number}
+      contactPhone={effectiveSettings.contact_phone}
+      businessName={businessName}
+      showFloating={effectiveSettings.show_floating_whatsapp ?? 1}
+    />
   </body>
 </html>
 
@@ -425,8 +452,33 @@ const schema = buildLocalBusinessSchema({
   .brand-link {
     text-decoration: none;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 0.65rem;
     flex-shrink: 0;
+  }
+  .brand-logo-img {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid #ea580c;
+    box-shadow: 0 2px 6px rgba(234, 88, 12, 0.2);
+  }
+  .brand-text-col {
+    display: flex;
+    flex-direction: column;
+  }
+  .ticker-promo-item {
+    background: rgba(234, 88, 12, 0.2);
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+  }
+  .promo-tag {
+    background: #ea580c !important;
+    color: #ffffff !important;
+  }
+  .promo-text {
+    color: #fef08a !important;
   }
   .brand-logo-text {
     font-family: var(--font-heading);

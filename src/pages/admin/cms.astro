@@ -1,0 +1,199 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { requireRole } from '../../lib/auth';
+import { getDb } from '../../lib/db';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+
+const auth = await requireRole(Astro.request, getRuntimeEnv(Astro.locals), ['OWNER', 'RECEPTIONIST']);
+if (!auth.ok) {
+  return Astro.redirect('/login/?role=OWNER&redirect=/admin/cms/');
+}
+
+const db = getDb({ locals: Astro.locals } as any);
+const postsResult = await db.prepare('SELECT * FROM cms_posts ORDER BY published_at DESC LIMIT 50').all();
+const posts = postsResult.results || [];
+---
+
+<AdminLayout title="HSR Green Energy — Content CMS & Media Vault">
+  <div class="admin-content-header">
+    <div>
+      <h1 class="admin-title">Website Content, Media & Guides CMS</h1>
+      <p class="admin-subtitle">Publish bilingual safety guides, customer tutorial videos, and news announcements with zero hosting costs.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+      <a href="/api/admin/zoho-export/" class="admin-btn-secondary" download="hsr_zoho_books_today.csv">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+          <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+        <span>Export Zoho Books CSV</span>
+      </a>
+      <button type="button" id="btn-new-post" class="admin-btn-primary">
+        + Create New Article / Video
+      </button>
+    </div>
+  </div>
+
+  <div class="admin-grid" style="grid-template-columns: 1fr 340px; gap: 1.5rem; align-items: start;">
+    <!-- Main Editor Section -->
+    <div class="admin-card">
+      <h2 class="card-heading" id="editor-heading">Draft New Content</h2>
+      <form id="form-cms-post" class="admin-form">
+        <input type="hidden" id="postId" name="id" />
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <label class="admin-field">
+            Slug (URL Key)
+            <input class="admin-input font-mono" id="postSlug" name="slug" placeholder="e.g. 5-step-cng-hydro-testing-safety" required />
+          </label>
+          <label class="admin-field">
+            Category
+            <select class="admin-select" id="postCategory" name="category">
+              <option value="SAFETY_GUIDE">Safety Guide (Rule 35)</option>
+              <option value="NEWS_ANNOUNCEMENT">News & Station Announcement</option>
+              <option value="VIDEO_TUTORIAL">Video Tutorial</option>
+              <option value="COMMERCIAL_FLEET">Commercial Fleet Advisory</option>
+            </select>
+          </label>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <label class="admin-field">
+            Article Title (English)
+            <input class="admin-input" id="postTitleEn" name="title_en" placeholder="e.g. 5 Signs Your CNG Cylinder is Overdue" required />
+          </label>
+          <label class="admin-field">
+            लेख शीर्षक (हिंदी)
+            <input class="admin-input" id="postTitleHi" name="title_hi" placeholder="उदा. सीएनजी सिलेंडर हाइड्रो टेस्टिंग के 5 महत्वपूर्ण चरण" required />
+          </label>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <label class="admin-field">
+            Summary / Meta Description (English)
+            <textarea class="admin-textarea" id="postSummaryEn" name="summary_en" rows="2" placeholder="Brief 2-line preview"></textarea>
+          </label>
+          <label class="admin-field">
+            संक्षिप्त सारांश (हिंदी)
+            <textarea class="admin-textarea" id="postSummaryHi" name="summary_hi" rows="2" placeholder="संक्षिप्त सारांश"></textarea>
+          </label>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <label class="admin-field">
+            Markdown Body (English)
+            <textarea class="admin-textarea font-mono" id="postContentEn" name="content_markdown_en" rows="8" placeholder="Full markdown formatted text" required></textarea>
+          </label>
+          <label class="admin-field">
+            मुख्य सामग्री - मार्कडाउन (हिंदी)
+            <textarea class="admin-textarea font-mono" id="postContentHi" name="content_markdown_hi" rows="8" placeholder="हिंदी सामग्री" required></textarea>
+          </label>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <label class="admin-field">
+            YouTube / Video Embed URL (Optional)
+            <input class="admin-input" id="postVideoUrl" name="video_url" placeholder="https://youtube.com/watch?v=..." />
+          </label>
+          <label class="admin-field">
+            R2 Cover Image Key (Optional)
+            <input class="admin-input font-mono" id="postCoverImage" name="cover_image_r2_key" placeholder="media/cng_jacket_inspection.webp" />
+          </label>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+          <label class="admin-check">
+            <input type="checkbox" id="postPublished" name="is_published" value="1" checked />
+            <span>Publish Immediately on Public Website</span>
+          </label>
+          <button type="submit" id="btn-save-post" class="admin-btn-primary">
+            Save & Publish Content
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Existing Content List -->
+    <div class="admin-card">
+      <h3 class="card-heading" style="font-size: 1.05rem;">Published Articles ({posts.length})</h3>
+      {posts.length === 0 ? (
+        <p class="admin-empty">No articles or guides published yet.</p>
+      ) : (
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          {posts.map((p: any) => (
+            <div class="post-item" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem; background: #f8fafc;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: #0284c7; text-transform: uppercase;">{p.category}</span>
+                <span style={`font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.4rem; border-radius: 4px; background: ${p.is_published ? '#dcfce7' : '#fee2e2'}; color: ${p.is_published ? '#15803d' : '#b91c1c'}`}>
+                  {p.is_published ? 'Live' : 'Draft'}
+                </span>
+              </div>
+              <div style="font-size: 0.88rem; font-weight: 700; color: #0a1128; margin-bottom: 0.2rem;">{p.title_en}</div>
+              <div style="font-size: 0.76rem; color: #64748b; font-family: monospace;">/{p.slug}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+</AdminLayout>
+
+<script>
+  const form = document.getElementById('form-cms-post') as HTMLFormElement;
+  const btnSave = document.getElementById('btn-save-post') as HTMLButtonElement;
+  const btnNew = document.getElementById('btn-new-post');
+
+  if (btnNew) {
+    btnNew.addEventListener('click', () => {
+      form.reset();
+      (document.getElementById('postId') as HTMLInputElement).value = '';
+      (document.getElementById('editor-heading') as HTMLElement).textContent = 'Draft New Content';
+    });
+  }
+
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      btnSave.disabled = true;
+      btnSave.textContent = 'Saving...';
+
+      const formData = new FormData(form);
+      const isPublished = (document.getElementById('postPublished') as HTMLInputElement).checked ? 1 : 0;
+      const idVal = (document.getElementById('postId') as HTMLInputElement).value;
+
+      const payload: any = {
+        slug: formData.get('slug'),
+        title_en: formData.get('title_en'),
+        title_hi: formData.get('title_hi'),
+        summary_en: formData.get('summary_en'),
+        summary_hi: formData.get('summary_hi'),
+        content_markdown_en: formData.get('content_markdown_en'),
+        content_markdown_hi: formData.get('content_markdown_hi'),
+        category: formData.get('category'),
+        video_url: formData.get('video_url') || undefined,
+        cover_image_r2_key: formData.get('cover_image_r2_key') || undefined,
+        is_published: isPublished
+      };
+
+      if (idVal) payload.id = idVal;
+
+      try {
+        const res = await fetch('/api/admin/cms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data: any = await res.json();
+        if (!res.ok) throw new Error(data.error?.message || 'Save failed');
+
+        alert('Article successfully saved and published!');
+        window.location.reload();
+      } catch (err: any) {
+        alert(err.message || 'Error saving post');
+      } finally {
+        btnSave.disabled = false;
+        btnSave.textContent = 'Save & Publish Content';
+      }
+    });
+  }
+</script>

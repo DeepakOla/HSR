@@ -6,7 +6,11 @@ type Locale = 'en' | 'hi';
 type Profile = {
   business_name_en:string; business_name_hi:string; city:string; address_line:string; map_url:string;
   contact_phone:string; whatsapp_number:string; contact_email:string; vpa_id:string; vpa_payee_name:string;
-  hold_minutes:number; flat_advance_paise?:number; enable_public_reminders?:number; seo_title_en:string; seo_title_hi:string; seo_desc_en:string; seo_desc_hi:string;
+  hold_minutes:number; flat_advance_paise?:number; enable_public_reminders?:number;
+  whatsapp_mode?:'STANDARD'|'CLOUD_API'; whatsapp_api_key?:string; whatsapp_phone_number_id?:string; whatsapp_template_name?:string;
+  show_floating_whatsapp?:number;
+  promo_code?:string; promo_discount_type?:'FLAT'|'PERCENT'; promo_discount_value?:number; promo_banner_text?:string; promo_banner_active?:number; promo_auto_apply?:number;
+  seo_title_en:string; seo_title_hi:string; seo_desc_en:string; seo_desc_hi:string;
 };
 type RetestReminder = {
   id: number;
@@ -89,6 +93,33 @@ const labels = {
     markBooked: 'Mark Booked',
     exportCsv: 'Export Reminders CSV',
     noReminders: 'No customer retest reminder requests found yet.',
+    whatsappConfig: 'WhatsApp Communications & Dispatch',
+    whatsappMode: 'WhatsApp Dispatch Mode',
+    standardWa: 'Standard WhatsApp (Direct wa.me link — Free)',
+    cloudApiWa: 'Official WhatsApp Business Cloud API (Meta / AiSensy)',
+    waApiKey: 'Meta / AiSensy API Key / Token',
+    waPhoneId: 'Phone Number ID',
+    waTemplate: 'Pre-Approved Template Name',
+    waHelpText: 'Standard mode opens chat links directly in your phone or browser with zero setup costs or third-party fees. Cloud API mode enables background dispatches once you configure API credentials.',
+    promotions: 'Promotions, Discounts & Homepage Marquee',
+    promoCode: 'Promotional Coupon Code (e.g. HSRFESTIVE)',
+    discountType: 'Discount Type',
+    flatInr: 'Flat ₹ Discount',
+    percent: 'Percentage (%) Off',
+    discountVal: 'Discount Value',
+    bannerText: 'Moving Top Announcement Text',
+    bannerActive: 'Display Announcement Ticker on Public Website',
+    tableCyl: 'Cylinders',
+    tableCode: 'Code',
+    tableNameEn: 'Name (EN)',
+    tableNameHi: 'Name (HI)',
+    tableBase: 'Base Price (₹)',
+    tableGst: 'GST (18%)',
+    tableTotal: 'Total (₹)',
+    tableAdvance: 'Online Advance (₹)',
+    tableStatus: 'Status',
+    activeLabel: 'Active',
+    inactiveLabel: 'Off',
   },
   hi: {
     title:'मालिक की सेटिंग्स',intro:'व्यवसाय की जानकारी, ग्राहक कीमतें, कार्य समय और वेबसाइट सामग्री बदलें।',
@@ -141,6 +172,33 @@ const labels = {
     markBooked: 'बुक हुआ चिह्नित करें',
     exportCsv: 'CSV डाउनलोड करें',
     noReminders: 'अभी तक कोई रीटेस्ट रिमाइंडर अनुरोध नहीं मिला है।',
+    whatsappConfig: 'व्हाट्सएप संचार और प्रेषण',
+    whatsappMode: 'व्हाट्सएप प्रेषण मोड',
+    standardWa: 'सामान्य व्हाट्सएप (सीधा wa.me लिंक — निःशुल्क)',
+    cloudApiWa: 'आधिकारिक व्हाट्सएप बिजनेस क्लाउड एपीआई (मेटा / AiSensy)',
+    waApiKey: 'मेटा / AiSensy एपीआई कुंजी / टोकन',
+    waPhoneId: 'फ़ोन नंबर आईडी',
+    waTemplate: 'स्वीकृत टेम्प्लेट नाम',
+    waHelpText: 'सामान्य मोड बिना किसी अतिरिक्त शुल्क के सीधे फोन या ब्राउज़र में लिंक खोलता है। क्लाउड एपीआई मोड क्रेडेंशियल सेट करने पर पृष्ठभूमि में संदेश भेजता है।',
+    promotions: 'प्रचार, छूट और शीर्ष घोषणा बैनर',
+    promoCode: 'प्रोमो कूपन कोड (उदा. HSRFESTIVE)',
+    discountType: 'छूट का प्रकार',
+    flatInr: 'निश्चित ₹ छूट',
+    percent: 'प्रतिशत (%) छूट',
+    discountVal: 'छूट राशि',
+    bannerText: 'चलती शीर्ष घोषणा सूचना',
+    bannerActive: 'सार्वजनिक वेबसाइट पर घोषणा टिकर दिखाएँ',
+    tableCyl: 'सिलेंडर',
+    tableCode: 'कोड',
+    tableNameEn: 'नाम (अंग्रेज़ी)',
+    tableNameHi: 'नाम (हिंदी)',
+    tableBase: 'मूल्य (₹)',
+    tableGst: 'जीएसटी (18%)',
+    tableTotal: 'कुल (₹)',
+    tableAdvance: 'ऑनलाइन अग्रिम (₹)',
+    tableStatus: 'स्थिति',
+    activeLabel: 'सक्रिय',
+    inactiveLabel: 'निष्क्रिय',
   }
 };
 
@@ -193,13 +251,25 @@ export default function OwnerSettings(){
   },[]);
 
   useEffect(()=>{void load();},[load]);
-  const setField=(key:keyof Profile,value:string)=>setProfile((p)=>p?({...p,[key]:value}):p);
+  const setField = <K extends keyof Profile>(key: K, value: Profile[K]) =>
+    setProfile((p) => (p ? { ...p, [key]: value } : p));
 
   const saveProfile=async()=>{
     if(!profile)return;
     setBusy(true);setError('');setMessage('');
     try{
-      const r=await fetch('/api/admin/settings/',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...profile,hold_minutes:Number(profile.hold_minutes),enable_public_reminders:profile.enable_public_reminders?1:0})});
+      const r = await fetch('/api/admin/settings/', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          ...profile,
+          hold_minutes: Number(profile.hold_minutes),
+          enable_public_reminders: profile.enable_public_reminders ? 1 : 0,
+          show_floating_whatsapp: profile.show_floating_whatsapp ? 1 : 0,
+          promo_banner_active: profile.promo_banner_active ? 1 : 0,
+          promo_auto_apply: profile.promo_auto_apply ? 1 : 0,
+        }),
+      });
       const data:any=await readApiJson(r);if(!r.ok)throw new Error(data.error?.message??t.saveError);
       setMessage(t.profileSaved);
     }catch(e){setError(e instanceof Error?e.message:t.saveError);}
@@ -423,7 +493,138 @@ export default function OwnerSettings(){
         <label className="admin-field">{t.payee}<input className="admin-input" value={profile.vpa_payee_name} onChange={e=>setField('vpa_payee_name',e.target.value)}/></label>
         <label className="admin-field">{t.hold}<input className="admin-input" type="number" min="5" max="120" value={profile.hold_minutes} onChange={e=>setProfile(p=>p?({...p,hold_minutes:Number(e.target.value)}):p)}/></label>
       </div>
-      <details className="owner-seo"><summary>SEO metadata / खोज मेटाडेटा</summary><div className="owner-grid">
+
+      <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.35rem' }}>
+          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: '#0a1128' }}>{t.whatsappConfig}</h3>
+          <label className="admin-check">
+            <input
+              type="checkbox"
+              checked={Number(profile.show_floating_whatsapp ?? 1) === 1}
+              onChange={e => setField('show_floating_whatsapp', e.target.checked ? 1 : 0)}
+            />
+            <span style={{ fontSize: '0.82rem' }}>Floating WhatsApp Quick-Chat on Public Website</span>
+          </label>
+        </div>
+        <p className="admin-subtitle" style={{ marginBottom: '1rem', fontSize: '0.82rem' }}>{t.waHelpText}</p>
+        <div className="owner-grid">
+          <label className="admin-field">
+            {t.whatsappMode}
+            <select
+              className="admin-select"
+              value={profile.whatsapp_mode || 'STANDARD'}
+              onChange={e => setField('whatsapp_mode', e.target.value as 'STANDARD' | 'CLOUD_API')}
+            >
+              <option value="STANDARD">{t.standardWa}</option>
+              <option value="CLOUD_API">{t.cloudApiWa}</option>
+            </select>
+          </label>
+          {profile.whatsapp_mode === 'CLOUD_API' && (
+            <>
+              <label className="admin-field">
+                {t.waApiKey}
+                <input
+                  className="admin-input"
+                  type="password"
+                  placeholder="Bearer token / EAAG..."
+                  value={profile.whatsapp_api_key || ''}
+                  onChange={e => setField('whatsapp_api_key', e.target.value)}
+                />
+              </label>
+              <label className="admin-field">
+                {t.waPhoneId}
+                <input
+                  className="admin-input"
+                  placeholder="e.g. 106543219876543"
+                  value={profile.whatsapp_phone_number_id || ''}
+                  onChange={e => setField('whatsapp_phone_number_id', e.target.value)}
+                />
+              </label>
+              <label className="admin-field">
+                {t.waTemplate}
+                <input
+                  className="admin-input"
+                  placeholder="e.g. hsr_hydro_compliance_v1"
+                  value={profile.whatsapp_template_name || ''}
+                  onChange={e => setField('whatsapp_template_name', e.target.value)}
+                />
+              </label>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
+          <div>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: '#0a1128' }}>{t.promotions}</h3>
+            <p className="admin-subtitle" style={{ margin: '0.2rem 0 0', fontSize: '0.82rem' }}>Configure promotional discount codes, auto-apply discounts on checkout, and manage the live announcement ticker.</p>
+          </div>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <label className="admin-check">
+              <input
+                type="checkbox"
+                checked={Number(profile.promo_auto_apply ?? 1) === 1}
+                onChange={e => setField('promo_auto_apply', e.target.checked ? 1 : 0)}
+              />
+              <span style={{ fontSize: '0.82rem' }}>Auto-apply discount at checkout</span>
+            </label>
+            <label className="admin-check">
+              <input
+                type="checkbox"
+                checked={Number(profile.promo_banner_active ?? 1) === 1}
+                onChange={e => setField('promo_banner_active', e.target.checked ? 1 : 0)}
+              />
+              <span style={{ fontSize: '0.82rem' }}>{t.bannerActive}</span>
+            </label>
+          </div>
+        </div>
+
+        <div className="owner-grid">
+          <label className="admin-field">
+            {t.promoCode}
+            <input
+              className="admin-input font-mono"
+              placeholder="e.g. HSRFESTIVE"
+              value={profile.promo_code || ''}
+              onChange={e => setField('promo_code', e.target.value.toUpperCase())}
+            />
+          </label>
+          <label className="admin-field">
+            {t.discountType}
+            <select
+              className="admin-select"
+              value={profile.promo_discount_type || 'FLAT'}
+              onChange={e => setField('promo_discount_type', e.target.value as 'FLAT' | 'PERCENT')}
+            >
+              <option value="FLAT">{t.flatInr}</option>
+              <option value="PERCENT">{t.percent}</option>
+            </select>
+          </label>
+          <label className="admin-field">
+            {t.discountVal}
+            <input
+              className="admin-input"
+              type="number"
+              min="0"
+              placeholder="e.g. 200 or 10"
+              value={profile.promo_discount_value ?? ''}
+              onChange={e => setField('promo_discount_value', Number(e.target.value))}
+            />
+          </label>
+          <label className="admin-field" style={{ gridColumn: '1 / -1' }}>
+            {t.bannerText}
+            <input
+              className="admin-input"
+              placeholder="e.g. ⚡ Special Offer: Book 2+ Cylinder Fleet Testing & Get ₹200 Flat Off! • PESO Certified 2-Hour Express Bay"
+              value={profile.promo_banner_text || ''}
+              onChange={e => setField('promo_banner_text', e.target.value)}
+            />
+          </label>
+        </div>
+      </div>
+
+      <details className="owner-seo" style={{ marginTop: '1.25rem' }}><summary>SEO metadata / खोज मेटाडेटा</summary><div className="owner-grid">
         <label className="admin-field">{t.seoEn}<input className="admin-input" value={profile.seo_title_en} onChange={e=>setField('seo_title_en',e.target.value)}/></label>
         <label className="admin-field">{t.seoHi}<input className="admin-input" value={profile.seo_title_hi} onChange={e=>setField('seo_title_hi',e.target.value)}/></label>
         <label className="admin-field">{t.descEn}<textarea className="admin-textarea" value={profile.seo_desc_en} onChange={e=>setField('seo_desc_en',e.target.value)}/></label>
@@ -433,20 +634,95 @@ export default function OwnerSettings(){
     </section>}
 
     <section id="commercials" className="admin-card owner-section">
-      <div className="owner-section-head"><div><p className="admin-eyebrow">02 / COMMERCIALS</p><h2 className="admin-section-title">{t.vehicles}</h2></div><button className="admin-button" disabled={busy} onClick={saveCategories}>{t.saveCategories}</button></div>
-      <div className="owner-category-list">{categories.map((item,index)=><div className="owner-category" key={item.code}>
-        <div className="owner-category-head"><strong>{item.nameEn||item.code}</strong><label className="admin-check"><input type="checkbox" checked={item.isActive} onChange={e=>editCategory(index,{isActive:e.target.checked})}/>{t.active}</label></div>
-        <div className="owner-grid">
-          <label className="admin-field">{t.categoryCode}<input className="admin-input" value={item.code} readOnly/></label>
-          <label className="admin-field">{t.displayEn}<input className="admin-input" value={item.nameEn} onChange={e=>editCategory(index,{nameEn:e.target.value})}/></label>
-          <label className="admin-field">{t.displayHi}<input className="admin-input" value={item.nameHi} onChange={e=>editCategory(index,{nameHi:e.target.value})}/></label>
-          <label className="admin-field">{t.cylinders}<input className="admin-input" type="number" min="1" max="12" value={item.cylinderCount} readOnly/></label>
-          <label className="admin-field">{t.base}<input className="admin-input" type="number" min="0" step="0.01" value={inr(item.basePricePaise)} onChange={e=>editCategory(index,{basePricePaise:paise(e.target.value)??0})}/></label>
-          <label className="admin-field">{t.gst}<input className="admin-input" value="18%" readOnly /></label>
-          <label className="admin-field">{t.advance}<input className="admin-input" type="number" min="0" step="0.01" value={inr(item.advancePaise)} onChange={e=>editCategory(index,{advancePaise:paise(e.target.value)})}/></label>
+      <div className="owner-section-head">
+        <div>
+          <p className="admin-eyebrow">02 / COMMERCIALS</p>
+          <h2 className="admin-section-title">{t.vehicles}</h2>
         </div>
-      </div>)}</div>
-      <p className="admin-note">Initial base price: ₹2,500 × cylinder count. Each of the 12 cylinder-count prices can be edited independently. GST is fixed at 18%. Confirm the applicable SAC and tax treatment before using this setting for live billing. Configure an advance for online UPI booking; a blank advance keeps that count unavailable online.</p>
+        <button className="admin-button" disabled={busy} onClick={saveCategories}>{t.saveCategories}</button>
+      </div>
+
+      <div className="commercials-table-container">
+        <table className="commercials-table">
+          <thead>
+            <tr>
+              <th>{t.tableCyl}</th>
+              <th>{t.tableCode}</th>
+              <th>{t.tableNameEn}</th>
+              <th>{t.tableNameHi}</th>
+              <th>{t.tableBase}</th>
+              <th>{t.tableGst}</th>
+              <th>{t.tableTotal}</th>
+              <th>{t.tableAdvance}</th>
+              <th>{t.tableStatus}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {categories.map((item, index) => {
+              const base = item.basePricePaise / 100;
+              const gst = (item.basePricePaise * 0.18) / 100;
+              const total = base + gst;
+              return (
+                <tr key={item.code} className={item.isActive ? 'row-active' : 'row-inactive'}>
+                  <td className="cell-cylinders"><strong>{item.cylinderCount} Cyl</strong></td>
+                  <td className="cell-code"><code>{item.code}</code></td>
+                  <td>
+                    <input
+                      className="table-input"
+                      value={item.nameEn}
+                      onChange={e => editCategory(index, { nameEn: e.target.value })}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      className="table-input"
+                      value={item.nameHi}
+                      onChange={e => editCategory(index, { nameHi: e.target.value })}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      className="table-input num-input"
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={inr(item.basePricePaise)}
+                      onChange={e => editCategory(index, { basePricePaise: paise(e.target.value) ?? 0 })}
+                    />
+                  </td>
+                  <td className="cell-calc text-muted">₹{gst.toFixed(2)}</td>
+                  <td className="cell-calc font-bold text-navy">₹{total.toFixed(2)}</td>
+                  <td>
+                    <input
+                      className="table-input num-input"
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="Optional"
+                      value={inr(item.advancePaise)}
+                      onChange={e => editCategory(index, { advancePaise: paise(e.target.value) })}
+                    />
+                  </td>
+                  <td className="cell-toggle">
+                    <label className="admin-check compact-check">
+                      <input
+                        type="checkbox"
+                        checked={item.isActive}
+                        onChange={e => editCategory(index, { isActive: e.target.checked })}
+                      />
+                      <span>{item.isActive ? t.activeLabel : t.inactiveLabel}</span>
+                    </label>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="admin-note">
+        All 12 cylinder-count tiers displayed in one high-density matrix. 18% GST and Total are dynamically calculated. Set an Online Advance amount (or leave blank to reserve full counter payment).
+      </p>
     </section>
 
     {schedule&&<section id="schedule" className="admin-card owner-section">

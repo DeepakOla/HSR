@@ -12,6 +12,17 @@ export interface BusinessSettings {
   hold_minutes: number;
   flat_advance_paise: number;
   enable_public_reminders?: number;
+  whatsapp_mode?: 'STANDARD' | 'CLOUD_API';
+  whatsapp_api_key?: string;
+  whatsapp_phone_number_id?: string;
+  whatsapp_template_name?: string;
+  promo_code?: string;
+  promo_discount_type?: 'FLAT' | 'PERCENT';
+  promo_discount_value?: number;
+  promo_banner_text?: string;
+  promo_banner_active?: number;
+  promo_auto_apply?: number;
+  show_floating_whatsapp?: number;
   r2_enabled: number;
   evidence_budget_bytes: number;
   timezone: string;

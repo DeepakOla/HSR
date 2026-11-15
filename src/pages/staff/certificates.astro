@@ -104,24 +104,40 @@ if (env?.DB) {
           </div>
 
           <!-- Upload Certificate & Release Actions -->
-          <div style="display: flex; gap: 1rem; align-items: center; justify-content: space-between;">
-            <div style="display: flex; gap: 0.75rem; align-items: center; flex: 1;">
+          <div style="display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex: 1; min-width: 320px;">
               <input
                 type="text"
                 id={`cert-no-${item.bookingId}`}
                 placeholder="Official PESO Cert No. (e.g. PESO/HR/2026/0491)"
-                style="padding: 0.55rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; width: 320px;"
+                style="padding: 0.55rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.85rem; width: 300px;"
               />
-              <input type="file" accept=".pdf" style="font-size: 0.8rem; color: #475569;" />
+              <button
+                type="button"
+                onclick={`copyPesoPayload(${JSON.stringify(item).replace(/"/g, '&quot;')})`}
+                style="background: #0284c7; color: #ffffff; padding: 0.55rem 0.85rem; border: none; border-radius: 6px; font-weight: 700; font-size: 0.82rem; cursor: pointer; white-space: nowrap;"
+                title="Copy structured JSON to clipboard for PESO Copilot extension"
+              >
+                📋 Copy PESO Payload
+              </button>
             </div>
 
-            <button
-              type="button"
-              onclick={`releaseVehicle('${item.bookingId}')`}
-              style="background: #166534; color: #ffffff; padding: 0.55rem 1.25rem; border: none; border-radius: 6px; font-weight: 700; font-size: 0.88rem; cursor: pointer;"
-            >
-              ✓ Upload PESO Cert & Release Vehicle
-            </button>
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+              <button
+                type="button"
+                onclick={`downloadInvoicePdf('${item.bookingId}', '${item.displayRegNo}', '${item.serialNo || 'EKC-001'}')`}
+                style="background: #0a1128; color: #ffffff; padding: 0.55rem 1rem; border: none; border-radius: 6px; font-weight: 700; font-size: 0.84rem; cursor: pointer;"
+              >
+                📥 Invoice PDF
+              </button>
+              <button
+                type="button"
+                onclick={`releaseVehicle('${item.bookingId}')`}
+                style="background: #166534; color: #ffffff; padding: 0.55rem 1.25rem; border: none; border-radius: 6px; font-weight: 700; font-size: 0.88rem; cursor: pointer;"
+              >
+                ✓ Release Vehicle
+              </button>
+            </div>
           </div>
         </div>
       ))}
@@ -137,6 +153,58 @@ if (env?.DB) {
   )}
 
   <script is:inline>
+    function copyPesoPayload(item) {
+      const payload = {
+        serialNumber: item.serialNo || 'EKC-0001',
+        manufacturer: item.mfg || 'EKC',
+        workingPressure: '200',
+        testPressure: String(item.testPressure || 300),
+        waterCapacityLiters: '60',
+        tareWeightKg: String(item.obsWeight || 62.1),
+        originalTareWeightKg: '62.5',
+        totalExpansionCc: String(item.totalExp || 380),
+        permanentExpansionCc: String(item.permExp || 12),
+        vehicleReg: item.displayRegNo,
+        bookingId: item.bookingId
+      };
+
+      navigator.clipboard.writeText(JSON.stringify(payload, null, 2)).then(() => {
+        alert(`Copied PESO Payload for ${item.displayRegNo} to clipboard! Open online.peso.gov.in and click Paste in PESO Copilot.`);
+      }).catch(() => {
+        prompt('Copy payload manually:', JSON.stringify(payload));
+      });
+    }
+
+    async function downloadInvoicePdf(bookingId, regNo, serialNo) {
+      try {
+        const { generateReceiptPdf, downloadReceiptPdf } = await import('/src/utils/generate-receipt-pdf.ts');
+        const pdfBytes = await generateReceiptPdf({
+          businessName: 'HSR Green Energy',
+          address: 'Bhiwadi Road, Near Express Toll, Rewari, Haryana',
+          phone: '+919910055355',
+          gstin: '06AAACH7409R1ZZ',
+          invoiceNumber: `HSR-${Date.now().toString().slice(-6)}`,
+          dateStr: new Date().toISOString().slice(0, 10),
+          customerName: 'Customer Vehicle Entry',
+          customerPhone: '+919910055355',
+          vehicleReg: regNo,
+          cylinderCount: 1,
+          cylinderSerials: [serialNo],
+          testPressureBar: 300,
+          baseAmountInr: 2500,
+          gstAmountInr: 450,
+          totalAmountInr: 2950,
+          advancePaidInr: 500,
+          balanceDueInr: 2450,
+          paymentMode: 'UPI / Counter',
+          retestDueDate: new Date(Date.now() + 3 * 365 * 86400000).toISOString().slice(0, 10)
+        });
+        downloadReceiptPdf(pdfBytes, `hsr_invoice_${regNo}.pdf`);
+      } catch (e) {
+        alert('Could not render PDF client-side: ' + (e.message || e));
+      }
+    }
+
     async function releaseVehicle(bookingId) {
       const input = document.getElementById(`cert-no-${bookingId}`);
       const certNo = input ? input.value.trim() : '';

@@ -2,6 +2,7 @@
 import type { Locale } from '../lib/constants';
 import type { BusinessSettings } from '../lib/types';
 import DueDateChecker from './home/DueDateChecker';
+import ComplianceModal from './ComplianceModal.astro';
 
 interface Props {
   locale: Locale;
@@ -16,35 +17,52 @@ const mapReady = settings.map_url !== 'SETUP_REQUIRED' && settings.map_url.start
 
 const cityName = cityReady ? settings.city : 'Rewari';
 const heading = locale === 'en'
-  ? 'Government Approved CNG Cylinder Hydro Testing'
-  : 'सरकारी प्रमाणित सीएनजी सिलेंडर हाइड्रो टेस्टिंग';
+  ? 'Avoid CNG Pump Refusals. Get Hydrotested in 2 Hours.'
+  : 'सीएनजी पंप पर गैस रिफिलिंग इंकार से बचें। 2 घंटे में हाइड्रो टेस्टिंग कराएं।';
 const subHeading = locale === 'en'
-  ? `Safe, Reliable & Certified CNG Cylinder Testing in ${cityName}.`
-  : `${cityName} में सुरक्षित, विश्वसनीय एवं प्रमाणित सीएनजी सिलेंडर टेस्टिंग।`;
+  ? 'Stay safe and road-legal with fast, reliable CNG cylinder hydrotesting. Valid across all CNG stations in India.'
+  : 'तेज़, विश्वसनीय एवं प्रमाणित सीएनजी सिलेंडर हाइड्रो टेस्टिंग के साथ सुरक्षित एवं वैधानिक रहें। भारत के सभी सीएनजी स्टेशनों पर मान्य।';
 ---
 
 <!-- SECTION 1: HERO & IDENTITY -->
 <section class="section hero-section" id="hero">
   <div class="container hero-grid">
     <div class="hero-content">
-      <div class="trust-badge trust-badge-amber">
-        ⚡ {locale === 'en' ? 'Government Approved Testing Facility (PESO Certified)' : 'सरकारी प्रमाणित टेस्टिंग सुविधा (PESO Certified)'}
+      <div class="hero-brand-badge">
+        <img src="/images/hsr-gauge-logo.jpg" alt="HSR CNG Pressure Gauge" class="hero-gauge-logo" />
+        <div class="trust-badge trust-badge-amber">
+          ⚡ {locale === 'en' ? 'PESO-Certified Lab • Government Approved CNG Cylinder Hydro Testing Station' : 'PESO-प्रमाणित लैब • सरकारी अनुमोदित सीएनजी हाइड्रो टेस्टिंग स्टेशन'}
+        </div>
       </div>
       <p class="hero-brand">{businessName || 'HSR'}</p>
       <h1 class="hero-title">{heading}</h1>
-      <p class="hero-subtitle-trust" style="font-size: 1.25rem; font-weight: 600; color: var(--color-steel-400); margin: 0.25rem 0 0.75rem;">
+      <p class="hero-subtitle-trust">
         {subHeading}
       </p>
-      <p class="hero-description">
-        {locale === 'en'
-          ? 'Mandatory periodic hydrostatic testing and compliance certification for passenger cars, commercial taxis, delivery tempos, and heavy transport trucks. Ensure safe refueling across all City Gas stations.'
-          : 'निजी कारों, टैक्सियों, कमर्शियल टेम्पो और भारी ट्रकों के लिए अनिवार्य वैधानिक हाइड्रोस्टेटिक परीक्षण एवं अनुपालन प्रमाणन। सभी सीएनजी स्टेशनों पर सुरक्षित एवं निर्बाध गैस रिफिलिंग सुनिश्चित करें।'}
-      </p>
+
+      <!-- Trust Badges (3 key pillars) -->
+      <div class="hero-trust-badges">
+        <div class="trust-badge-pill">
+          <span class="trust-pill-icon">🛡️</span>
+          <span>{locale === 'en' ? 'PESO-Certified Lab' : 'PESO-प्रमाणित लैब'}</span>
+        </div>
+        <div class="trust-badge-pill">
+          <span class="trust-pill-icon">📜</span>
+          <span>{locale === 'en' ? 'Govt-Approved Plate & Certificate' : 'सरकारी अनुमोदित प्लेट एवं प्रमाणपत्र'}</span>
+        </div>
+        <div class="trust-badge-pill">
+          <span class="trust-pill-icon">⚡</span>
+          <span>{locale === 'en' ? '2-Hour Express Service' : '2 घंटे एक्सप्रेस सेवा'}</span>
+        </div>
+      </div>
 
       <div class="hero-actions">
         <a class="btn btn-primary hero-btn-main" href={`/${locale}/book/`}>
-          ⚡ {locale === 'en' ? 'Book Testing Appointment' : 'टेस्टिंग स्लॉट बुक करें'} →
+          ⚡ {locale === 'en' ? 'Book Hydrotesting Now' : 'अभी हाइड्रो टेस्टिंग बुक करें'} →
         </a>
+        <button type="button" class="btn btn-secondary hero-btn-notice" id="open-compliance-notice-btn">
+          📋 {locale === 'en' ? 'Rule 35 Notice & Checker' : 'नियम 35 सूचना एवं जाँच'}
+        </button>
         {phoneReady && (
           <a class="btn btn-secondary" href={`tel:${settings.contact_phone}`}>
             📞 {locale === 'en' ? 'Call Centre' : 'कॉल करें'}
@@ -803,4 +821,53 @@ const subHeading = locale === 'en'
       grid-template-columns: 1fr;
     }
   }
+
+  /* Hero Extensions: Brand Badge, Official Logo & Trust Badges */
+  .hero-brand-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .hero-gauge-logo {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #ea580c;
+    box-shadow: 0 2px 8px rgba(234, 88, 12, 0.25);
+  }
+  .hero-trust-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin: 1.25rem 0 1.5rem;
+  }
+  .trust-badge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 9999px;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #1e293b;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  }
+  .trust-pill-icon {
+    font-size: 1rem;
+  }
+  .hero-btn-notice {
+    background: #f1f5f9;
+    color: #0f172a;
+    border: 1px solid #cbd5e1;
+    font-weight: 600;
+  }
+  .hero-btn-notice:hover {
+    background: #e2e8f0;
+  }
 </style>
+
+<ComplianceModal locale={locale} bookUrl={`/${locale}/book/`} />

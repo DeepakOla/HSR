@@ -163,6 +163,27 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
   const [evidenceError, setEvidenceError] = useState<string>('');
   const [idempotencyKey] = useState<string>(() => crypto.randomUUID());
 
+  // Promotions & Discounts
+  const [publicConfig, setPublicConfig] = useState<any>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<string>('');
+  const [couponInput, setCouponInput] = useState<string>('');
+  const [couponMsg, setCouponMsg] = useState<{ isError: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/public/config/')
+      .then((res) => res.json())
+      .then((data: any) => {
+        if (data?.data) {
+          const cfg = data.data;
+          setPublicConfig(cfg);
+          if (cfg.promoAutoApply && cfg.promoCode) {
+            setAppliedCoupon(cfg.promoCode);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Fetch slots and pricing categories
   useEffect(() => {
     let cancelled = false;
@@ -203,6 +224,39 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
   const selectedCategory = useMemo(() => {
     return categories.find((c) => c.cylinderCount === cylinderCount) || categories[0] || null;
   }, [categories, cylinderCount]);
+
+  const discountPaise = useMemo(() => {
+    if (!appliedCoupon || !publicConfig || !selectedCategory) return 0;
+    if (appliedCoupon.toUpperCase() !== (publicConfig.promoCode || '').toUpperCase()) return 0;
+    if (publicConfig.promoDiscountType === 'PERCENT') {
+      return Math.round((selectedCategory.totalPaise * (publicConfig.promoDiscountValue || 0)) / 100);
+    }
+    return Math.min(selectedCategory.totalPaise, (publicConfig.promoDiscountValue || 0) * 100);
+  }, [appliedCoupon, publicConfig, selectedCategory]);
+
+  const finalTotalPaise = useMemo(() => {
+    if (!selectedCategory) return 0;
+    return Math.max(0, selectedCategory.totalPaise - discountPaise);
+  }, [selectedCategory, discountPaise]);
+
+  const handleApplyCoupon = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    setCouponMsg(null);
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+    if (publicConfig?.promoCode && code === publicConfig.promoCode.toUpperCase()) {
+      setAppliedCoupon(code);
+      setCouponMsg({ isError: false, text: hindi ? 'कूपन कोड सफलतापूर्वक लागू!' : 'Promo coupon applied!' });
+    } else {
+      setCouponMsg({ isError: true, text: hindi ? 'अमान्य कूपन कोड' : 'Invalid promo code' });
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon('');
+    setCouponInput('');
+    setCouponMsg(null);
+  };
 
   // Filter slots for chosen date
   const dateSlots = useMemo(() => {
@@ -709,8 +763,58 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                     </div>
                     <div className="calc-item total-item">
                       <span>{hindi ? 'कुल शुल्क' : 'Total Amount'}:</span>
-                      <strong className="highlight-price">{inr(selectedCategory.totalPaise)}</strong>
+                      {discountPaise > 0 ? (
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.85rem', marginRight: '0.5rem' }}>
+                            {inr(selectedCategory.totalPaise)}
+                          </span>
+                          <strong className="highlight-price">{inr(finalTotalPaise)}</strong>
+                        </div>
+                      ) : (
+                        <strong className="highlight-price">{inr(selectedCategory.totalPaise)}</strong>
+                      )}
                     </div>
+                  </div>
+
+                  {/* Coupon section */}
+                  <div style={{ padding: '0.65rem 0', borderTop: '1px solid #e2e8f0', marginTop: '0.5rem' }}>
+                    {appliedCoupon ? (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '0.4rem 0.75rem', borderRadius: '6px', fontSize: '0.82rem' }}>
+                        <span style={{ color: '#065f46', fontWeight: 600 }}>
+                          🎉 Coupon <strong>{appliedCoupon}</strong> Applied: -{inr(discountPaise)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleRemoveCoupon}
+                          style={{ background: 'none', border: 'none', color: '#b91c1c', cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem' }}
+                        >
+                          {hindi ? 'हटाएँ' : 'Remove'}
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <input
+                          type="text"
+                          placeholder={hindi ? 'कूपन / प्रोमो कोड' : 'Have a promo coupon?'}
+                          value={couponInput}
+                          onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                          style={{ padding: '0.35rem 0.6rem', fontSize: '0.82rem', border: '1px solid #cbd5e1', borderRadius: '6px', maxWidth: '180px', textTransform: 'uppercase' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleApplyCoupon}
+                          className="btn btn-secondary"
+                          style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
+                        >
+                          {hindi ? 'लागू करें' : 'Apply'}
+                        </button>
+                        {couponMsg && (
+                          <span style={{ fontSize: '0.78rem', color: couponMsg.isError ? '#dc2626' : '#16a34a' }}>
+                            {couponMsg.text}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="advance-highlight-banner">
@@ -719,8 +823,8 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                       <strong className="adv-amt">{inr(selectedCategory.advancePaise || 50000)}</strong>
                       <span className="adv-desc">
                         {hindi
-                          ? `₹500 अग्रिम ऑनलाइन देकर स्लॉट आरक्षित करें। शेष ${inr(selectedCategory.totalPaise - (selectedCategory.advancePaise || 50000))} टेस्टिंग पूर्ण होने पर स्टेशन पर देय होगा।`
-                          : `Pay ₹500 advance online to confirm testing bay. Balance ${inr(selectedCategory.totalPaise - (selectedCategory.advancePaise || 50000))} payable on arrival after inspection.`}
+                          ? `₹500 अग्रिम ऑनलाइन देकर स्लॉट आरक्षित करें। शेष ${inr(finalTotalPaise - (selectedCategory.advancePaise || 50000))} टेस्टिंग पूर्ण होने पर स्टेशन पर देय होगा।`
+                          : `Pay ₹500 advance online to confirm testing bay. Balance ${inr(finalTotalPaise - (selectedCategory.advancePaise || 50000))} payable on arrival after inspection.`}
                       </span>
                     </div>
                   </div>

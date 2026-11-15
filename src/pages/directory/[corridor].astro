@@ -1,0 +1,403 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getDb, getBusinessSettings } from '../../lib/db';
+
+const { corridor = 'gurugram-rewari' } = Astro.params;
+const db = getDb({ locals: Astro.locals } as any);
+const settings = await getBusinessSettings(db);
+
+const corridorName = corridor === 'gurugram-rewari' 
+  ? 'Gurugram - Pataudi - Rewari Corridor' 
+  : corridor.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+
+let stationsResult = await db.prepare(`
+  SELECT * FROM directory_stations 
+  WHERE corridor_slug = ? 
+  ORDER BY is_hsr_flagship DESC, rating DESC
+`).bind(corridor).all();
+
+let stations = stationsResult.results || [];
+if (stations.length === 0) {
+  stations = [
+    {
+      slug: 'hsr-green-energy-rewari',
+      station_name: 'HSR Green Energy (PESO Statutory Testing Centre)',
+      corridor_slug: 'gurugram-rewari',
+      corridor_name: 'Gurugram - Pataudi - Rewari Corridor',
+      is_hsr_flagship: 1,
+      address: 'Bhiwadi Road, Near Express Toll Plaza, Rewari, Haryana 123401',
+      city: 'Rewari',
+      phone: '+919910055355',
+      rating: 4.9,
+      hydro_testing_available: 1,
+      turnaround_hours: '2 Hours Express Bay',
+      price_starts_inr: 2500
+    },
+    {
+      slug: 'haryana-city-gas-pataudi',
+      station_name: 'Pataudi Commercial Fuel & CNG Dispenser',
+      corridor_slug: 'gurugram-rewari',
+      corridor_name: 'Gurugram - Pataudi - Rewari Corridor',
+      is_hsr_flagship: 0,
+      address: 'Pataudi Bypass, NH-352W Link, Haryana',
+      city: 'Pataudi',
+      phone: '+919812000000',
+      rating: 4.6,
+      hydro_testing_available: 0,
+      turnaround_hours: 'Dispensing Only (Testing at HSR)',
+      price_starts_inr: 0
+    },
+    {
+      slug: 'manesar-auto-cng-hub',
+      station_name: 'Manesar IMT Commercial CNG Dispensing Hub',
+      corridor_slug: 'gurugram-rewari',
+      corridor_name: 'Gurugram - Pataudi - Rewari Corridor',
+      is_hsr_flagship: 0,
+      address: 'Sector 8, IMT Manesar, Gurugram, Haryana',
+      city: 'Manesar',
+      phone: '+919811000000',
+      rating: 4.7,
+      hydro_testing_available: 0,
+      turnaround_hours: 'Dispensing Only (Testing at HSR)',
+      price_starts_inr: 0
+    }
+  ];
+}
+
+const title = `CNG Cylinder Testing & Retesting Stations in ${corridorName} | HSR Green Energy`;
+const description = `Find verified PESO-certified CNG cylinder hydro testing stations along ${corridorName}. HSR Green Energy Rewari offers 2-hour express testing, digital certificates & online booking.`;
+---
+
+<BaseLayout
+  locale="en"
+  title={title}
+  description={description}
+  canonicalPath={`/directory/${corridor}`}
+  businessName={settings.business_name_en}
+  settings={settings}
+>
+  <main class="dir-page">
+    <div class="dir-container">
+      <div class="dir-header">
+        <span class="dir-badge">CORRIDOR DIRECTORY & GUIDE</span>
+        <h1 class="dir-title">CNG Cylinder Testing Along {corridorName}</h1>
+        <p class="dir-subtitle">
+          Verified directory of automotive CNG cylinder testing facilities and dispensing points. Under Rule 35, hydro testing requires certified 300 Bar water jacket facilities.
+        </p>
+      </div>
+
+      <div class="stations-list">
+        {stations.map((st: any) => (
+          <div class={`station-card ${st.is_hsr_flagship ? 'flagship-card' : ''}`}>
+            {st.is_hsr_flagship === 1 && (
+              <div class="flagship-ribbon">
+                <span>⭐ #1 RECOMMENDED PESO TESTING CENTRE</span>
+              </div>
+            )}
+            
+            <div class="station-main">
+              <div class="station-info">
+                <div class="station-meta-row">
+                  <span class="station-city">{st.city}</span>
+                  <span class="station-rating">★ {st.rating} (Verified)</span>
+                  {st.hydro_testing_available === 1 ? (
+                    <span class="badge-capable">PESO Certified Hydro Testing</span>
+                  ) : (
+                    <span class="badge-fuel">Fuel Dispensing Only</span>
+                  )}
+                </div>
+
+                <h2 class="station-name">{st.station_name}</h2>
+                <p class="station-address">{st.address}</p>
+
+                <div class="station-features">
+                  <div class="feature-item">
+                    <span class="feature-lbl">Turnaround:</span>
+                    <span class="feature-val">{st.turnaround_hours}</span>
+                  </div>
+                  {st.price_starts_inr > 0 && (
+                    <div class="feature-item">
+                      <span class="feature-lbl">Starting Price:</span>
+                      <span class="feature-val">₹{st.price_starts_inr} + GST</span>
+                    </div>
+                  )}
+                  <div class="feature-item">
+                    <span class="feature-lbl">Helpline:</span>
+                    <span class="feature-val">{st.phone}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="station-actions">
+                {st.is_hsr_flagship === 1 ? (
+                  <>
+                    <a href="/en/#booking" class="btn-primary-action">
+                      ⚡ Book Express Bay Slot
+                    </a>
+                    <a href={`https://wa.me/${st.phone.replace(/[^0-9]/g, '')}?text=Hello%20HSR,%20I%20want%20to%20book%20CNG%20cylinder%20testing`} target="_blank" rel="noopener noreferrer" class="btn-wa-action">
+                      💬 WhatsApp Support
+                    </a>
+                  </>
+                ) : (
+                  <a href="/en/#booking" class="btn-secondary-action">
+                    Book Testing at HSR Express Bay
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <!-- SEO Corridor Information Block -->
+      <section class="corridor-seo-block">
+        <h3>Statutory Testing on the {corridorName}</h3>
+        <p>
+          Fleet operators, commercial cabs, and personal motorists commuting along the Gurugram, Dharuhera, Pataudi, and Rewari corridors must maintain statutory 3-year CNG compliance. Avoid fuel dispensing rejections at Mother Stations by scheduling express hydrostatic testing at HSR Green Energy Rewari.
+        </p>
+      </section>
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .dir-page {
+    background: #f8fafc;
+    padding: 3rem 1rem 5rem;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+
+  .dir-container {
+    max-width: 980px;
+    margin: 0 auto;
+  }
+
+  .dir-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .dir-badge {
+    display: inline-block;
+    background: rgba(2, 132, 199, 0.1);
+    color: #0284c7;
+    font-weight: 800;
+    font-size: 0.74rem;
+    letter-spacing: 0.08em;
+    padding: 0.35rem 0.85rem;
+    border-radius: 9999px;
+    margin-bottom: 0.75rem;
+  }
+
+  .dir-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #0a1128;
+    margin: 0 0 0.85rem;
+  }
+
+  .dir-subtitle {
+    font-size: 0.98rem;
+    color: #475569;
+    max-width: 700px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .stations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+
+  .station-card {
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    padding: 1.5rem 1.75rem;
+    box-shadow: 0 2px 10px rgba(10, 17, 40, 0.03);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .flagship-card {
+    border: 2px solid #0284c7;
+    box-shadow: 0 6px 24px rgba(2, 132, 199, 0.1);
+  }
+
+  .flagship-ribbon {
+    background: #0284c7;
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    padding: 0.35rem 1rem;
+    margin: -1.5rem -1.75rem 1.25rem;
+  }
+
+  .station-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .station-info {
+    flex: 1;
+    min-width: 300px;
+  }
+
+  .station-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .station-city {
+    font-size: 0.78rem;
+    font-weight: 700;
+    background: #f1f5f9;
+    color: #334155;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+  }
+
+  .station-rating {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #ea580c;
+  }
+
+  .badge-capable {
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: #dcfce7;
+    color: #15803d;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+  }
+
+  .badge-fuel {
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: #f1f5f9;
+    color: #64748b;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+  }
+
+  .station-name {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0a1128;
+    margin: 0 0 0.35rem;
+  }
+
+  .station-address {
+    font-size: 0.86rem;
+    color: #64748b;
+    margin: 0 0 1rem;
+  }
+
+  .station-features {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    font-size: 0.82rem;
+  }
+
+  .feature-item {
+    display: flex;
+    gap: 0.35rem;
+  }
+
+  .feature-lbl {
+    color: #64748b;
+  }
+
+  .feature-val {
+    font-weight: 700;
+    color: #0a1128;
+  }
+
+  .station-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    min-width: 220px;
+  }
+
+  .btn-primary-action {
+    display: block;
+    text-align: center;
+    background: #ea580c;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background 0.15s;
+  }
+
+  .btn-primary-action:hover {
+    background: #c2410c;
+  }
+
+  .btn-wa-action {
+    display: block;
+    text-align: center;
+    background: #f0fdf4;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 0.65rem 1.25rem;
+    border-radius: 8px;
+    text-decoration: none;
+  }
+
+  .btn-wa-action:hover {
+    background: #25d366;
+    color: #ffffff;
+  }
+
+  .btn-secondary-action {
+    display: block;
+    text-align: center;
+    background: #f8fafc;
+    color: #0a1128;
+    border: 1px solid #cbd5e1;
+    font-weight: 600;
+    font-size: 0.84rem;
+    padding: 0.7rem 1.25rem;
+    border-radius: 8px;
+    text-decoration: none;
+  }
+
+  .corridor-seo-block {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    padding: 2rem;
+  }
+
+  .corridor-seo-block h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #0a1128;
+    margin: 0 0 0.75rem;
+  }
+
+  .corridor-seo-block p {
+    font-size: 0.9rem;
+    color: #475569;
+    line-height: 1.6;
+    margin: 0;
+  }
+</style>
