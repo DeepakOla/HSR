@@ -9,6 +9,7 @@ import { POST as requestChallengePost } from '../src/pages/api/auth/customer/req
 import { POST as verifyChallengePost } from '../src/pages/api/auth/customer/verify-challenge';
 import { GET as seoAuditsGet, POST as seoAuditsPost } from '../src/pages/api/admin/seo';
 import { POST as settingsPost } from '../src/pages/api/admin/settings';
+import { GET as vouchersGet, PATCH as vouchersPatch } from '../src/pages/api/admin/vouchers';
 import { createMockD1 } from './helpers/d1-mock';
 import { setupMockJwksServer } from './helpers/jwt-mock';
 
@@ -288,6 +289,215 @@ describe('v0.0.3: Customer Journey Simplification, 2-Path Due Date, Email Auth &
       expect(settings.show_social_media).toBe(1);
       expect(settings.voucher_amount_paise).toBe(20000);
       expect(settings.voucher_enabled).toBe(1);
+    });
+
+    it('allows owner to update brand_logo_url in business settings', async () => {
+      const token = await jwks.createToken({
+        email: 'owner@hsr.test',
+      });
+
+      const req = new Request('http://localhost:4321/api/admin/settings/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Origin: 'http://localhost:4321',
+          'cf-access-jwt-assertion': token,
+        },
+        body: JSON.stringify({
+          brand_logo_url: '/images/custom-hsr-logo.png',
+        }),
+      });
+
+      const res = await settingsPost({
+        request: req,
+        locals: {
+          runtime: {
+            env: {
+              DB: db,
+              ACCESS_TEAM_DOMAIN: 'hsr-auth.cloudflareaccess.com',
+              ACCESS_AUDIENCE: 'aud-hsr-testing-bay-prod-12345',
+            },
+          },
+        },
+      } as any);
+
+      expect(res.status).toBe(200);
+      const json = await res.json() as any;
+      expect(json.data.updated).toBe(true);
+
+      const settings = await db.prepare(
+        'SELECT brand_logo_url FROM business_settings WHERE id = 1'
+      ).first() as any;
+
+      expect(settings.brand_logo_url).toBe('/images/custom-hsr-logo.png');
+    });
+  });
+
+  describe('Admin Vouchers Management & Vehicle Linkage API', () => {
+    beforeEach(async () => {
+      // Seed test vouchers
+      await db.prepare(`
+        INSERT INTO due_date_assistance_requests 
+          (id, vehicle_registration, display_reg_no, mobile, email, cylinder_info, voucher_code, voucher_discount_paise, status)
+        VALUES 
+          ('vch-001', 'HR26DK5555', 'HR26 DK 5555', '9812345678', 'customer1@test.com', '1 cylinder Maruti', 'HSR200-ABCD', 20000, 'PENDING_ASSISTANCE'),
+          ('vch-002', 'DL01AB1234', 'DL01 AB 1234', '9899001122', 'customer2@test.com', 'Commercial taxi', 'HSR200-EFGH', 20000, 'CONTACTED')
+      `).run();
+    });
+
+    it('rejects unauthenticated requests with HTTP 401', async () => {
+      const req = new Request('http://localhost:4321/api/admin/vouchers');
+      const res = await vouchersGet({
+        request: req,
+        locals: { runtime: { env: { DB: db } } },
+      } as any);
+
+      expect(res.status).toBe(401);
+    });
+
+    it('allows receptionist to list vouchers and returns computed stats', async () => {
+      const token = await jwks.createToken({ email: 'receptionist@hsr.test' });
+      const req = new Request('http://localhost:4321/api/admin/vouchers', {
+        headers: { 'cf-access-jwt-assertion': token },
+      });
+
+      const res = await vouchersGet({
+        request: req,
+        locals: {
+          runtime: {
+            env: {
+              DB: db,
+              ACCESS_TEAM_DOMAIN: 'hsr-auth.cloudflareaccess.com',
+              ACCESS_AUDIENCE: 'aud-hsr-testing-bay-prod-12345',
+            },
+          },
+        },
+      } as any);
+
+      expect(res.status).toBe(200);
+      const json = await res.json() as any;
+      expect(json.data.vouchers).toBeInstanceOf(Array);
+      expect(json.data.vouchers.length).toBeGreaterThanOrEqual(2);
+      expect(json.data.stats.total).toBeGreaterThanOrEqual(2);
+      expect(json.data.stats.pending).toBeGreaterThanOrEqual(1);
+      expect(json.data.stats.totalDiscountPaise).toBeGreaterThanOrEqual(40000);
+    });
+
+    it('filters vouchers by vehicle registration query', async () => {
+      const token = await jwks.createToken({ email: 'owner@hsr.test' });
+      const req = new Request('http://localhost:4321/api/admin/vouchers?q=HR26DK', {
+        headers: { 'cf-access-jwt-assertion': token },
+      });
+
+      const res = await vouchersGet({
+        request: req,
+        locals: {
+          runtime: {
+            env: {
+              DB: db,
+              ACCESS_TEAM_DOMAIN: 'hsr-auth.cloudflareaccess.com',
+              ACCESS_AUDIENCE: 'aud-hsr-testing-bay-prod-12345',
+            },
+          },
+        },
+      } as any);
+
+      expect(res.status).toBe(200);
+      const json = await res.json() as any;
+      expect(json.data.vouchers.length).toBe(1);
+      expect(json.data.vouchers[0].vehicle_registration).toBe('HR26DK5555');
+      expect(json.data.vouchers[0].voucher_code).toBe('HSR200-ABCD');
+    });
+
+    it('finds voucher by car registration with spaces or lowercase', async () => {
+      const token = await jwks.createToken({ email: 'owner@hsr.test' });
+      const req = new Request('http://localhost:4321/api/admin/vouchers?q=hr26dk5555', {
+        headers: { 'cf-access-jwt-assertion': token },
+      });
+
+      const res = await vouchersGet({
+        request: req,
+        locals: {
+          runtime: {
+            env: {
+              DB: db,
+              ACCESS_TEAM_DOMAIN: 'hsr-auth.cloudflareaccess.com',
+              ACCESS_AUDIENCE: 'aud-hsr-testing-bay-prod-12345',
+            },
+          },
+        },
+      } as any);
+
+      expect(res.status).toBe(200);
+      const json = await res.json() as any;
+      expect(json.data.vouchers.length).toBe(1);
+      expect(json.data.vouchers[0].vehicle_registration).toBe('HR26DK5555');
+    });
+
+    it('returns empty list when vehicle registration has no voucher', async () => {
+      const token = await jwks.createToken({ email: 'receptionist@hsr.test' });
+      const req = new Request('http://localhost:4321/api/admin/vouchers?q=UP16ZZ9999', {
+        headers: { 'cf-access-jwt-assertion': token },
+      });
+
+      const res = await vouchersGet({
+        request: req,
+        locals: {
+          runtime: {
+            env: {
+              DB: db,
+              ACCESS_TEAM_DOMAIN: 'hsr-auth.cloudflareaccess.com',
+              ACCESS_AUDIENCE: 'aud-hsr-testing-bay-prod-12345',
+            },
+          },
+        },
+      } as any);
+
+      expect(res.status).toBe(200);
+      const json = await res.json() as any;
+      expect(json.data.vouchers.length).toBe(0);
+    });
+
+    it('successfully updates voucher status to BOOKED', async () => {
+      const token = await jwks.createToken({ email: 'receptionist@hsr.test' });
+      const req = new Request('http://localhost:4321/api/admin/vouchers', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Origin: 'http://localhost:4321',
+          'cf-access-jwt-assertion': token,
+        },
+        body: JSON.stringify({
+          id: 'vch-001',
+          status: 'BOOKED',
+          notes: 'Customer arrived and ₹200 discount applied to bill',
+        }),
+      });
+
+      const res = await vouchersPatch({
+        request: req,
+        locals: {
+          runtime: {
+            env: {
+              DB: db,
+              ACCESS_TEAM_DOMAIN: 'hsr-auth.cloudflareaccess.com',
+              ACCESS_AUDIENCE: 'aud-hsr-testing-bay-prod-12345',
+            },
+          },
+        },
+      } as any);
+
+      expect(res.status).toBe(200);
+      const json = await res.json() as any;
+      expect(json.data.success).toBe(true);
+
+      // Verify in DB
+      const updated = await db.prepare(
+        'SELECT status, notes FROM due_date_assistance_requests WHERE id = ?'
+      ).bind('vch-001').first() as any;
+
+      expect(updated.status).toBe('BOOKED');
+      expect(updated.notes).toContain('discount applied');
     });
   });
 

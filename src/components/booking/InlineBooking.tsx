@@ -229,7 +229,11 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
   }, [categories, cylinderCount]);
 
   const discountPaise = useMemo(() => {
-    if (!appliedCoupon || !publicConfig || !selectedCategory) return 0;
+    if (!appliedCoupon || !selectedCategory) return 0;
+    if (appliedCoupon.toUpperCase().startsWith('HSR200-')) {
+      return Math.min(selectedCategory.totalPaise, 20000);
+    }
+    if (!publicConfig) return 0;
     if (appliedCoupon.toUpperCase() !== (publicConfig.promoCode || '').toUpperCase()) return 0;
     if (publicConfig.promoDiscountType === 'PERCENT') {
       return Math.round((selectedCategory.totalPaise * (publicConfig.promoDiscountValue || 0)) / 100);
@@ -247,7 +251,10 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
     setCouponMsg(null);
     const code = couponInput.trim().toUpperCase();
     if (!code) return;
-    if (publicConfig?.promoCode && code === publicConfig.promoCode.toUpperCase()) {
+    if (code.startsWith('HSR200-')) {
+      setAppliedCoupon(code);
+      setCouponMsg({ isError: false, text: hindi ? '₹200 लॉयल्टी वाउचर लागू!' : '₹200 Loyalty Voucher applied!' });
+    } else if (publicConfig?.promoCode && code === publicConfig.promoCode.toUpperCase()) {
       setAppliedCoupon(code);
       setCouponMsg({ isError: false, text: hindi ? 'कूपन कोड सफलतापूर्वक लागू!' : 'Promo coupon applied!' });
     } else {

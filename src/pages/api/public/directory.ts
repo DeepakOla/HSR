@@ -1,6 +1,5 @@
 import type { APIRoute } from 'astro';
 import { getDb } from '../../../lib/db';
-import { jsonResponse } from '../../../lib/utils';
 
 export const GET: APIRoute = async ({ request, locals }) => {
   const url = new URL(request.url);
@@ -22,7 +21,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
         corridor_slug: 'gurugram-rewari',
         corridor_name: 'Gurugram - Pataudi - Rewari Corridor',
         is_hsr_flagship: 1,
-        address: 'Bhiwadi Road, Near Express Toll, Rewari, Haryana',
+        address: 'Rewari Industrial Corridor (NH-48), Rewari, Haryana 123401',
         city: 'Rewari',
         phone: '+919910055355',
         rating: 4.9,
@@ -36,7 +35,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
         corridor_slug: 'gurugram-rewari',
         corridor_name: 'Gurugram - Pataudi - Rewari Corridor',
         is_hsr_flagship: 0,
-        address: 'Pataudi Bypass Road, Gurugram Border, Haryana',
+        address: 'Pataudi Highway Corridor, Gurugram District, Haryana',
         city: 'Pataudi',
         phone: '+919812000000',
         rating: 4.6,
@@ -50,7 +49,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
         corridor_slug: 'gurugram-rewari',
         corridor_name: 'Gurugram - Pataudi - Rewari Corridor',
         is_hsr_flagship: 0,
-        address: 'Sector 8, IMT Manesar, Gurugram, Haryana',
+        address: 'IMT Manesar Commercial Corridor (NH-48), Gurugram, Haryana',
         city: 'Manesar',
         phone: '+919811000000',
         rating: 4.7,

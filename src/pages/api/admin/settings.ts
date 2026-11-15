@@ -41,6 +41,7 @@ const editableSchema = z.object({
   show_social_media: z.number().int().min(0).max(1).optional(),
   voucher_amount_paise: z.number().int().min(0).max(10_000_000).optional(),
   voucher_enabled: z.number().int().min(0).max(1).optional(),
+  brand_logo_url: z.string().trim().max(500).optional(),
   seo_title_en: z.string().trim().min(3).max(160).optional(),
   seo_title_hi: z.string().trim().min(3).max(160).optional(),
   seo_desc_en: z.string().trim().min(10).max(320).optional(),

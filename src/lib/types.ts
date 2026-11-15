@@ -31,6 +31,7 @@ export interface BusinessSettings {
   show_social_media?: number;
   voucher_amount_paise?: number;
   voucher_enabled?: number;
+  brand_logo_url?: string;
   r2_enabled: number;
   evidence_budget_bytes: number;
   timezone: string;

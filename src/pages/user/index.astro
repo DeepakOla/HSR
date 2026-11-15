@@ -21,6 +21,7 @@ let overviewData: any = {
   upcomingAppointments: [],
   recentActivity: [],
 };
+let userVouchers: any[] = [];
 
 if (env?.DB && session) {
   try {
@@ -70,6 +71,25 @@ if (env?.DB && session) {
     )
       .bind(session.partyId, session.partyId)
       .all<any>();
+
+    // Query active assistance vouchers linked to this customer or their vehicles
+    const vchRows = await env.DB.prepare(`
+      SELECT id, vehicle_registration, display_reg_no, voucher_code, voucher_discount_paise, status
+      FROM due_date_assistance_requests
+      WHERE status IN ('PENDING_ASSISTANCE', 'CONTACTED')
+        AND (
+          vehicle_registration IN (
+            SELECT v.normalized_registration FROM vehicles v
+            JOIN party_vehicle_access pva ON pva.vehicle_id = v.id
+            WHERE pva.party_id = ?
+          )
+          OR mobile IN (SELECT phone FROM parties WHERE id = ?)
+          OR email IN (SELECT email FROM parties WHERE id = ?)
+        )
+      ORDER BY created_at DESC LIMIT 5
+    `).bind(session.partyId, session.partyId, session.partyId).all<any>();
+
+    userVouchers = vchRows?.results || [];
 
     overviewData.metrics = {
       registeredVehiclesCount: vCount?.count || 0,
@@ -287,6 +307,28 @@ if (env?.DB && session) {
   <div class="welcome-date">{todayFormatted}</div>
   <h1 class="welcome-title">Welcome, {firstName}</h1>
   <p class="welcome-subtitle">Stay ahead of your vehicle cylinder testing, all in one place.</p>
+
+  <!-- Active Loyalty Vouchers Connected to Vehicle -->
+  {userVouchers.length > 0 && (
+    <div style="margin-bottom: 2rem;">
+      {userVouchers.map((vch: any) => (
+        <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1.5px solid #86efac; border-radius: 14px; padding: 1.1rem 1.4rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+          <div>
+            <span style="background: #16a34a; color: #fff; font-size: 0.72rem; font-weight: 800; padding: 0.2rem 0.6rem; border-radius: 9999px; text-transform: uppercase;">Active ₹200 Voucher</span>
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: #14532d; margin: 0.35rem 0 0.15rem;">
+              ₹{Math.round((vch.voucher_discount_paise || 20000)/100)} Voucher Code: <span style="font-family: monospace; letter-spacing: 0.05em; background: #fff; padding: 0.15rem 0.6rem; border-radius: 6px; border: 1px solid #bbf7d0;">{vch.voucher_code}</span>
+            </h3>
+            <p style="font-size: 0.88rem; color: #166534; margin: 0;">
+              Connected Car Registration: <strong>{vch.display_reg_no || vch.vehicle_registration}</strong>
+            </p>
+          </div>
+          <a href="/user/book/" style="background: #15803d; color: #fff; text-decoration: none; font-weight: 700; font-size: 0.9rem; padding: 0.65rem 1.35rem; border-radius: 10px; display: inline-flex; align-items: center; gap: 0.35rem; box-shadow: 0 2px 6px rgba(21, 128, 61, 0.25);">
+            Book Testing Bay →
+          </a>
+        </div>
+      ))}
+    </div>
+  )}
 
   <!-- 3 Top Metric Cards (Sugam Reference) -->
   <div class="kpi-grid">

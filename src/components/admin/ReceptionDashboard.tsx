@@ -107,6 +107,7 @@ export default function ReceptionDashboard() {
   const [slotId, setSlotId] = useState('');
   const [source, setSource] = useState<'PHONE'|'WHATSAPP'|'WALKIN'>('PHONE');
   const [paymentCollected, setPaymentCollected] = useState(false);
+  const [matchedVoucher, setMatchedVoucher] = useState<{ code: string; status: string; discount: number } | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -193,9 +194,23 @@ export default function ReceptionDashboard() {
     const res = validateVehicleRegistration(registration, locale);
     if (!res.valid) {
       setRegError(res.error || (locale === 'hi' ? 'अमान्य वाहन पंजीकरण संख्या' : 'Invalid vehicle registration number'));
+      setMatchedVoucher(null);
     } else {
       setRegistration(res.normalized);
       setRegError('');
+      // Check if voucher exists for this registration
+      fetch(`/api/admin/vouchers?q=${encodeURIComponent(res.normalized)}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data: any) => {
+          const list = data?.data?.vouchers || data?.vouchers || [];
+          if (list.length > 0) {
+            const v = list[0];
+            setMatchedVoucher({ code: v.voucher_code, status: v.status, discount: v.voucher_discount_paise || 20000 });
+          } else {
+            setMatchedVoucher(null);
+          }
+        })
+        .catch(() => setMatchedVoucher(null));
     }
   };
 
@@ -274,6 +289,9 @@ export default function ReceptionDashboard() {
       <div className="admin-heading">
         <div><p className="admin-eyebrow">{t.eyebrow}</p><h1>{t.title}</h1><p className="admin-subtitle">{t.sub}</p></div>
         <div className="admin-actions">
+          <a href="/admin/vouchers/" className="admin-button secondary" style={{ textDecoration: 'none' }}>
+            🎟️ {locale === 'hi' ? 'वाउचर एवं सहायता' : 'Vouchers & Retests'}
+          </a>
           <a href="/admin/cylinder-register/" className="admin-button secondary" style={{ textDecoration: 'none' }}>
             🛢️ {locale === 'hi' ? 'सिलेंडर रजिस्टर' : 'Cylinder Register'}
           </a>
@@ -324,6 +342,12 @@ export default function ReceptionDashboard() {
                 <label className="admin-field">{t.registration}
                   <input className="admin-input" required minLength={4} value={registration} onChange={(e) => handleRegistrationChange(e.target.value)} onBlur={handleRegistrationBlur} />
                   {regError && <span style={{ color: '#dc2626', fontSize: '0.8rem', marginTop: '0.2rem' }}>{regError}</span>}
+                  {matchedVoucher && (
+                    <div style={{ marginTop: '0.35rem', padding: '0.45rem 0.75rem', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '8px', fontSize: '0.85rem', color: '#065f46', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>🎟️ <strong>₹{Math.round(matchedVoucher.discount / 100)} Voucher: {matchedVoucher.code}</strong> ({matchedVoucher.status})</span>
+                      <a href="/admin/vouchers/" target="_blank" rel="noopener noreferrer" style={{ color: '#059669', fontWeight: 700, textDecoration: 'none', fontSize: '0.8rem' }}>View ↗</a>
+                    </div>
+                  )}
                 </label>
                 <label className="admin-field">{t.cylinder}
                   <select className="admin-select" required value={cylinderCount} onChange={(e) => handleCylinderChange(e.target.value)}>

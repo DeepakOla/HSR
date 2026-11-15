@@ -9,7 +9,7 @@ export const GET: APIRoute = async ({ locals }) => {
   const address =
     settings.address_line && settings.address_line !== 'SETUP_REQUIRED'
       ? settings.address_line
-      : 'Bhiwadi Road, Near Express Toll Plaza, Rewari, Haryana 123401';
+      : 'Rewari Industrial Corridor (NH-48), Rewari, Haryana 123401';
 
   const mapUrl =
     settings.map_url && settings.map_url !== 'SETUP_REQUIRED'

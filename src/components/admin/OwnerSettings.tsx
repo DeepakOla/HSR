@@ -12,6 +12,7 @@ type Profile = {
   social_facebook?:string; social_instagram?:string; social_youtube?:string; social_twitter?:string; social_whatsapp?:string;
   show_social_media?:number;
   voucher_amount_paise?:number; voucher_enabled?:number;
+  brand_logo_url?:string;
   promo_code?:string; promo_discount_type?:'FLAT'|'PERCENT'; promo_discount_value?:number; promo_banner_text?:string; promo_banner_active?:number; promo_auto_apply?:number;
   seo_title_en:string; seo_title_hi:string; seo_desc_en:string; seo_desc_hi:string;
 };
@@ -523,6 +524,24 @@ export default function OwnerSettings(){
         <label className="admin-field">{t.email}<input className="admin-input" value={profile.contact_email} onChange={e=>setField('contact_email',e.target.value)}/></label>
         <label className="admin-field">{t.vpa}<input className="admin-input" value={profile.vpa_id} onChange={e=>setField('vpa_id',e.target.value)}/></label>
         <label className="admin-field">{t.payee}<input className="admin-input" value={profile.vpa_payee_name} onChange={e=>setField('vpa_payee_name',e.target.value)}/></label>
+        <label className="admin-field">
+          {locale === 'hi' ? 'ब्रांड लोगो URL (Brand Logo URL)' : 'Brand Logo URL'}
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            <input
+              className="admin-input"
+              style={{ flex: 1 }}
+              value={profile.brand_logo_url || '/images/hsr-gauge-logo.jpg'}
+              onChange={e => setField('brand_logo_url', e.target.value)}
+              placeholder="/images/hsr-gauge-logo.jpg or https://..."
+            />
+            <img
+              src={profile.brand_logo_url || '/images/hsr-gauge-logo.jpg'}
+              alt="Logo Preview"
+              style={{ width: '38px', height: '38px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #cbd5e1' }}
+              onError={(e) => { (e.target as HTMLImageElement).src = '/images/hsr-gauge-logo.jpg'; }}
+            />
+          </div>
+        </label>
         <label className="admin-field">{t.hold}<input className="admin-input" type="number" min="5" max="120" value={profile.hold_minutes} onChange={e=>setProfile(p=>p?({...p,hold_minutes:Number(e.target.value)}):p)}/></label>
         <label className="admin-field">
           {locale === 'hi' ? 'फ्लैट ऑनलाइन टोकन अग्रिम (₹)' : 'Online Flat Advance Amount (₹)'}

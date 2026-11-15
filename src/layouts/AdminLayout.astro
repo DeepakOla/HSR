@@ -7,7 +7,7 @@ import '../styles/admin.css';
 interface Props {
   title: string;
   owner?: boolean;
-  activeNav?: 'overview' | 'reception' | 'testing' | 'bays' | 'register' | 'records' | 'finance' | 'owner' | 'reminders' | 'seo';
+  activeNav?: 'overview' | 'reception' | 'testing' | 'bays' | 'register' | 'records' | 'finance' | 'owner' | 'reminders' | 'seo' | 'vouchers';
   breadcrumb?: string;
 }
 
@@ -19,12 +19,21 @@ const isOwner = staff?.role === 'OWNER' || owner;
 const staffRoleLabel = isOwner ? 'Owner Console' : 'Desk Officer';
 const userInitials = isOwner ? 'OW' : 'ST';
 
+let brandLogoUrl = '/images/hsr-gauge-logo.jpg';
+if (env?.DB) {
+  try {
+    const s = await env.DB.prepare('SELECT brand_logo_url FROM business_settings LIMIT 1').first<any>();
+    if (s?.brand_logo_url) brandLogoUrl = s.brand_logo_url;
+  } catch {}
+}
+
 const pathname = Astro.url.pathname;
 let currentNav = explicitActiveNav;
 if (!currentNav) {
   if (pathname.includes('/admin/reception')) currentNav = 'reception';
   else if (pathname.includes('/admin/owner')) currentNav = 'owner';
   else if (pathname.includes('/admin/seo')) currentNav = 'seo';
+  else if (pathname.includes('/admin/vouchers')) currentNav = 'vouchers';
   else if (pathname.includes('/admin/records')) currentNav = 'records';
   else if (pathname.includes('/admin/cylinder-register') || pathname.includes('/admin/register')) currentNav = 'register';
   else if (pathname.includes('/admin/bays-equipment')) currentNav = 'bays';
@@ -42,6 +51,7 @@ const derivedBreadcrumb = breadcrumb || (
   currentNav === 'bays' ? 'Bays & Rigs' :
   currentNav === 'register' ? 'Cylinder Register & PESO Lookup' :
   currentNav === 'records' ? 'Master Records' :
+  currentNav === 'vouchers' ? 'Customer Vouchers & Assistance' :
   currentNav === 'reminders' ? 'Retest Reminders' :
   currentNav === 'finance' ? 'Finance Ledger' :
   currentNav === 'owner' ? 'Owner Settings' : title
@@ -57,8 +67,6 @@ const derivedBreadcrumb = breadcrumb || (
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles/design-tokens.css" />
-    <link rel="stylesheet" href="/styles/admin.css" />
     <script is:inline>
       if (localStorage.getItem('hsr_theme') === 'dark' || (!('hsr_theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
         document.documentElement.classList.add('dark');
@@ -76,7 +84,7 @@ const derivedBreadcrumb = breadcrumb || (
       <!-- Brand & Facility Lockup -->
       <div class="sidebar-header">
         <a class="brand-lockup" href="/admin/">
-          <img src="/images/hsr-gauge-logo.jpg" alt="HSR Logo" class="sidebar-logo-img" />
+          <img src={brandLogoUrl} alt="HSR Logo" class="sidebar-logo-img" />
           <div class="brand-info">
             <span class="brand-title">HSR CNG Testing</span>
             <span class="brand-tag">⚡ Management Portal</span>
@@ -128,6 +136,10 @@ const derivedBreadcrumb = breadcrumb || (
         <a href="/admin/reminders/" class={`nav-item ${currentNav === 'reminders' ? 'active' : ''}`}>
           <span class="nav-icon">🔔</span>
           <span class="nav-label">Retest Reminders</span>
+        </a>
+        <a href="/admin/vouchers/" class={`nav-item ${currentNav === 'vouchers' ? 'active' : ''}`}>
+          <span class="nav-icon">🎟️</span>
+          <span class="nav-label">Vouchers & Assistance</span>
         </a>
 
         {isOwner && (
@@ -217,6 +229,11 @@ const derivedBreadcrumb = breadcrumb || (
           {currentNav !== 'register' && (
             <a href="/admin/cylinder-register/" class="quick-nav-btn secondary">
               <span>🛢️</span> Cylinder Register
+            </a>
+          )}
+          {currentNav !== 'vouchers' && (
+            <a href="/admin/vouchers/" class="quick-nav-btn secondary">
+              <span>🎟️</span> Vouchers
             </a>
           )}
 

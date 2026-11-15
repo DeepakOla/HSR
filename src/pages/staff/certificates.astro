@@ -179,8 +179,8 @@ if (env?.DB) {
       try {
         const { generateReceiptPdf, downloadReceiptPdf } = await import('/src/utils/generate-receipt-pdf.ts');
         const pdfBytes = await generateReceiptPdf({
-          businessName: 'HSR Green Energy',
-          address: 'Bhiwadi Road, Near Express Toll, Rewari, Haryana',
+          businessName: 'HSR CNG Testing',
+          address: 'Rewari Industrial Corridor (NH-48), Rewari, Haryana 123401',
           phone: '+919910055355',
           gstin: '06AAACH7409R1ZZ',
           invoiceNumber: `HSR-${Date.now().toString().slice(-6)}`,

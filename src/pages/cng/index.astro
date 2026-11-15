@@ -1,0 +1,712 @@
+---
+// File: src/pages/cng/index.astro
+// Comprehensive SEO Pillar Page: The Complete Guide to CNG Cylinder Hydrostatic Testing
+import { getCollection } from 'astro:content';
+import { getDb, getBusinessSettings } from '../../lib/db';
+import FloatingWhatsApp from '../../components/FloatingWhatsApp.astro';
+import '../../styles/design-tokens.css';
+
+const db = getDb(Astro);
+const settings = await getBusinessSettings(db);
+
+const businessName = settings.business_name_en || 'HSR Green Energy';
+const cityName = settings.city || 'Rewari';
+const contactPhone = settings.contact_phone || '+919910055355';
+const whatsappNumber = settings.whatsapp_number || '+919910055355';
+const brandLogo = settings.brand_logo_url || '/images/hsr-gauge-logo.jpg';
+const stationAddress = settings.address_line && settings.address_line !== 'SETUP_REQUIRED'
+  ? settings.address_line
+  : `${cityName} Industrial Corridor (NH-48), Haryana 123401`;
+
+const pageTitle = `CNG Cylinder Hydro Testing Guide India (PESO 3-Year Rule) | ${businessName}`;
+const pageDescription = "Comprehensive authority guide on CNG cylinder hydrostatic stretch testing in India. Gas Cylinders Rules 2016 Rule 35, 3-year testing mandate, PESO Form C certification, 300 bar procedure, and avoiding pump refilling refusals.";
+const canonicalUrl = "https://hsrgreenenergy.in/cng/";
+
+// Fetch related blog articles
+const allPosts = await getCollection('blog', ({ data }) => !data.draft && data.locale === 'en');
+allPosts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const articles = allPosts.slice(0, 3);
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Why is CNG cylinder hydrostatic testing mandatory every 3 years in India?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Under Rule 35 of the Gas Cylinders Rules (2016) and Bureau of Indian Standards IS 8451, all compressed natural gas (CNG) on-board vehicle cylinders must undergo high-pressure water-jacket hydrostatic stretch testing every 3 years to ensure structural integrity and prevent catastrophic rupture under 200 bar operating pressure."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can a CNG pump refuse to fill gas if my hydro test certificate has expired?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Indian law and Petroleum and Explosives Safety Organization (PESO) regulations strictly prohibit fuel stations from dispensing CNG to any vehicle without an active, verified compliance plate affixed near the filling nozzle or in the engine bay. Fuel pumps face immediate license suspension if they dispense to expired cylinders."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How long does the CNG cylinder hydrostatic test take at a certified plant?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "At a Class-A PESO approved facility like HSR, testing takes between 90 minutes to 2 hours when booked in an express bay. The vehicle cylinder is degassed, placed in a 300-bar water jacket, dried, stamped with a new brass compliance plate, and issued an instant digital PESO Form C certificate."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the cost of CNG cylinder testing in Haryana and NCR?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The statutory base rate is ₹2,500 per cylinder plus 18% GST (Total ₹2,950). Online reservations at HSR require only a flat ₹500 advance to lock an express bay, with the balance payable upon certificate delivery."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can a local mechanic or CNG retrofit workshop issue a hydro test certificate?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Only authorized testing stations possessing a valid PESO Class-A Hydro Testing License equipped with calibrated water-jacket stretch testing apparatus are legally recognized. Certificates issued by roadside mechanics or unauthorized garages are invalid and rejected by transport authorities and fuel pumps."
+      }
+    }
+  ]
+};
+
+const articleSchema = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": pageTitle,
+  "description": pageDescription,
+  "image": brandLogo,
+  "author": {
+    "@type": "Organization",
+    "name": businessName
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": businessName,
+    "logo": {
+      "@type": "ImageObject",
+      "url": brandLogo
+    }
+  },
+  "datePublished": "2026-01-15T08:00:00Z",
+  "dateModified": new Date().toISOString()
+};
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{pageTitle}</title>
+  <meta name="description" content={pageDescription} />
+  <link rel="canonical" href={canonicalUrl} />
+  <link rel="icon" type="image/jpeg" href={brandLogo} />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content={pageTitle} />
+  <meta property="og:description" content={pageDescription} />
+  <meta property="og:url" content={canonicalUrl} />
+  <meta property="og:type" content="article" />
+  <meta property="og:image" content={brandLogo} />
+
+  <!-- High-Performance Web Fonts (Inter & Plus Jakarta Sans with display=swap) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+
+  <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+  <script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />
+
+  <style>
+    :root {
+      --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --primary: #ea580c;
+      --primary-dark: #c2410c;
+      --navy: #0a1128;
+      --navy-dark: #050b18;
+      --steel: #0284c7;
+      --slate-bg: #f8fafc;
+      --border-color: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: var(--font-body); background: var(--slate-bg); color: #0f172a; line-height: 1.6; }
+
+    /* Sticky Navigation Header */
+    .pillar-header {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.75rem 1.25rem;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+    .header-inner {
+      max-width: 1140px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+      color: var(--navy);
+      font-family: var(--font-heading);
+      font-weight: 800;
+      font-size: 1.15rem;
+    }
+    .header-nav { display: flex; gap: 1rem; align-items: center; }
+    .header-nav a { font-size: 0.85rem; font-weight: 600; color: #475569; text-decoration: none; }
+    .header-nav a:hover { color: var(--primary); }
+    .btn-header-cta {
+      background: var(--primary);
+      color: #fff !important;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-weight: 700 !important;
+      box-shadow: 0 2px 4px rgba(234, 88, 12, 0.3);
+    }
+
+    /* Hero Section */
+    .pillar-hero {
+      background: linear-gradient(135deg, #0a1128 0%, #1e293b 100%);
+      color: #ffffff;
+      padding: 4.5rem 1.25rem 3.5rem;
+      text-align: center;
+    }
+    .hero-container { max-width: 880px; margin: 0 auto; }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(234, 88, 12, 0.2);
+      border: 1px solid rgba(234, 88, 12, 0.45);
+      color: #fb923c;
+      font-size: 0.78rem;
+      font-weight: 800;
+      padding: 0.35rem 0.95rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1.25rem;
+    }
+    .hero-title {
+      font-family: var(--font-heading);
+      font-size: clamp(2rem, 4.5vw, 3rem);
+      font-weight: 800;
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.25rem;
+    }
+    .hero-subtitle {
+      font-size: 1.15rem;
+      color: #cbd5e1;
+      max-width: 760px;
+      margin: 0 auto 2rem;
+      line-height: 1.6;
+    }
+    .hero-cta-group {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-primary-cta {
+      background: var(--primary);
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 1rem;
+      padding: 0.9rem 1.8rem;
+      border-radius: 12px;
+      text-decoration: none;
+      box-shadow: 0 4px 14px rgba(234, 88, 12, 0.4);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn-secondary-cta {
+      background: #0284c7;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 0.9rem 1.8rem;
+      border-radius: 12px;
+      text-decoration: none;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Content Layout */
+    .pillar-layout {
+      max-width: 1080px;
+      margin: 3rem auto;
+      padding: 0 1.25rem;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2.5rem;
+    }
+    .content-article {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    }
+    .content-article h2 {
+      font-family: var(--font-heading);
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--navy);
+      margin-top: 2.25rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #f1f5f9;
+    }
+    .content-article h2:first-of-type { margin-top: 0; }
+    .content-article h3 {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 1.5rem 0 0.75rem;
+    }
+    .content-article p {
+      font-size: 1.05rem;
+      color: #334155;
+      margin-bottom: 1.2rem;
+      line-height: 1.75;
+    }
+    .highlight-card {
+      background: #f0fdf4;
+      border-left: 4px solid #16a34a;
+      padding: 1.25rem 1.5rem;
+      border-radius: 0 12px 12px 0;
+      margin: 1.75rem 0;
+    }
+    .highlight-card strong {
+      display: block;
+      color: #15803d;
+      font-size: 1.05rem;
+      margin-bottom: 0.35rem;
+    }
+    .procedure-step-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+      margin: 1.75rem 0;
+    }
+    .step-card {
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+    .step-num {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #0a1128;
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 800;
+      text-align: center;
+      line-height: 28px;
+      margin-bottom: 0.75rem;
+    }
+    .step-card h4 {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 0.5rem;
+    }
+    .step-card p {
+      font-size: 0.9rem;
+      color: #64748b;
+      margin-bottom: 0;
+      line-height: 1.5;
+    }
+
+    /* FAQ Accordion */
+    .faq-list { margin-top: 1.5rem; }
+    .faq-item {
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      background: #fff;
+      overflow: hidden;
+    }
+    .faq-summary {
+      padding: 1.15rem 1.25rem;
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--navy);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .faq-content {
+      padding: 0 1.25rem 1.25rem;
+      font-size: 0.95rem;
+      color: #475569;
+      line-height: 1.65;
+    }
+
+    /* Articles Row */
+    .articles-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+    .article-pill-card {
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 1.25rem;
+      text-decoration: none;
+      color: inherit;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .article-pill-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+    }
+    .article-pill-title {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #0a1128;
+      margin-bottom: 0.5rem;
+    }
+    .article-pill-desc {
+      font-size: 0.85rem;
+      color: #64748b;
+      line-height: 1.5;
+      margin-bottom: 1rem;
+    }
+    .article-pill-link {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    /* Footer */
+    .pillar-footer {
+      background: #ffffff;
+      border-top: 1px solid var(--border-color);
+      padding: 3rem 1.25rem;
+      text-align: center;
+      margin-top: 4rem;
+    }
+    .footer-social-bar {
+      display: flex;
+      gap: 0.85rem;
+      justify-content: center;
+      margin: 1.25rem 0;
+      flex-wrap: wrap;
+    }
+    .social-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      color: #fff;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Sticky Bar -->
+  <header class="pillar-header">
+    <div class="header-inner">
+      <a href="/cng/" class="brand-link">
+        <img src={brandLogo} alt={`${businessName} Logo`} style="width: 28px; height: 28px; border-radius: 6px; object-fit: cover;" />
+        <span>⚡ {businessName}</span>
+      </a>
+      <nav class="header-nav">
+        <a href="#rules">Regulations</a>
+        <a href="#procedure">Testing Procedure</a>
+        <a href="#pump-refusal">Pump Rules</a>
+        <a href="#faqs">FAQs</a>
+        <a href="/cng/cylinder-test/" class="btn-header-cta">Book Testing Bay (₹500 Advance) →</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="pillar-hero">
+    <div class="hero-container">
+      <span class="hero-badge">Statutory Educational Resource • Gas Cylinders Rules (2016)</span>
+      
+      <h1 class="hero-title">
+        The Complete Guide to CNG Cylinder Hydro Testing in India
+      </h1>
+
+      <p class="hero-subtitle">
+        Everything vehicle owners, fleet managers, and commercial operators must know about the mandatory 3-year hydrostatic stretch testing cycle, PESO Form C certification, and avoiding fuel station refusal.
+      </p>
+
+      <div class="hero-cta-group">
+        <a href="/cng/cylinder-test/" class="btn-primary-cta">
+          <span>⚡</span> Book Cylinder Test Bay (₹500 Advance) →
+        </a>
+        <a href="/cng/cylinder-test/?action=check-due-date" class="btn-secondary-cta">
+          <span>📅</span> Check Retest Due Date & Claim ₹200 Voucher
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Pillar Content -->
+  <main class="pillar-layout">
+    <article class="content-article">
+      
+      <div class="highlight-card">
+        <strong>⚖️ Executive Regulatory Summary</strong>
+        Under <strong>Rule 35 of the Gas Cylinders Rules (2016)</strong> and Indian Standard <strong>IS 8451</strong>, every CNG vehicle cylinder must undergo high-pressure water-jacket hydrostatic testing every <strong>3 years</strong>. Without an active compliance plate stamped by a PESO-certified testing facility, CNG pumps will reject refueling.
+      </div>
+
+      <h2 id="rules">1. Why CNG Cylinder Hydro Testing is Mandatory Every 3 Years</h2>
+      <p>
+        Compressed Natural Gas (CNG) is stored in automobile cylinders under extreme pressures between <strong>200 to 250 Bar (2,900 to 3,600 PSI)</strong>. Unlike liquid petroleum or diesel tanks which operate at atmospheric pressure, a CNG cylinder is a certified pressure vessel subjected to continuous stress cycles.
+      </p>
+      <p>
+        Every time a vehicle refuels at a CNG station, the cylinder walls expand slightly under high pressure and contract as fuel is consumed during driving. Over 3 years of daily driving on Indian roads, road vibrations, thermal fluctuations, and pressure cycling can induce microscopic fatigue, valve seat degradation, or internal moisture-induced corrosion.
+      </p>
+      <p>
+        The 3-year statutory retest is a life-safety mandate supervised by the <strong>Petroleum and Explosives Safety Organization (PESO)</strong>, Ministry of Commerce and Industry. Its purpose is to guarantee that the vessel has not exceeded its allowable elastic deformation and can safely withstand pressure spikes during fast-fill dispensing.
+      </p>
+
+      <h2 id="procedure">2. What Happens During the 300 Bar Water-Jacket Hydro Test</h2>
+      <p>
+        Hydrostatic stretch testing is performed using a high-precision calibrated water-jacket apparatus. The cylinder is submerged in water, sealed inside an armored jacket, and pressurized to <strong>300 Bar (1.5 times its working operating pressure)</strong>.
+      </p>
+
+      <div class="procedure-step-grid">
+        <div class="step-card">
+          <span class="step-num">1</span>
+          <h4>Degassing & Depressurization</h4>
+          <p>Residual natural gas is safely purged into a flare chimney or recovery system to ensure zero explosive vapor remains.</p>
+        </div>
+        <div class="step-card">
+          <span class="step-num">2</span>
+          <h4>Endoscopic Internal Inspection</h4>
+          <p>An illuminated high-definition borescope is inserted into the cylinder neck to inspect the inner lining for pitting, rust, or oil contamination.</p>
+        </div>
+        <div class="step-card">
+          <span class="step-num">3</span>
+          <h4>300 Bar Water Jacket Test</h4>
+          <p>The cylinder is filled with water, placed into the water jacket test rig, and pressurized to 300 Bar. Displaced jacket water is measured in a calibrated burette.</p>
+        </div>
+        <div class="step-card">
+          <span class="step-num">4</span>
+          <h4>Permanent Expansion Measurement</h4>
+          <p>Upon pressure release, residual volumetric expansion is measured. By law, permanent expansion must not exceed 10% of total expansion.</p>
+        </div>
+        <div class="step-card">
+          <span class="step-num">5</span>
+          <h4>Ultrasonic Wall Thickness Check</h4>
+          <p>Multi-point ultrasonic thickness gauges measure cylinder wall thickness to ensure compliance with original manufacturer tolerances.</p>
+        </div>
+        <div class="step-card">
+          <span class="step-num">6</span>
+          <h4>Hot Air Drying & Valve Torquing</h4>
+          <p>The interior is dried using heated dry air. The cylinder valve is overhauled, fitted with new O-rings, and torqued to specified foot-pounds.</p>
+        </div>
+        <div class="step-card">
+          <span class="step-num">7</span>
+          <h4>Brass Compliance Plate Stamping</h4>
+          <p>A tamper-evident compliance plate is engraved with testing plant identification, test pressure, retest date, and next expiry date.</p>
+        </div>
+        <div class="step-card">
+          <span class="step-num">8</span>
+          <h4>PESO Form C Certificate Generation</h4>
+          <p>An official digital PESO Form C test certificate is generated and issued, linking the vehicle chassis number and cylinder serial number.</p>
+        </div>
+      </div>
+
+      <h2 id="pump-refusal">3. Why CNG Fuel Pumps Refuse Uncertified Vehicles</h2>
+      <p>
+        City Gas Distribution (CGD) companies such as Indraprastha Gas Limited (IGL), Haryana City Gas, Adani Total Gas, and Torrent Gas operate under strict safety guidelines. Pump attendants are legally mandated to inspect the brass compliance plate affixed near your vehicle's fueling inlet or under the bonnet before inserting the nozzle.
+      </p>
+      <p>
+        If the compliance plate is missing, unreadable, or past its 3-year validity date:
+      </p>
+      <ul style="margin: 0 0 1.5rem 1.5rem; color: #475569; font-size: 1rem; line-height: 1.7;">
+        <li><strong>Automated Refueling Shutoff:</strong> The station nozzle will not be connected.</li>
+        <li><strong>No Counter Override:</strong> Attendants face criminal penalties and stations face license forfeiture if an uncertified vessel experiences rupture on pump premises.</li>
+        <li><strong>Traffic Police Challans:</strong> Driving a CNG vehicle with an expired compliance plate violates the Motor Vehicles Act, carrying fines up to ₹10,000 and vehicle impoundment.</li>
+      </ul>
+
+      <h2>4. Transparent Pricing: Zero Retail Markups</h2>
+      <p>
+        Local roadside garages frequently act as middlemen, taking customer cars to distant testing facilities and adding substantial surcharges. Testing directly at an authorized Class-A PESO station guarantees transparent government-aligned pricing:
+      </p>
+      <ul style="margin: 0 0 1.5rem 1.5rem; color: #475569; font-size: 1rem; line-height: 1.7;">
+        <li><strong>Single Cylinder (Private Car / Taxi):</strong> ₹2,500 base + 18% GST = ₹2,950 total.</li>
+        <li><strong>Dual Cylinders (Commercial Vans / Tempo):</strong> ₹5,000 base + 18% GST = ₹5,900 total.</li>
+        <li><strong>Four Cylinders (Heavy Commercial Trucks):</strong> ₹10,000 base + 18% GST = ₹11,800 total.</li>
+        <li><strong>Online Advance:</strong> Flat ₹500 advance locks your designated bay, with remainder payable on delivery.</li>
+      </ul>
+
+      <div style="text-align: center; margin: 2.5rem 0; padding: 2rem; background: #f0f9ff; border: 1.5px solid #bae6fd; border-radius: 16px;">
+        <h3 style="margin-top: 0; color: #0369a1;">Need to Book Your 3-Year CNG Cylinder Hydro Test?</h3>
+        <p style="color: #0c4a6e; font-size: 0.95rem; margin-bottom: 1.5rem;">
+          Lock your preferred 20-minute arrival slot at our Rewari Class-A testing plant with express 2-hour turnaround.
+        </p>
+        <a href="/cng/cylinder-test/" class="btn-primary-cta" style="margin-right: 0.5rem;">
+          Book Testing Bay (₹500 Flat Advance) →
+        </a>
+      </div>
+
+      <h2 id="faqs">5. Frequently Asked Questions (FAQs)</h2>
+      <div class="faq-list">
+        <details class="faq-item" open>
+          <summary class="faq-summary">
+            <span>How often must a vehicle CNG cylinder be tested in India?</span>
+            <span>▾</span>
+          </summary>
+          <div class="faq-content">
+            Under Rule 35 of the Gas Cylinders Rules (2016), on-board motor vehicle CNG cylinders must undergo hydrostatic stretch testing every 3 years from the date of initial manufacture or previous test.
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-summary">
+            <span>What happens if my cylinder fails the hydrostatic test?</span>
+            <span>▾</span>
+          </summary>
+          <div class="faq-content">
+            If permanent volumetric expansion exceeds 10% or structural flaws are detected, the cylinder is condemned by the testing plant in accordance with PESO guidelines to ensure public safety. You will not be charged balance fees, and guidance on certified cylinder replacement is provided.
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-summary">
+            <span>What documents are required for testing?</span>
+            <span>▾</span>
+          </summary>
+          <div class="faq-content">
+            Please bring a copy of your vehicle Registration Certificate (RC) and your previous hydro test certificate (if available). The chassis number and cylinder serial numbers are verified against your RC during check-in.
+          </div>
+        </details>
+
+        <details class="faq-item">
+          <summary class="faq-summary">
+            <span>Can I wait at the facility during testing?</span>
+            <span>▾</span>
+          </summary>
+          <div class="faq-content">
+            Yes. Our facility features a clean, air-conditioned customer lounge with live telemetry displays showing your cylinder's 300-bar test readings in real time. Express turnaround is 90 to 120 minutes.
+          </div>
+        </details>
+      </div>
+
+      {articles.length > 0 && (
+        <div style="margin-top: 3rem;">
+          <h2>6. In-Depth Technical Articles & Safety Advisories</h2>
+          <div class="articles-row">
+            {articles.map((art) => {
+              const cleanSlug = art.id.replace(/^en\//, '').replace(/\.(md|mdx)$/, '');
+              return (
+                <a href={`/en/blog/${cleanSlug}/`} class="article-pill-card">
+                  <div>
+                    <h4 class="article-pill-title">{art.data.title}</h4>
+                    <p class="article-pill-desc">{art.data.description}</p>
+                  </div>
+                  <span class="article-pill-link">Read Full Guide →</span>
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+    </article>
+  </main>
+
+  <!-- Redesigned Clean Industrial Footer -->
+  <footer class="pillar-footer">
+    <div style="max-width: 960px; margin: 0 auto;">
+      <div style="display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 0.6rem;">
+        <img src={brandLogo} alt={`${businessName} Logo`} style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover;" />
+        <strong style="font-family: var(--font-heading); font-size: 1.35rem; color: var(--navy); display: inline-block;">
+          ⚡ {businessName}
+        </strong>
+      </div>
+      <p style="font-size: 0.9rem; color: #475569; margin-bottom: 1.25rem; font-weight: 500;">
+        Certified Class-A PESO CNG Cylinder Hydrostatic Testing Plant • {stationAddress}
+      </p>
+
+      {settings.show_social_media !== 0 && (
+        <div class="footer-social-bar" role="navigation" aria-label="Social Media Channels">
+          {settings.social_facebook && (
+            <a href={settings.social_facebook} target="_blank" rel="noopener noreferrer" class="social-btn" style="background: #1877f2;" aria-label="Follow HSR on Facebook" title="Facebook">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            </a>
+          )}
+          {settings.social_instagram && (
+            <a href={settings.social_instagram} target="_blank" rel="noopener noreferrer" class="social-btn" style="background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);" aria-label="Follow HSR on Instagram" title="Instagram">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            </a>
+          )}
+          {settings.social_youtube && (
+            <a href={settings.social_youtube} target="_blank" rel="noopener noreferrer" class="social-btn" style="background: #ff0000;" aria-label="Watch HSR on YouTube" title="YouTube">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            </a>
+          )}
+          {settings.social_twitter && (
+            <a href={settings.social_twitter} target="_blank" rel="noopener noreferrer" class="social-btn" style="background: #000000;" aria-label="Follow HSR on X (Twitter)" title="X / Twitter">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </a>
+          )}
+          {whatsappNumber && (
+            <a href={`https://wa.me/${whatsappNumber.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" class="social-btn" style="background: #25d366;" aria-label="Contact HSR on WhatsApp" title="WhatsApp Support">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.031 0C5.397 0 0 5.397 0 12.031c0 2.12.553 4.19 1.605 6.012L.062 24l6.155-1.614a11.97 11.97 0 0 0 5.814 1.488h.005c6.634 0 12.031-5.397 12.031-12.031 0-3.214-1.251-6.236-3.524-8.509A11.954 11.954 0 0 0 12.031 0zm0 22.029h-.004a9.98 9.98 0 0 1-5.088-1.39l-.365-.216-3.778.99.1-3.682-.238-.378a9.986 9.986 0 0 1-1.534-5.322c0-5.525 4.496-10.021 10.026-10.021a9.96 9.96 0 0 1 7.086 2.935 9.96 9.96 0 0 1 2.934 7.085c0 5.526-4.496 10.022-10.025 10.022zm5.494-7.502c-.301-.151-1.782-.88-2.058-.98-.276-.101-.476-.151-.676.151-.2.301-.777.98-.952 1.18-.176.2-.351.226-.652.075-.301-.151-1.272-.469-2.423-1.496-.896-.799-1.5-1.786-1.676-2.087-.175-.301-.019-.464.132-.614.136-.135.301-.351.452-.527.15-.175.2-.301.3-.502.101-.2.05-.376-.025-.526-.075-.151-.677-1.631-.928-2.233-.244-.587-.492-.507-.676-.517-.175-.009-.376-.011-.576-.011s-.527.075-.803.376c-.276.301-1.053 1.029-1.053 2.508 0 1.48 1.078 2.909 1.229 3.11.15.201 2.122 3.24 5.141 4.544.718.31 1.279.496 1.716.635.722.23 1.378.197 1.9.119.58-.087 1.782-.728 2.032-1.431.251-.703.251-1.305.176-1.431-.075-.126-.276-.201-.577-.352z"/></svg>
+            </a>
+          )}
+        </div>
+      )}
+
+      <p style="font-size: 0.8rem; color: #64748b; margin-top: 1rem; line-height: 1.5;">
+        © 2026 {businessName}. All rights reserved. Gas Cylinders Rules (2016) Rule 35 & IS 8451 certified.
+      </p>
+      <p style="font-size: 0.8rem; margin-top: 0.6rem;">
+        <a href="/en/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Home</a> •
+        <a href="/cng/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">CNG Pillar Guide</a> •
+        <a href="/cng/cylinder-test/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Testing Plant</a> •
+        <a href="/website-guide/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">System Architecture</a> •
+        <a href="/user/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Customer Workspace</a> •
+        <a href="/admin/login/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Staff / Admin Login</a>
+      </p>
+    </div>
+  </footer>
+
+  <FloatingWhatsApp
+    whatsappNumber={whatsappNumber}
+    contactPhone={contactPhone}
+    businessName={businessName}
+    showFloating={settings.show_floating_whatsapp ?? 1}
+  />
+</body>
+</html>
