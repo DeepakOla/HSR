@@ -352,7 +352,27 @@ export default function OwnerSettings(){
     page_key: selectedPage,
     locale: contentLang,
     title: labels[contentLang].pages[selectedPage as keyof typeof labels['en']['pages']] ?? selectedPage,
-    body: 'SETUP_REQUIRED',
+    body: JSON.stringify({
+      summary: contentLang === 'en'
+        ? `Official ${selectedPage.toUpperCase()} details for HSR Green Energy Rewari.`
+        : `एचएसआर ग्रीन एनर्जी रेवाड़ी के लिए आधिकारिक ${selectedPage} विवरण।`,
+      sections: [
+        {
+          heading: contentLang === 'en' ? 'Statutory Standards' : 'वैधानिक मानक',
+          subheading: contentLang === 'en' ? 'Rule 35 Hydro Testing Compliance' : 'नियम 35 हाइड्रो टेस्टिंग अनुपालन',
+          paragraphs: [
+            contentLang === 'en'
+              ? 'Our facility conducts high-precision 300-bar hydrostatic testing, digital endoscopic examination, and instant brass compliance plate riveting in Rewari.'
+              : 'हमारा स्टेशन रेवाड़ी में 300-बार हाइड्रोस्टेटिक टेस्टिंग, डिजिटल एंडोस्कोपिक जांच और तत्काल पीतल अनुपालन प्लेट फिटिंग प्रदान करता है।'
+          ],
+          bullets: [
+            contentLang === 'en' ? 'PESO certified test facility' : 'पीईएसओ प्रमाणित टेस्टिंग लैब',
+            contentLang === 'en' ? 'Fast 2-hour express turnaround' : '2 घंटे में एक्सप्रेस सर्विस',
+            contentLang === 'en' ? 'Digital WhatsApp certificate on spot' : 'व्हाट्सएप पर तुरंत डिजिटल प्रमाणपत्र'
+          ]
+        }
+      ]
+    }, null, 2),
   };
 
   const updateCurrentContent = (patch: Partial<ContentRecord>) => {
@@ -422,7 +442,14 @@ export default function OwnerSettings(){
   const renderPreview = () => {
     const raw = currentContentItem.body.trim();
     if (raw === 'SETUP_REQUIRED' || !raw) {
-      return <p style={{ fontStyle: 'italic', color: '#6b7280' }}>Page is in SETUP_REQUIRED state.</p>;
+      return (
+        <div style={{ padding: '1rem', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '8px', textAlign: 'center' }}>
+          <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '0.5rem' }}>No custom content published for this page yet.</p>
+          <button type="button" onClick={insertTemplate} className="admin-button secondary" style={{ fontSize: '0.8rem', padding: '0.35rem 0.75rem' }}>
+            Insert Verified Safety Template
+          </button>
+        </div>
+      );
     }
     if (raw.startsWith('{') && raw.endsWith('}')) {
       try {

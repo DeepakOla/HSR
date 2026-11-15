@@ -139,14 +139,30 @@ export default function RegisterConsole() {
     <div className="admin-app">
       <div className="admin-heading">
         <div>
-          <p className="admin-eyebrow">OPERATIONS / CYLINDER HISTORY</p>
-          <h1>Cylinder retest register</h1>
-          <p className="admin-subtitle">Record a cylinder only after the linked booking is marked completed.</p>
+          <p className="admin-eyebrow">STATUTORY PESO FORM C • RULE 35 COMPLIANCE</p>
+          <h1>Cylinder Retest Register</h1>
+          <p className="admin-subtitle">
+            Daily operational logbook for hydrostatic stretch testing, water capacity, tare weight, and certificate stamping.
+          </p>
         </div>
-        <label className="admin-inline">
-          <span className="admin-note">Completed service date</span>
-          <input className="admin-control" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
-        </label>
+        <div className="admin-actions">
+          <a href="/admin/records/" className="admin-button secondary" style={{ textDecoration: 'none' }}>
+            📁 Master Station Records
+          </a>
+          <label className="admin-inline">
+            <span className="admin-note">Completed service date</span>
+            <input className="admin-control" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
+          </label>
+        </div>
+      </div>
+
+      <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '10px', padding: '0.85rem 1.15rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', fontSize: '0.85rem', color: '#0369a1' }}>
+        <div>
+          <strong>📌 Note on Statutory Register:</strong> This console records individual cylinder serials and 300-bar hydrostatic stretch readings for completed vehicles. To view all customers, vehicle histories, or download past Form C certificates, switch to Master Station Records.
+        </div>
+        <a href="/admin/records/" style={{ color: '#0284c7', fontWeight: 700, whiteSpace: 'nowrap', textDecoration: 'underline' }}>
+          Open Master Records →
+        </a>
       </div>
 
       {error && <div className="admin-alert error" role="alert">{error}</div>}

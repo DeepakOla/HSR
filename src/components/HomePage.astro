@@ -3,6 +3,7 @@ import type { Locale } from '../lib/constants';
 import type { BusinessSettings } from '../lib/types';
 import DueDateChecker from './home/DueDateChecker';
 import ComplianceModal from './ComplianceModal.astro';
+import InlineBooking from './booking/InlineBooking';
 
 interface Props {
   locale: Locale;
@@ -57,7 +58,7 @@ const subHeading = locale === 'en'
       </div>
 
       <div class="hero-actions">
-        <a class="btn btn-primary hero-btn-main" href={`/${locale}/book/`}>
+        <a class="btn btn-primary hero-btn-main" href="#booking-form">
           ⚡ {locale === 'en' ? 'Book Hydrotesting Now' : 'अभी हाइड्रो टेस्टिंग बुक करें'} →
         </a>
         <button type="button" class="btn btn-secondary hero-btn-notice" id="open-compliance-notice-btn">
@@ -146,6 +147,24 @@ const subHeading = locale === 'en'
         <p>{locale === 'en' ? 'Stamp test date, fix official brass plate near filler valve, and issue test certificate.' : 'टेस्ट तारीख की मोहर, फिलर वाल्व के पास पीतल की प्लेट लगाना और डिजिटल सर्टिफिकेट जारी करना।'}</p>
       </article>
     </div>
+  </div>
+</section>
+
+<!-- SECTION 4: INLINE BOOKING WIZARD -->
+<section class="section booking-section" id="booking-form" style="background: #ffffff; padding: 3.5rem 0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
+  <div class="container">
+    <div class="section-title-wrap" style="text-align: center; max-width: 720px; margin: 0 auto 2.5rem;">
+      <span class="trust-badge trust-badge-amber">⚡ {locale === 'en' ? 'Direct Bay Reservation' : 'सीधी बे बुकिंग'}</span>
+      <h2 class="section-heading" style="font-size: clamp(1.85rem, 3.5vw, 2.3rem); margin: 0.5rem 0 0.5rem;">
+        {locale === 'en' ? 'Book Cylinder Hydro Testing Appointment' : 'सिलेंडर हाइड्रो टेस्टिंग अपॉइंटमेंट बुक करें'}
+      </h2>
+      <p class="section-subtext" style="color: #64748b; font-size: 1rem; margin: 0;">
+        {locale === 'en'
+          ? `Lock your 20-minute bay slot in ${cityName}, Haryana. Official stamped brass plate & WhatsApp certificate in 2 to 3 hours.`
+          : `${cityName}, हरियाणा में अपना स्लॉट बुक करें। 2 से 3 घंटे में पीतल की प्लेट और व्हाट्सएप सर्टिफिकेट।`}
+      </p>
+    </div>
+    <InlineBooking client:load locale={locale} stationPhone={phoneReady ? settings.contact_phone : '+919910055355'} stationCity={cityName} />
   </div>
 </section>
 

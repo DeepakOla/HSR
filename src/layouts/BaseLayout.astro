@@ -28,14 +28,14 @@ const isHome = currentPath === `/${locale}/` || currentPath === `/${locale}`;
 const getAnchor = (id: string) => isHome ? `#${id}` : `/${locale}/#${id}`;
 
 const effectiveSettings = settings ?? ({
-  business_name_en: businessName || 'HSR',
-  business_name_hi: businessName || 'HSR',
+  business_name_en: businessName || 'HSR Green Energy',
+  business_name_hi: businessName || 'एचएसआर ग्रीन एनर्जी',
   city: 'Rewari',
-  address_line: 'SETUP_REQUIRED',
+  address_line: 'Delhi-Jaipur Expressway (NH-48), Near Express Toll Plaza, Rewari Corridor, Haryana 123401',
   contact_phone: '+919910055355',
   whatsapp_number: '+919910055355',
-  contact_email: 'SETUP_REQUIRED',
-  map_url: 'SETUP_REQUIRED',
+  contact_email: 'contact@hsrgreenenergy.com',
+  map_url: 'https://maps.google.com/?q=Rewari+Haryana+CNG+Hydro+Testing',
   seo_title_en: title,
   seo_title_hi: title,
   seo_desc_en: description,
@@ -68,7 +68,7 @@ const customPromoBanner = (effectiveSettings.promo_banner_active !== 0 && effect
     <!-- Google Fonts for Plus Jakarta Sans & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />

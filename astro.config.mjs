@@ -21,5 +21,7 @@ export default defineConfig({
     '/hsr/cng/cylinder-test': '/cng/cylinder-test/',
     '/HSR/CNG/Cylinder-Test': '/cng/cylinder-test/',
     '/admin/login': '/login/?role=staff',
+    '/customer': '/app/',
+    '/portal': '/login/',
   },
 });
