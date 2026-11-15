@@ -477,7 +477,7 @@ export interface VerifyCustomerChallengeResponse {
     partyId: string;
     fullName: string;
     phoneE164: string;
-    redirectUrl: string;              // '/app'
+    redirectUrl: string;              // '/user'
   };
 }
 

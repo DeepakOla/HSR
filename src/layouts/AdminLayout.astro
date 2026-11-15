@@ -7,7 +7,7 @@ import '../styles/admin.css';
 interface Props {
   title: string;
   owner?: boolean;
-  activeNav?: 'overview' | 'reception' | 'testing' | 'bays' | 'register' | 'records' | 'finance' | 'owner' | 'reminders';
+  activeNav?: 'overview' | 'reception' | 'testing' | 'bays' | 'register' | 'records' | 'finance' | 'owner' | 'reminders' | 'seo';
   breadcrumb?: string;
 }
 
@@ -24,6 +24,7 @@ let currentNav = explicitActiveNav;
 if (!currentNav) {
   if (pathname.includes('/admin/reception')) currentNav = 'reception';
   else if (pathname.includes('/admin/owner')) currentNav = 'owner';
+  else if (pathname.includes('/admin/seo')) currentNav = 'seo';
   else if (pathname.includes('/admin/records')) currentNav = 'records';
   else if (pathname.includes('/admin/cylinder-register') || pathname.includes('/admin/register')) currentNav = 'register';
   else if (pathname.includes('/admin/bays-equipment')) currentNav = 'bays';
@@ -139,6 +140,10 @@ const derivedBreadcrumb = breadcrumb || (
             <a href="/admin/owner/" class={`nav-item ${currentNav === 'owner' ? 'active' : ''}`}>
               <span class="nav-icon">⚙️</span>
               <span class="nav-label">Owner Settings</span>
+            </a>
+            <a href="/admin/seo/" class={`nav-item ${currentNav === 'seo' ? 'active' : ''}`}>
+              <span class="nav-icon">📈</span>
+              <span class="nav-label">SEO Tracker</span>
             </a>
           </>
         )}

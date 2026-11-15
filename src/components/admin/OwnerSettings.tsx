@@ -9,6 +9,9 @@ type Profile = {
   hold_minutes:number; flat_advance_paise?:number; hide_pricing_until_vehicle_details?:number; enable_public_reminders?:number;
   whatsapp_mode?:'STANDARD'|'CLOUD_API'; whatsapp_api_key?:string; whatsapp_phone_number_id?:string; whatsapp_template_name?:string;
   show_floating_whatsapp?:number;
+  social_facebook?:string; social_instagram?:string; social_youtube?:string; social_twitter?:string; social_whatsapp?:string;
+  show_social_media?:number;
+  voucher_amount_paise?:number; voucher_enabled?:number;
   promo_code?:string; promo_discount_type?:'FLAT'|'PERCENT'; promo_discount_value?:number; promo_banner_text?:string; promo_banner_active?:number; promo_auto_apply?:number;
   seo_title_en:string; seo_title_hi:string; seo_desc_en:string; seo_desc_hi:string;
 };
@@ -674,6 +677,88 @@ export default function OwnerSettings(){
               placeholder="e.g. ⚡ Special Offer: Book 2+ Cylinder Fleet Testing & Get ₹200 Flat Off! • PESO Certified 2-Hour Express Bay"
               value={profile.promo_banner_text || ''}
               onChange={e => setField('promo_banner_text', e.target.value)}
+            />
+          </label>
+        </div>
+      </div>
+
+      {/* SOCIAL MEDIA & LOYALTY VOUCHER SECTION */}
+      <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
+          <div>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: '#0a1128' }}>
+              {locale === 'hi' ? 'सोशल मीडिया एवं ₹200 ग्राहक लॉयल्टी वाउचर' : 'Social Media & ₹200 Customer Loyalty Voucher'}
+            </h3>
+            <p className="admin-subtitle" style={{ margin: '0.2rem 0 0', fontSize: '0.82rem' }}>
+              Configure social profile URLs for homepage & footer, and manage the ₹200 discount voucher awarded on retest reminders.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <label className="admin-check">
+              <input
+                type="checkbox"
+                checked={Number(profile.show_social_media ?? 1) === 1}
+                onChange={e => setField('show_social_media', e.target.checked ? 1 : 0)}
+              />
+              <span style={{ fontSize: '0.82rem', fontWeight: 600 }}>Show Social Media on Website</span>
+            </label>
+            <label className="admin-check">
+              <input
+                type="checkbox"
+                checked={Number(profile.voucher_enabled ?? 1) === 1}
+                onChange={e => setField('voucher_enabled', e.target.checked ? 1 : 0)}
+              />
+              <span style={{ fontSize: '0.82rem', fontWeight: 600 }}>Enable ₹200 Retest Voucher Offer</span>
+            </label>
+          </div>
+        </div>
+
+        <div className="owner-grid">
+          <label className="admin-field">
+            Facebook Page URL
+            <input
+              className="admin-input"
+              placeholder="https://facebook.com/hsrgreenenergy"
+              value={profile.social_facebook || ''}
+              onChange={e => setField('social_facebook', e.target.value)}
+            />
+          </label>
+          <label className="admin-field">
+            Instagram Profile URL
+            <input
+              className="admin-input"
+              placeholder="https://instagram.com/hsrgreenenergy"
+              value={profile.social_instagram || ''}
+              onChange={e => setField('social_instagram', e.target.value)}
+            />
+          </label>
+          <label className="admin-field">
+            YouTube Channel URL
+            <input
+              className="admin-input"
+              placeholder="https://youtube.com/@hsrgreenenergy"
+              value={profile.social_youtube || ''}
+              onChange={e => setField('social_youtube', e.target.value)}
+            />
+          </label>
+          <label className="admin-field">
+            Twitter / X Profile URL
+            <input
+              className="admin-input"
+              placeholder="https://twitter.com/hsrgreenenergy"
+              value={profile.social_twitter || ''}
+              onChange={e => setField('social_twitter', e.target.value)}
+            />
+          </label>
+          <label className="admin-field">
+            {locale === 'hi' ? 'वाउचर छूट राशि (₹)' : 'Retest Voucher Discount (₹)'}
+            <input
+              className="admin-input"
+              type="number"
+              min="0"
+              step="50"
+              value={Math.round((profile.voucher_amount_paise ?? 20000) / 100)}
+              onChange={e => setField('voucher_amount_paise', Math.max(0, Number(e.target.value) * 100))}
             />
           </label>
         </div>

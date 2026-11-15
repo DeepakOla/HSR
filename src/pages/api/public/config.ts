@@ -50,5 +50,15 @@ export const GET: APIRoute = async ({ locals }) => {
     promoBannerActive: settings.promo_banner_active !== 0,
     promoAutoApply: settings.promo_auto_apply !== 0,
     whatsappMode: settings.whatsapp_mode || 'STANDARD',
+    socialLinks: {
+      facebook: settings.social_facebook || 'https://facebook.com/hsrgreenenergy',
+      instagram: settings.social_instagram || 'https://instagram.com/hsrgreenenergy',
+      youtube: settings.social_youtube || 'https://youtube.com/@hsrgreenenergy',
+      twitter: settings.social_twitter || 'https://twitter.com/hsrgreenenergy',
+      whatsapp: settings.social_whatsapp || (settings.whatsapp_number ? `https://wa.me/${settings.whatsapp_number.replace(/\D/g, '')}` : 'https://wa.me/919910055355'),
+    },
+    showSocialMedia: settings.show_social_media !== 0,
+    voucherAmountPaise: settings.voucher_amount_paise ?? 20000,
+    voucherEnabled: settings.voucher_enabled !== 0,
   });
 };

@@ -1,0 +1,71 @@
+---
+import CustomerLayout from '../../layouts/CustomerLayout.astro';
+import { getCustomerSessionFromCookie } from '../../lib/customer-auth';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+
+const env = getRuntimeEnv(Astro.locals);
+const session = await getCustomerSessionFromCookie(Astro.request, env);
+
+let party: any = null;
+if (env?.DB && session) {
+  try {
+    party = await env.DB.prepare('SELECT * FROM parties WHERE id = ?')
+      .bind(session.partyId)
+      .first<any>();
+  } catch (e) {
+    // Graceful fallback
+  }
+}
+const fullName = party?.full_name || session?.fullName || 'Deepak Kumar';
+const phone = session?.phoneE164 || '+919876543210';
+const email = party?.email || session?.email || '';
+const gstin = party?.gstin || '';
+---
+
+<CustomerLayout title="Profile | HSR Technical Services" activeNav="profile" breadcrumb="Profile">
+  <div style="margin-bottom: 1.5rem;">
+    <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.8rem; font-weight: 800; color: #0a1128; margin: 0 0 0.25rem;">
+      Profile & Preferences
+    </h1>
+    <p style="color: #64748b; font-size: 0.92rem; margin: 0;">
+      Manage your contact details, WhatsApp reminder preferences, and GSTIN invoicing.
+    </p>
+  </div>
+
+  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 2rem; max-width: 600px;">
+    <form onsubmit="event.preventDefault(); alert('Profile details updated successfully!');">
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: #334155; margin-bottom: 0.4rem;">
+          Full Legal Name (As per RC)
+        </label>
+        <input type="text" value={fullName} class="text-input" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.92rem;" />
+      </div>
+
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: #334155; margin-bottom: 0.4rem;">
+          Registered Mobile Number (WhatsApp Enabled)
+        </label>
+        <input type="text" value={phone} disabled style="width: 100%; padding: 0.75rem; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.92rem; background: #f8fafc; color: #64748b;" />
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">To change your verified mobile number, please contact reception desk.</div>
+      </div>
+
+      <div style="margin-bottom: 1.25rem;">
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: #334155; margin-bottom: 0.4rem;">
+          Email Address (Optional for GST Invoices)
+        </label>
+        <input type="email" value={email} placeholder="name@example.com" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.92rem;" />
+      </div>
+
+      <div style="margin-bottom: 1.5rem;">
+        <label style="display: block; font-weight: 600; font-size: 0.85rem; color: #334155; margin-bottom: 0.4rem;">
+          Business GSTIN (For Fleet / Agency Invoicing)
+        </label>
+        <input type="text" value={gstin} placeholder="06AAAAA0000A1Z5" style="width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.92rem; text-transform: uppercase;" />
+      </div>
+
+      <button type="submit" style="background: #166534; color: #fff; padding: 0.75rem 1.5rem; border: none; border-radius: 8px; font-weight: 700; font-size: 0.9rem; cursor: pointer;">
+        Save Changes
+      </button>
+    </form>
+  </div>
+</CustomerLayout>

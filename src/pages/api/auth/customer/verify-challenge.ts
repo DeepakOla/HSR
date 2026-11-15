@@ -22,7 +22,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const body = (await request.json()) as VerifyCustomerChallengeRequest;
     const challengeId = (body.challengeId || '').trim();
-    const codeOrToken = (body.codeOrToken || '').trim();
+    const codeOrToken = (body.codeOrToken || (body as any).code || '').trim();
 
     if (!challengeId || !codeOrToken) {
       return errorResponse('Challenge ID and verification code are required', 400, 'MISSING_PARAMS');
@@ -94,8 +94,46 @@ export const POST: APIRoute = async ({ request, locals }) => {
         phoneId = phoneRow.id;
       }
     } else {
-      phoneE164 = '+919876543210';
-      phoneId = 'ph_email_holder';
+      // Secure per-email identifier isolation: each customer email receives a unique contact record
+      phoneE164 = identifier.toLowerCase();
+      const displayPhone = identifier.toLowerCase();
+
+      phoneRow = await env.DB.prepare('SELECT * FROM contact_phones WHERE phone_e164 = ?')
+        .bind(phoneE164)
+        .first<ContactPhoneRow>();
+
+      if (!phoneRow) {
+        phoneId = `ph_${crypto.randomUUID()}`;
+        await env.DB.prepare(
+          'INSERT INTO contact_phones (id, phone_e164, display_phone) VALUES (?, ?, ?)'
+        )
+          .bind(phoneId, phoneE164, displayPhone)
+          .run();
+      } else {
+        phoneId = phoneRow.id;
+      }
+
+      // Check if party already exists with this email and ensure it is linked
+      const partyByEmail = await env.DB.prepare(
+        'SELECT id, full_name FROM parties WHERE lower(email) = ?'
+      )
+        .bind(identifier.toLowerCase())
+        .first<{ id: string; full_name: string }>();
+
+      if (partyByEmail) {
+        const link = await env.DB.prepare(
+          'SELECT id FROM party_phones WHERE party_id = ? AND phone_id = ?'
+        )
+          .bind(partyByEmail.id, phoneId)
+          .first();
+        if (!link) {
+          await env.DB.prepare(
+            'INSERT INTO party_phones (id, party_id, phone_id, relationship_label, is_primary) VALUES (?, ?, ?, ?, 1)'
+          )
+            .bind(`pp_${crypto.randomUUID()}`, partyByEmail.id, phoneId, 'SELF')
+            .run();
+        }
+      }
     }
 
     // Find linked parties via party_phones
@@ -212,7 +250,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         partyId: selectedParty.id,
         fullName: selectedParty.full_name,
         phoneE164,
-        redirectUrl: '/app/',
+        redirectUrl: '/user/',
       },
     };
 

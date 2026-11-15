@@ -219,7 +219,7 @@ const posts = postsResult.results || [];
       if (idVal) payload.id = idVal;
 
       try {
-        const res = await fetch('/api/admin/cms', {
+        const res = await fetch('/api/admin/cms/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)

@@ -275,6 +275,30 @@ const customPromoBanner = (effectiveSettings.promo_banner_active !== 0 && effect
                 <strong>WhatsApp:</strong> <a href={`https://wa.me/${effectiveSettings.whatsapp_number.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">{effectiveSettings.whatsapp_number}</a>
               </p>
             )}
+            {effectiveSettings.show_social_media !== 0 && (
+              <div class="footer-social-row" style="margin-top: 1rem; display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                {effectiveSettings.social_facebook && (
+                  <a href={effectiveSettings.social_facebook} target="_blank" rel="noopener noreferrer" class="social-icon-btn" aria-label="Facebook" style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: #1877f2; color: #fff; text-decoration: none; font-size: 0.85rem; font-weight: 700;">
+                    f
+                  </a>
+                )}
+                {effectiveSettings.social_instagram && (
+                  <a href={effectiveSettings.social_instagram} target="_blank" rel="noopener noreferrer" class="social-icon-btn" aria-label="Instagram" style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); color: #fff; text-decoration: none; font-size: 0.85rem; font-weight: 700;">
+                    ig
+                  </a>
+                )}
+                {effectiveSettings.social_youtube && (
+                  <a href={effectiveSettings.social_youtube} target="_blank" rel="noopener noreferrer" class="social-icon-btn" aria-label="YouTube" style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: #ff0000; color: #fff; text-decoration: none; font-size: 0.85rem; font-weight: 700;">
+                    ▶
+                  </a>
+                )}
+                {effectiveSettings.social_twitter && (
+                  <a href={effectiveSettings.social_twitter} target="_blank" rel="noopener noreferrer" class="social-icon-btn" aria-label="Twitter / X" style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: #000000; color: #fff; text-decoration: none; font-size: 0.85rem; font-weight: 700;">
+                    𝕏
+                  </a>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

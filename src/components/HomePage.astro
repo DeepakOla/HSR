@@ -346,6 +346,52 @@ const subHeading = locale === 'en'
   </div>
 </section>
 
+{settings.show_social_media !== 0 && (
+  <section class="section social-media-section" id="social-connect" style="background: #f8fafc; padding: 2.5rem 0; border-top: 1px solid #e2e8f0;">
+    <div class="container" style="text-align: center;">
+      <span class="trust-badge" style="background: #e0f2fe; color: #0369a1; font-weight: 800; font-size: 0.72rem; padding: 0.2rem 0.6rem; border-radius: 9999px; text-transform: uppercase;">
+        {locale === 'en' ? 'Stay Connected' : 'जुड़े रहें'}
+      </span>
+      <h2 style="font-family: var(--font-heading); font-size: 1.5rem; font-weight: 800; color: #0a1128; margin: 0.4rem 0 0.5rem;">
+        {locale === 'en' ? `Connect with ${businessName || 'HSR'} Green Energy` : `${businessName || 'HSR'} ग्रीन एनर्जी से जुड़ें`}
+      </h2>
+      <p style="font-size: 0.9rem; color: #64748b; max-width: 580px; margin: 0 auto 1.5rem;">
+        {locale === 'en'
+          ? 'Follow our official channels for PESO compliance alerts, retest guidelines, and exclusive seasonal service vouchers.'
+          : 'वैधानिक नियमों, रीटेस्ट सलाह और छूट वाउचर के लिए हमारे आधिकारिक सोशल मीडिया हैंडल्स से जुड़ें।'}
+      </p>
+
+      <div style="display: flex; gap: 0.85rem; justify-content: center; flex-wrap: wrap;">
+        {settings.social_facebook && (
+          <a href={settings.social_facebook} target="_blank" rel="noopener noreferrer" class="social-hero-btn" style="background: #1877f2; color: #fff; padding: 0.6rem 1.25rem; border-radius: 12px; font-weight: 700; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+            <span>f</span> Facebook
+          </a>
+        )}
+        {settings.social_instagram && (
+          <a href={settings.social_instagram} target="_blank" rel="noopener noreferrer" class="social-hero-btn" style="background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); color: #fff; padding: 0.6rem 1.25rem; border-radius: 12px; font-weight: 700; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+            <span>📷</span> Instagram
+          </a>
+        )}
+        {settings.social_youtube && (
+          <a href={settings.social_youtube} target="_blank" rel="noopener noreferrer" class="social-hero-btn" style="background: #ff0000; color: #fff; padding: 0.6rem 1.25rem; border-radius: 12px; font-weight: 700; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+            <span>▶</span> YouTube
+          </a>
+        )}
+        {settings.social_twitter && (
+          <a href={settings.social_twitter} target="_blank" rel="noopener noreferrer" class="social-hero-btn" style="background: #000000; color: #fff; padding: 0.6rem 1.25rem; border-radius: 12px; font-weight: 700; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+            <span>𝕏</span> Twitter / X
+          </a>
+        )}
+        {phoneReady && (
+          <a href={`https://wa.me/${(settings.whatsapp_number || settings.contact_phone).replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" class="social-hero-btn" style="background: #25d366; color: #fff; padding: 0.6rem 1.25rem; border-radius: 12px; font-weight: 700; font-size: 0.85rem; text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;">
+            <span>💬</span> WhatsApp
+          </a>
+        )}
+      </div>
+    </div>
+  </section>
+)}
+
 <style>
   /* Common Section Title Utilities */
   .section-title-wrap {

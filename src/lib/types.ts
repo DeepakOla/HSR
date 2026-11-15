@@ -23,6 +23,14 @@ export interface BusinessSettings {
   promo_banner_active?: number;
   promo_auto_apply?: number;
   show_floating_whatsapp?: number;
+  social_facebook?: string;
+  social_instagram?: string;
+  social_youtube?: string;
+  social_twitter?: string;
+  social_whatsapp?: string;
+  show_social_media?: number;
+  voucher_amount_paise?: number;
+  voucher_enabled?: number;
   r2_enabled: number;
   evidence_budget_bytes: number;
   timezone: string;

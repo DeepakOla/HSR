@@ -7,6 +7,7 @@ Disallow: /admin/
 Disallow: /api/
 Disallow: /staff/
 Disallow: /app/
+Disallow: /user/
 
 Sitemap: ${new URL('/sitemap.xml', url.origin).toString()}
 `;
