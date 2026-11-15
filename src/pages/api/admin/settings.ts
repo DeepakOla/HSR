@@ -19,6 +19,7 @@ const editableSchema = z.object({
   vpa_payee_name: z.string().trim().min(2).max(120).optional(),
   hold_minutes: z.number().int().min(5).max(120).optional(),
   flat_advance_paise: z.number().int().min(0).max(10_000_000).optional(),
+  hide_pricing_until_vehicle_details: z.number().int().min(0).max(1).optional(),
   enable_public_reminders: z.number().int().min(0).max(1).optional(),
   r2_enabled: z.number().int().min(0).max(1).optional(),
   whatsapp_mode: z.enum(['STANDARD', 'CLOUD_API']).optional(),

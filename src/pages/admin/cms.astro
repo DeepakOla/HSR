@@ -79,14 +79,26 @@ const posts = postsResult.results || [];
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-          <label class="admin-field">
-            Markdown Body (English)
+          <div class="admin-field">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <label for="postContentEn" style="margin: 0; font-weight: 700; font-size: 0.8rem;">Markdown Body (English)</label>
+              <div style="display: flex; gap: 0.35rem;">
+                <button type="button" id="btn-paste-en" style="padding: 0.2rem 0.5rem; font-size: 0.72rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer;">📋 Paste Clipboard</button>
+                <button type="button" id="btn-template-en" style="padding: 0.2rem 0.5rem; font-size: 0.72rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer;">📄 Safety Template</button>
+              </div>
+            </div>
             <textarea class="admin-textarea font-mono" id="postContentEn" name="content_markdown_en" rows="8" placeholder="Full markdown formatted text" required></textarea>
-          </label>
-          <label class="admin-field">
-            मुख्य सामग्री - मार्कडाउन (हिंदी)
+          </div>
+          <div class="admin-field">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <label for="postContentHi" style="margin: 0; font-weight: 700; font-size: 0.8rem;">मुख्य सामग्री - मार्कडाउन (हिंदी)</label>
+              <div style="display: flex; gap: 0.35rem;">
+                <button type="button" id="btn-paste-hi" style="padding: 0.2rem 0.5rem; font-size: 0.72rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer;">📋 पेस्ट करें</button>
+                <button type="button" id="btn-template-hi" style="padding: 0.2rem 0.5rem; font-size: 0.72rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer;">📄 हिंदी टेम्पलेट</button>
+              </div>
+            </div>
             <textarea class="admin-textarea font-mono" id="postContentHi" name="content_markdown_hi" rows="8" placeholder="हिंदी सामग्री" required></textarea>
-          </label>
+          </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
@@ -141,6 +153,36 @@ const posts = postsResult.results || [];
   const form = document.getElementById('form-cms-post') as HTMLFormElement;
   const btnSave = document.getElementById('btn-save-post') as HTMLButtonElement;
   const btnNew = document.getElementById('btn-new-post');
+  const txtEn = document.getElementById('postContentEn') as HTMLTextAreaElement;
+  const txtHi = document.getElementById('postContentHi') as HTMLTextAreaElement;
+
+  document.getElementById('btn-paste-en')?.addEventListener('click', async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (txtEn && text) txtEn.value = text;
+    } catch {
+      alert('Clipboard access denied. Please paste directly using Ctrl+V.');
+    }
+  });
+
+  document.getElementById('btn-paste-hi')?.addEventListener('click', async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (txtHi && text) txtHi.value = text;
+    } catch {
+      alert('Clipboard access denied. Please paste directly using Ctrl+V.');
+    }
+  });
+
+  document.getElementById('btn-template-en')?.addEventListener('click', () => {
+    if (!txtEn) return;
+    txtEn.value = `## Statutory Hydro Testing Overview\\n\\nUnder Rule 35 of Gas Cylinders Rules (2016), every CNG cylinder fitted in motor vehicles must be hydrostatically tested every 3 years at 300 Bar pressure.\\n\\n### Key Testing Steps:\\n1. **Degassing**: Methane purging with nitrogen inerting.\\n2. **Ultrasonic Scan**: Internal wall thickness verification.\\n3. **300 Bar Water Jacket Test**: Volumetric expansion measurement.\\n4. **Baking & Drying**: 80°C hot air circulation.\\n5. **Compliance Punching**: Stamped brass plate and PESO Form C digital upload.\\n\\n*Contact HSR Green Energy, Rewari for priority bay booking.*`;
+  });
+
+  document.getElementById('btn-template-hi')?.addEventListener('click', () => {
+    if (!txtHi) return;
+    txtHi.value = `## वैधानिक सीएनजी सिलेंडर हाइड्रो टेस्टिंग मार्गदर्शिका\\n\\nगैस सिलेंडर नियम (2016) के नियम 35 के तहत, मोटर वाहनों में लगे प्रत्येक सीएनजी सिलेंडर का हर 3 साल में 300 बार हाइड्रोलिक दबाव पर परीक्षण अनिवार्य है।\\n\\n### मुख्य परीक्षण चरण:\\n1. **डीगैसिंग**: नाइट्रोजन द्वारा मीथेन गैस की सुरक्षित निकासी।\\n2. **अल्ट्रासोनिक मोटाई जांच**: आंतरिक दीवारों की सूक्ष्म जांच।\\n3. **300 बार वाटर जैकेट टेस्ट**: हाइड्रोलिक विस्तार का मापन।\\n4. **हॉट-एयर बेकिंग**: 80°C गर्म हवा से सिलेंडर को सुखाना।\\n5. **प्रमाणपत्र एवं ब्रास प्लेट**: वैधानिक फॉर्म C और कॉपर/ब्रास प्लेट पंचिंग।\\n\\n*एचएसआर ग्रीन एनर्जी, रीवाड़ी में तत्काल स्लॉट बुक करें।*`;
+  });
 
   if (btnNew) {
     btnNew.addEventListener('click', () => {

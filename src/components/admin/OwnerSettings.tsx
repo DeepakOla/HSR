@@ -6,7 +6,7 @@ type Locale = 'en' | 'hi';
 type Profile = {
   business_name_en:string; business_name_hi:string; city:string; address_line:string; map_url:string;
   contact_phone:string; whatsapp_number:string; contact_email:string; vpa_id:string; vpa_payee_name:string;
-  hold_minutes:number; flat_advance_paise?:number; enable_public_reminders?:number;
+  hold_minutes:number; flat_advance_paise?:number; hide_pricing_until_vehicle_details?:number; enable_public_reminders?:number;
   whatsapp_mode?:'STANDARD'|'CLOUD_API'; whatsapp_api_key?:string; whatsapp_phone_number_id?:string; whatsapp_template_name?:string;
   show_floating_whatsapp?:number;
   promo_code?:string; promo_discount_type?:'FLAT'|'PERCENT'; promo_discount_value?:number; promo_banner_text?:string; promo_banner_active?:number; promo_auto_apply?:number;
@@ -264,6 +264,8 @@ export default function OwnerSettings(){
         body: JSON.stringify({
           ...profile,
           hold_minutes: Number(profile.hold_minutes),
+          flat_advance_paise: Number(profile.flat_advance_paise ?? 50000),
+          hide_pricing_until_vehicle_details: profile.hide_pricing_until_vehicle_details ? 1 : 0,
           enable_public_reminders: profile.enable_public_reminders ? 1 : 0,
           show_floating_whatsapp: profile.show_floating_whatsapp ? 1 : 0,
           promo_banner_active: profile.promo_banner_active ? 1 : 0,
@@ -492,6 +494,32 @@ export default function OwnerSettings(){
         <label className="admin-field">{t.vpa}<input className="admin-input" value={profile.vpa_id} onChange={e=>setField('vpa_id',e.target.value)}/></label>
         <label className="admin-field">{t.payee}<input className="admin-input" value={profile.vpa_payee_name} onChange={e=>setField('vpa_payee_name',e.target.value)}/></label>
         <label className="admin-field">{t.hold}<input className="admin-input" type="number" min="5" max="120" value={profile.hold_minutes} onChange={e=>setProfile(p=>p?({...p,hold_minutes:Number(e.target.value)}):p)}/></label>
+        <label className="admin-field">
+          {locale === 'hi' ? 'फ्लैट ऑनलाइन टोकन अग्रिम (₹)' : 'Online Flat Advance Amount (₹)'}
+          <input
+            className="admin-input"
+            type="number"
+            min="0"
+            step="100"
+            value={Math.round((profile.flat_advance_paise ?? 50000) / 100)}
+            onChange={e => setField('flat_advance_paise', Math.max(0, Number(e.target.value) * 100))}
+          />
+        </label>
+      </div>
+
+      <div style={{ marginTop: '0.85rem', padding: '0.85rem 1rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+        <label className="admin-check" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={Number(profile.hide_pricing_until_vehicle_details ?? 0) === 1}
+            onChange={e => setField('hide_pricing_until_vehicle_details', e.target.checked ? 1 : 0)}
+          />
+          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0f172a' }}>
+            {locale === 'hi'
+              ? 'ग्राहक द्वारा मान्य वाहन नंबर दर्ज करने तक दरें छिपाएं (Lean Step-by-Step Flow)'
+              : 'Hide cylinder test rates on booking step 1 until customer enters a valid vehicle registration number'}
+          </span>
+        </label>
       </div>
 
       <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid #e2e8f0' }}>

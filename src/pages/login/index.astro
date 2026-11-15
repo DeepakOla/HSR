@@ -1,0 +1,673 @@
+---
+// File: src/pages/login/index.astro
+import { getStaffContext } from '../../lib/auth';
+import { getCustomerSessionFromCookie } from '../../lib/customer-auth';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+import '../../styles/design-tokens.css';
+
+const env = getRuntimeEnv(Astro.locals);
+const staff = await getStaffContext(Astro.request, env);
+const customer = await getCustomerSessionFromCookie(Astro.request, env);
+
+const roleParam = Astro.url.searchParams.get('role') || 'customer';
+const initialRole = ['customer', 'staff', 'admin'].includes(roleParam) ? roleParam : 'customer';
+
+const pageTitle = "Unified Sign-In Portal | HSR Green Energy";
+const pageDescription = "Sign in to Customer Vehicle Workspace, Staff Testing Desk, or Station Owner Console.";
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{pageTitle}</title>
+  <meta name="description" content={pageDescription} />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --navy: #0a1128;
+      --primary: #ea580c;
+      --primary-dark: #c2410c;
+      --blue: #0284c7;
+      --green: #15803d;
+      --slate-bg: #f8fafc;
+      --border-color: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-body);
+      background: var(--slate-bg);
+      color: #0f172a;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .login-top-bar {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.85rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      text-decoration: none;
+      color: var(--navy);
+      font-family: var(--font-heading);
+      font-weight: 800;
+      font-size: 1.15rem;
+    }
+    .brand-pill {
+      background: #fed7aa;
+      color: #9a3412;
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+    }
+    .public-link {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #64748b;
+      text-decoration: none;
+    }
+    .public-link:hover { color: var(--primary); }
+    .main-wrap {
+      max-width: 920px;
+      margin: 2.5rem auto;
+      padding: 0 1rem;
+      flex: 1;
+      width: 100%;
+    }
+    .portal-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .portal-eyebrow {
+      display: inline-block;
+      background: #e0f2fe;
+      color: #0369a1;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.6rem;
+    }
+    .portal-title {
+      font-family: var(--font-heading);
+      font-size: clamp(1.75rem, 3.5vw, 2.25rem);
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    .portal-subtitle {
+      color: #64748b;
+      font-size: 0.95rem;
+      margin-top: 0.4rem;
+    }
+    /* Role Selector Tabs */
+    .role-tabs-wrap {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    .role-tab-btn {
+      background: #ffffff;
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      padding: 0.85rem 1.25rem;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #475569;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      transition: all 0.15s ease;
+      min-width: 220px;
+      justify-content: center;
+    }
+    .role-tab-btn:hover {
+      border-color: #cbd5e1;
+      background: #f8fafc;
+    }
+    .role-tab-btn.active {
+      border-color: var(--primary);
+      background: #fff7ed;
+      color: var(--primary-dark);
+      box-shadow: 0 4px 8px -2px rgba(234, 88, 12, 0.15);
+    }
+    .role-tab-btn.active.staff-active {
+      border-color: var(--blue);
+      background: #f0f9ff;
+      color: #0369a1;
+      box-shadow: 0 4px 8px -2px rgba(2, 132, 199, 0.15);
+    }
+    .role-tab-btn.active.admin-active {
+      border-color: var(--navy);
+      background: #f8fafc;
+      color: var(--navy);
+      box-shadow: 0 4px 8px -2px rgba(10, 17, 40, 0.15);
+    }
+    /* Card Container */
+    .auth-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+      max-width: 580px;
+      margin: 0 auto;
+    }
+    .card-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 800;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.5rem;
+    }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-blue { background: #e0f2fe; color: #0369a1; }
+    .badge-navy { background: #f1f5f9; color: #0a1128; }
+    .card-title {
+      font-family: var(--font-heading);
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 0.35rem;
+    }
+    .card-desc {
+      color: #64748b;
+      font-size: 0.88rem;
+      margin-bottom: 1.5rem;
+      line-height: 1.45;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-bottom: 1.25rem;
+    }
+    .form-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #475569;
+      letter-spacing: 0.03em;
+    }
+    .form-input {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      font-size: 0.95rem;
+      color: #0f172a;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    .form-input:focus {
+      border-color: var(--primary);
+    }
+    .btn-submit {
+      width: 100%;
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      padding: 0.85rem 1.25rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 6px -1px rgba(234, 88, 12, 0.2);
+      transition: background 0.15s ease;
+    }
+    .btn-submit:hover { background: var(--primary-dark); }
+    .btn-submit.staff-btn { background: var(--blue); }
+    .btn-submit.staff-btn:hover { background: #026ba3; }
+    .btn-submit.admin-btn { background: var(--navy); }
+    .btn-submit.admin-btn:hover { background: #1e293b; }
+    .alert-box {
+      margin-top: 1rem;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+    .alert-error { background: #fee2e2; border: 1px solid #fca5a5; color: #991b1b; }
+    .alert-success { background: #dcfce7; border: 1px solid #86efac; color: #166534; }
+    .quick-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 1.25rem;
+    }
+    .chip-btn {
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 0.25rem 0.6rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+    }
+    .chip-btn:hover { background: #e2e8f0; }
+    .security-note {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 2rem;
+      line-height: 1.4;
+    }
+    .footer-bar {
+      border-top: 1px solid var(--border-color);
+      padding: 1.5rem 1rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #64748b;
+      background: #ffffff;
+      margin-top: auto;
+    }
+    .footer-bar a { color: var(--primary); text-decoration: none; font-weight: 600; margin: 0 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="login-top-bar">
+    <a href="/en/" class="brand-link">
+      <span>⚡ HSR Green Energy</span>
+      <span class="brand-pill">Rewari Plant</span>
+    </a>
+    <a href="/en/" class="public-link">← Return to Public Website</a>
+  </div>
+
+  <main class="main-wrap">
+    <div class="portal-header">
+      <span class="portal-eyebrow">Enterprise Identity & Access</span>
+      <h1 class="portal-title">Unified Management & Customer Gateway</h1>
+      <p class="portal-subtitle">Select your account profile below to access your assigned workspace.</p>
+    </div>
+
+    <!-- 3-Role Selector Tabs -->
+    <div class="role-tabs-wrap">
+      <button type="button" class={`role-tab-btn ${initialRole === 'customer' ? 'active' : ''}`} data-role="customer">
+        <span>🚗</span> Customer Workspace
+      </button>
+      <button type="button" class={`role-tab-btn ${initialRole === 'staff' ? 'active staff-active' : ''}`} data-role="staff">
+        <span>📋</span> Staff Testing Desk
+      </button>
+      <button type="button" class={`role-tab-btn ${initialRole === 'admin' ? 'active admin-active' : ''}`} data-role="admin">
+        <span>⚡</span> Station Owner Console
+      </button>
+    </div>
+
+    <!-- CUSTOMER LOGIN CARD -->
+    <div id="card-customer" class="auth-card" style={initialRole === 'customer' ? 'display: block;' : 'display: none;'}>
+      <span class="card-badge badge-green">Self-Service Customer Portal</span>
+      <h2 class="card-title">Vehicle Owner Sign-In</h2>
+      <p class="card-desc">
+        Enter your registered 10-digit mobile number to view test records, 3-year statutory retest due dates, and download PESO Form C certificates.
+      </p>
+
+      <form id="customer-auth-form">
+        <div class="form-group" id="phone-group">
+          <label class="form-label" for="customer-mobile">10-Digit Mobile Number</label>
+          <input
+            id="customer-mobile"
+            type="tel"
+            required
+            pattern="[0-9]{10}"
+            maxlength="10"
+            placeholder="e.g. 9812345678"
+            class="form-input"
+            autocomplete="tel"
+          />
+        </div>
+
+        <div class="form-group" id="otp-group" style="display: none;">
+          <label class="form-label" for="customer-otp">Enter 6-Digit OTP (Sent to Mobile)</label>
+          <input
+            id="customer-otp"
+            type="text"
+            pattern="[0-9]{6}"
+            maxlength="6"
+            placeholder="123456"
+            class="form-input font-mono"
+            autocomplete="one-time-code"
+          />
+          <span style="font-size: 0.75rem; color: #64748b; margin-top: 0.2rem;">
+            Default OTP for instant testing: <strong>123456</strong>
+          </span>
+        </div>
+
+        <button type="submit" id="customer-submit-btn" class="btn-submit">
+          <span>📲 Send One-Time Verification OTP →</span>
+        </button>
+
+        <div id="customer-alert" class="alert-box alert-error" style="display: none;"></div>
+      </form>
+    </div>
+
+    <!-- STAFF LOGIN CARD -->
+    <div id="card-staff" class="auth-card" style={initialRole === 'staff' ? 'display: block;' : 'display: none;'}>
+      <span class="card-badge badge-blue">Plant Operations & Reception</span>
+      <h2 class="card-title">Staff Testing Bay Sign-In</h2>
+      <p class="card-desc">
+        Authorized testing bay engineers and reception officers sign in with registered staff credentials to manage bookings, test rungs, and statutory logs.
+      </p>
+
+      <div class="quick-chips">
+        <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; align-self: center;">Quick Select:</span>
+        <button type="button" class="chip-btn staff-preset" data-email="reception@hsr.test">📋 reception@hsr.test</button>
+        <button type="button" class="chip-btn staff-preset" data-email="testing@hsr.test">🔧 testing@hsr.test</button>
+      </div>
+
+      <form id="staff-auth-form">
+        <div class="form-group">
+          <label class="form-label" for="staff-email">Registered Staff Email *</label>
+          <input
+            id="staff-email"
+            type="email"
+            required
+            placeholder="reception@hsr.test"
+            class="form-input"
+            autocomplete="email"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="staff-pin">Security PIN (Optional for Dev)</label>
+          <input
+            id="staff-pin"
+            type="password"
+            placeholder="••••••"
+            class="form-input"
+            autocomplete="current-password"
+          />
+        </div>
+
+        <button type="submit" id="staff-submit-btn" class="btn-submit staff-btn">
+          <span>🔐 Sign In to Operations Desk →</span>
+        </button>
+
+        <div id="staff-alert" class="alert-box alert-error" style="display: none;"></div>
+      </form>
+    </div>
+
+    <!-- ADMIN LOGIN CARD -->
+    <div id="card-admin" class="auth-card" style={initialRole === 'admin' ? 'display: block;' : 'display: none;'}>
+      <span class="card-badge badge-navy">Licensed Station Executive</span>
+      <h2 class="card-title">Owner Executive Console</h2>
+      <p class="card-desc">
+        Station license holders access commercial rates, schedule windows, ledger exports, and statutory PESO settings via zero-trust verification.
+      </p>
+
+      <div class="quick-chips">
+        <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; align-self: center;">Quick Select:</span>
+        <button type="button" class="chip-btn admin-preset" data-email="kumardeepakola@gmail.com">👑 kumardeepakola@gmail.com</button>
+        <button type="button" class="chip-btn admin-preset" data-email="owner@hsr.test">⚙️ owner@hsr.test</button>
+      </div>
+
+      <form id="admin-auth-form">
+        <div class="form-group">
+          <label class="form-label" for="admin-email">Owner Email Address *</label>
+          <input
+            id="admin-email"
+            type="email"
+            required
+            placeholder="kumardeepakola@gmail.com"
+            class="form-input"
+            autocomplete="email"
+          />
+        </div>
+
+        <button type="submit" id="admin-submit-btn" class="btn-submit admin-btn">
+          <span>⚡ Enter Owner Console →</span>
+        </button>
+
+        <div id="admin-alert" class="alert-box alert-error" style="display: none;"></div>
+      </form>
+    </div>
+
+    <p class="security-note">
+      🛡️ <strong>Zero-Trust Server Guard:</strong> Client card selection does not confer elevated privileges. Every administrative request requires server-side HMAC session token or Cloudflare Access identity validation.
+    </p>
+  </main>
+
+  <footer class="footer-bar">
+    <p>© 2026 HSR Green Energy. PESO Form GCT Certified Cylinder Testing Laboratory.</p>
+    <p style="margin-top: 0.4rem;">
+      <a href="/en/">Public Site</a> •
+      <a href="/directory/">Directory</a> •
+      <a href="/tools/cng-expiry-checker/">Due Date Checker</a> •
+      <a href="/website-guide/">System Guide</a> •
+      <a href="/app/">Customer Workspace</a>
+    </p>
+  </footer>
+
+  <script>
+    // Tab switching logic
+    const tabButtons = document.querySelectorAll('.role-tab-btn');
+    const customerCard = document.getElementById('card-customer')!;
+    const staffCard = document.getElementById('card-staff')!;
+    const adminCard = document.getElementById('card-admin')!;
+
+    function switchRole(role: string) {
+      tabButtons.forEach(btn => {
+        btn.classList.remove('active', 'staff-active', 'admin-active');
+        if (btn.getAttribute('data-role') === role) {
+          btn.classList.add('active');
+          if (role === 'staff') btn.classList.add('staff-active');
+          if (role === 'admin') btn.classList.add('admin-active');
+        }
+      });
+
+      customerCard.style.display = role === 'customer' ? 'block' : 'none';
+      staffCard.style.display = role === 'staff' ? 'block' : 'none';
+      adminCard.style.display = role === 'admin' ? 'block' : 'none';
+
+      // Update URL query parameter without full reload
+      const url = new URL(window.location.href);
+      url.searchParams.set('role', role);
+      window.history.replaceState({}, '', url.toString());
+    }
+
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const role = btn.getAttribute('data-role');
+        if (role) switchRole(role);
+      });
+    });
+
+    // CUSTOMER OTP FLOW
+    let challengeId: string | null = null;
+    let customerMobileNumber: string = '';
+    const customerForm = document.getElementById('customer-auth-form') as HTMLFormElement;
+    const phoneGroup = document.getElementById('phone-group')!;
+    const otpGroup = document.getElementById('otp-group')!;
+    const mobileInput = document.getElementById('customer-mobile') as HTMLInputElement;
+    const otpInput = document.getElementById('customer-otp') as HTMLInputElement;
+    const customerBtn = document.getElementById('customer-submit-btn') as HTMLButtonElement;
+    const customerAlert = document.getElementById('customer-alert')!;
+
+    customerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      customerAlert.style.display = 'none';
+
+      if (!challengeId) {
+        // Step 1: Request OTP challenge
+        const phone = mobileInput.value.replace(/\D/g, '');
+        if (phone.length !== 10) {
+          customerAlert.textContent = 'Please enter a valid 10-digit mobile number.';
+          customerAlert.style.display = 'block';
+          return;
+        }
+        customerMobileNumber = phone;
+        customerBtn.disabled = true;
+        customerBtn.innerHTML = '<span>⏳ Sending OTP...</span>';
+
+        try {
+          const res = await fetch('/api/auth/customer/request-challenge/', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ identifier: phone }),
+          });
+          const data: any = await res.json();
+          if (!res.ok) throw new Error(data?.error?.message || 'Failed to send OTP.');
+
+          challengeId = data.challengeId;
+          phoneGroup.style.display = 'none';
+          otpGroup.style.display = 'flex';
+          customerBtn.innerHTML = '<span>✅ Verify OTP & Enter Workspace →</span>';
+          customerAlert.className = 'alert-box alert-success';
+          customerAlert.textContent = 'OTP sent! Enter 123456 to continue.';
+          customerAlert.style.display = 'block';
+          otpInput.focus();
+        } catch (err: any) {
+          customerAlert.className = 'alert-box alert-error';
+          customerAlert.textContent = err.message || 'Error sending OTP.';
+          customerAlert.style.display = 'block';
+        } finally {
+          customerBtn.disabled = false;
+        }
+      } else {
+        // Step 2: Verify OTP challenge
+        const code = otpInput.value.trim();
+        if (code.length !== 6) {
+          customerAlert.className = 'alert-box alert-error';
+          customerAlert.textContent = 'Please enter the 6-digit OTP.';
+          customerAlert.style.display = 'block';
+          return;
+        }
+
+        customerBtn.disabled = true;
+        customerBtn.innerHTML = '<span>⏳ Verifying OTP...</span>';
+
+        try {
+          const res = await fetch('/api/auth/customer/verify-challenge/', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ challengeId, code }),
+          });
+          const data: any = await res.json();
+          if (!res.ok) throw new Error(data?.error?.message || 'Invalid or expired OTP.');
+
+          customerAlert.className = 'alert-box alert-success';
+          customerAlert.textContent = 'Authentication successful! Redirecting...';
+          customerAlert.style.display = 'block';
+          window.location.href = data.redirectUrl || '/app/';
+        } catch (err: any) {
+          customerAlert.className = 'alert-box alert-error';
+          customerAlert.textContent = err.message || 'OTP verification failed.';
+          customerAlert.style.display = 'block';
+        } finally {
+          customerBtn.disabled = false;
+        }
+      }
+    });
+
+    // STAFF LOGIN
+    const staffForm = document.getElementById('staff-auth-form') as HTMLFormElement;
+    const staffEmailInput = document.getElementById('staff-email') as HTMLInputElement;
+    const staffAlert = document.getElementById('staff-alert')!;
+    const staffBtn = document.getElementById('staff-submit-btn') as HTMLButtonElement;
+
+    document.querySelectorAll('.staff-preset').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const em = chip.getAttribute('data-email');
+        if (em) staffEmailInput.value = em;
+      });
+    });
+
+    staffForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      staffAlert.style.display = 'none';
+      const email = staffEmailInput.value.trim();
+      if (!email) return;
+
+      staffBtn.disabled = true;
+      staffBtn.innerHTML = '<span>⏳ Signing In...</span>';
+
+      try {
+        const res = await fetch('/api/admin/auth/session/', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const data: any = await res.json();
+        if (!res.ok) throw new Error(data?.error?.message || 'Staff sign-in failed.');
+
+        window.location.href = data?.redirect || '/admin/reception/';
+      } catch (err: any) {
+        staffAlert.textContent = err.message || 'Staff authentication error.';
+        staffAlert.style.display = 'block';
+      } finally {
+        staffBtn.disabled = false;
+        staffBtn.innerHTML = '<span>🔐 Sign In to Operations Desk →</span>';
+      }
+    });
+
+    // OWNER LOGIN
+    const adminForm = document.getElementById('admin-auth-form') as HTMLFormElement;
+    const adminEmailInput = document.getElementById('admin-email') as HTMLInputElement;
+    const adminAlert = document.getElementById('admin-alert')!;
+    const adminBtn = document.getElementById('admin-submit-btn') as HTMLButtonElement;
+
+    document.querySelectorAll('.admin-preset').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const em = chip.getAttribute('data-email');
+        if (em) adminEmailInput.value = em;
+      });
+    });
+
+    adminForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      adminAlert.style.display = 'none';
+      const email = adminEmailInput.value.trim();
+      if (!email) return;
+
+      adminBtn.disabled = true;
+      adminBtn.innerHTML = '<span>⏳ Authenticating Owner...</span>';
+
+      try {
+        const res = await fetch('/api/admin/auth/session/', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const data: any = await res.json();
+        if (!res.ok) throw new Error(data?.error?.message || 'Owner authentication failed.');
+
+        window.location.href = '/admin/owner/';
+      } catch (err: any) {
+        adminAlert.textContent = err.message || 'Owner authentication error.';
+        adminAlert.style.display = 'block';
+      } finally {
+        adminBtn.disabled = false;
+        adminBtn.innerHTML = '<span>⚡ Enter Owner Console →</span>';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -13,4 +13,13 @@ export default defineConfig({
   output: 'server',
   integrations: [react()],
   trailingSlash: 'always',
+  redirects: {
+    '/Searchcng': '/directory/',
+    '/search-cng': '/directory/',
+    '/searchCNG': '/directory/',
+    '/HSR/CNG/CylinderTest': '/cng/cylinder-test/',
+    '/hsr/cng/cylinder-test': '/cng/cylinder-test/',
+    '/HSR/CNG/Cylinder-Test': '/cng/cylinder-test/',
+    '/admin/login': '/login/?role=staff',
+  },
 });

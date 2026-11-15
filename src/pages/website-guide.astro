@@ -1,0 +1,349 @@
+---
+// File: src/pages/website-guide.astro
+import '../styles/design-tokens.css';
+
+const pageTitle = "HSR Green Energy — Visual Platform Architecture & Operational Guide";
+const pageDescription = "Illustrated step-by-step pictorial map of the entire HSR Green Energy testing platform: booking flows, testing bay operations, owner console, WhatsApp integration, and audit checklist.";
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{pageTitle}</title>
+  <meta name="description" content={pageDescription} />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --navy: #0a1128;
+      --primary: #ea580c;
+      --blue: #0284c7;
+      --green: #15803d;
+      --purple: #7c3aed;
+      --slate-bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-body); background: var(--slate-bg); color: #0f172a; line-height: 1.6; }
+    .nav-bar { background: #fff; border-bottom: 1px solid var(--border); padding: 0.85rem 1.5rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 30; }
+    .nav-brand { text-decoration: none; color: var(--navy); font-family: var(--font-heading); font-weight: 800; font-size: 1.15rem; }
+    .nav-links { display: flex; gap: 1rem; align-items: center; }
+    .nav-link { font-size: 0.85rem; font-weight: 600; color: #475569; text-decoration: none; }
+    .nav-btn { background: var(--navy); color: #fff; font-size: 0.82rem; font-weight: 700; padding: 0.45rem 0.9rem; border-radius: 8px; text-decoration: none; }
+    .container { max-width: 1040px; margin: 2.5rem auto; padding: 0 1rem; }
+    .header-box { text-align: center; margin-bottom: 3rem; }
+    .tag-pill { display: inline-block; background: #e0f2fe; color: #0369a1; font-size: 0.75rem; font-weight: 800; padding: 0.25rem 0.85rem; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
+    .main-title { font-family: var(--font-heading); font-size: clamp(2rem, 4vw, 2.75rem); font-weight: 800; color: var(--navy); letter-spacing: -0.02em; line-height: 1.2; }
+    .main-desc { color: #64748b; font-size: 1.05rem; max-width: 780px; margin: 0.75rem auto 0; }
+    
+    /* Illustrated Flow Section */
+    .flow-section { margin-bottom: 3.5rem; }
+    .section-head { margin-bottom: 1.5rem; }
+    .section-pill { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.2rem 0.6rem; border-radius: 6px; display: inline-block; margin-bottom: 0.35rem; }
+    .pill-orange { background: #ffedd5; color: #9a3412; }
+    .pill-green { background: #dcfce7; color: #166534; }
+    .pill-blue { background: #e0f2fe; color: #0369a1; }
+    .pill-purple { background: #ede9fe; color: #5b21b6; }
+    .section-title { font-family: var(--font-heading); font-size: 1.5rem; font-weight: 800; color: var(--navy); }
+    
+    /* Visual Diagram Cards */
+    .steps-chain { display: flex; flex-direction: column; gap: 1rem; }
+    @media (min-width: 768px) {
+      .steps-chain-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+    }
+    .flow-step-card { background: #fff; border: 2px solid var(--border); border-radius: 14px; padding: 1.25rem; display: flex; flex-direction: column; justify-content: space-between; position: relative; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+    .flow-step-card.active-step { border-color: var(--primary); background: #fffaf5; }
+    .step-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .step-label { font-size: 0.7rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+    .step-name { font-family: var(--font-heading); font-size: 1.1rem; font-weight: 800; color: var(--navy); margin: 0.25rem 0 0.4rem; }
+    .step-desc { font-size: 0.82rem; color: #475569; line-height: 1.45; }
+    .step-link { margin-top: 1rem; font-size: 0.78rem; font-weight: 700; color: var(--primary); text-decoration: none; display: inline-flex; align-items: center; gap: 0.25rem; }
+    
+    /* Issue Audit Checklist Table */
+    .audit-card { background: #fff; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04); margin-top: 1.5rem; }
+    .audit-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .audit-table th { background: #f1f5f9; padding: 0.85rem 1rem; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; color: #475569; letter-spacing: 0.03em; }
+    .audit-table td { padding: 0.85rem 1rem; border-top: 1px solid var(--border); font-size: 0.85rem; vertical-align: top; }
+    .badge-done { background: #dcfce7; color: #166534; font-size: 0.72rem; font-weight: 800; padding: 0.2rem 0.55rem; border-radius: 9999px; display: inline-block; }
+    .code-pill { font-family: var(--font-mono); font-size: 0.75rem; background: #f1f5f9; padding: 0.15rem 0.4rem; border-radius: 4px; color: #0f172a; }
+    
+    .faq-explainer { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 1.5rem; margin-top: 1rem; }
+    .faq-explainer h4 { font-family: var(--font-heading); font-size: 1.05rem; font-weight: 800; color: var(--navy); margin-bottom: 0.35rem; }
+    .faq-explainer p { font-size: 0.85rem; color: #475569; line-height: 1.5; }
+    
+    .site-footer { border-top: 1px solid var(--border); padding: 2rem 1rem; text-align: center; font-size: 0.8rem; color: #64748b; background: #fff; margin-top: 4rem; }
+    .site-footer a { color: var(--primary); text-decoration: none; font-weight: 600; margin: 0 0.5rem; }
+  </style>
+</head>
+<body>
+  <nav class="nav-bar">
+    <a href="/en/" class="nav-brand">⚡ HSR Green Energy</a>
+    <div class="nav-links">
+      <a href="/en/" class="nav-link">Home</a>
+      <a href="/cng/cylinder-test/" class="nav-link">Hydro Testing</a>
+      <a href="/directory/" class="nav-link">Station Directory</a>
+      <a href="/tools/cng-expiry-checker/" class="nav-link">Due Date Checker</a>
+      <a href="/login/" class="nav-btn">Portal Sign-In →</a>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="header-box">
+      <span class="tag-pill">Visual System Architecture</span>
+      <h1 class="main-title">How HSR Green Energy Works (Start-to-Finish)</h1>
+      <p class="main-desc">
+        A clear pictorial map explaining every part of the platform: how customers book, how technicians test cylinders, how the owner controls settings, and where WhatsApp & payments are handled.
+      </p>
+    </div>
+
+    <!-- MODULE 1: PUBLIC DISCOVERY & BOOKING -->
+    <section class="flow-section">
+      <div class="section-head">
+        <span class="section-pill pill-orange">Module 1 • Public Website & Booking Journey</span>
+        <h2 class="section-title">Step 1 to 4: From Highway Search to Confirmed Slot</h2>
+      </div>
+
+      <div class="steps-chain-row">
+        <div class="flow-step-card active-step">
+          <div>
+            <div class="step-icon">🚗</div>
+            <span class="step-label">Step 1 • Homepage</span>
+            <h3 class="step-name">Vehicle & Category</h3>
+            <p class="step-desc">Motorist chooses Car, Eeco, or Truck. Selects convenient 20-minute appointment date & slot.</p>
+          </div>
+          <a href="/en/#booking-form" class="step-link">View Booking Form →</a>
+        </div>
+
+        <div class="flow-step-card">
+          <div>
+            <div class="step-icon">📋</div>
+            <span class="step-label">Step 2 • Form Details</span>
+            <h3 class="step-name">RC Legal Name</h3>
+            <p class="step-desc">Mandatory RC Owner Name + Mobile Number. Optional Driver / Drop-off details and GSTIN.</p>
+          </div>
+          <span class="step-link" style="color: #64748b;">PESO Form C Compliance</span>
+        </div>
+
+        <div class="flow-step-card">
+          <div>
+            <div class="step-icon">📲</div>
+            <span class="step-label">Step 3 • Zero-Cost Advance</span>
+            <h3 class="step-name">Direct UPI QR</h3>
+            <p class="step-desc">Instant dynamic UPI QR code generated with ₹500/₹1,000 flat advance. Customer pays with GPay, PhonePe or Paytm.</p>
+          </div>
+          <span class="step-link" style="color: #64748b;">Zero Gateway Fees</span>
+        </div>
+
+        <div class="flow-step-card">
+          <div>
+            <div class="step-icon">✅</div>
+            <span class="step-label">Step 4 • Confirmation</span>
+            <h3 class="step-name">Pass & WhatsApp Link</h3>
+            <p class="step-desc">Bay locked for 15 mins. UTR entered. Customer receives WhatsApp confirmation & gate entry pass.</p>
+          </div>
+          <a href="/login/?role=customer" class="step-link">Customer Workspace →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODULE 2: RECEPTION DESK & TESTING BAY -->
+    <section class="flow-section">
+      <div class="section-head">
+        <span class="section-pill pill-blue">Module 2 • Operations & Testing Bay Workflow</span>
+        <h2 class="section-title">Step 5 to 8: Testing Laboratory Workflow</h2>
+      </div>
+
+      <div class="steps-chain-row">
+        <div class="flow-step-card">
+          <div>
+            <div class="step-icon">🏢</div>
+            <span class="step-label">Step 5 • Reception</span>
+            <h3 class="step-name">Reception Check-In</h3>
+            <p class="step-desc">Staff searches vehicle registration or scan QR. Marks customer as Checked-In and assigns Rig Bay.</p>
+          </div>
+          <a href="/admin/reception/" class="step-link">Reception Desk →</a>
+        </div>
+
+        <div class="flow-step-card active-step">
+          <div>
+            <div class="step-icon">🔬</div>
+            <span class="step-label">Step 6 • 5-Step Hydro Test</span>
+            <h3 class="step-name">300 Bar Water Jacket</h3>
+            <p class="step-desc">Degassing -> Ultrasonic scan -> 300 Bar hydraulic stretch expansion -> 80°C internal dry air baking.</p>
+          </div>
+          <a href="/staff/testing/" class="step-link">Testing Bay →</a>
+        </div>
+
+        <div class="flow-step-card">
+          <div>
+            <div class="step-icon">🏷️</div>
+            <span class="step-label">Step 7 • Punching</span>
+            <h3 class="step-name">Compliance Plate</h3>
+            <p class="step-desc">Brass verification tag stamped with sequential test number, test date, and next 3-year expiry date.</p>
+          </div>
+          <a href="/admin/cylinder-register/" class="step-link">Cylinder Register →</a>
+        </div>
+
+        <div class="flow-step-card">
+          <div>
+            <div class="step-icon">📜</div>
+            <span class="step-label">Step 8 • PESO Form C</span>
+            <h3 class="step-name">Digital Certificate</h3>
+            <p class="step-desc">PESO Form C compliance certificate signed, uploaded, and made available in customer account & Master Records.</p>
+          </div>
+          <a href="/admin/records/" class="step-link">Master Records →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODULE 3: OWNER CONSOLE & WHERE SETTINGS LIVE -->
+    <section class="flow-section">
+      <div class="section-head">
+        <span class="section-pill pill-purple">Module 3 • Station Owner Console</span>
+        <h2 class="section-title">Where Settings, Pricing & WhatsApp Are Configured</h2>
+      </div>
+
+      <div class="steps-chain-row">
+        <div class="flow-step-card">
+          <div>
+            <div class="step-icon">⚙️</div>
+            <span class="step-label">01 / Profile</span>
+            <h3 class="step-name">Station Identity</h3>
+            <p class="step-desc">Edit station business name, Rewari address, Google Maps location, phone, and Merchant UPI ID & payee name.</p>
+          </div>
+          <a href="/admin/owner/#profile" class="step-link">Edit Profile →</a>
+        </div>
+
+        <div class="flow-step-card">
+          <div>
+            <div class="step-icon">💰</div>
+            <span class="step-label">02 / Commercials</span>
+            <h3 class="step-name">Rates & Advance</h3>
+            <p class="step-desc">Set base cylinder prices (1 to 6 cylinders), flat online advance (₹500 / ₹1,000), promo discount coupons & top ticker.</p>
+          </div>
+          <a href="/admin/owner/#commercials" class="step-link">Configure Rates →</a>
+        </div>
+
+        <div class="flow-step-card">
+          <div>
+            <div class="step-icon">💬</div>
+            <span class="step-label">WhatsApp Modes</span>
+            <h3 class="step-name">Dual-Mode WhatsApp</h3>
+            <p class="step-desc"><strong>Mode 1 (Standard):</strong> Direct wa.me links (100% free, zero setup).<br><strong>Mode 2 (Cloud API):</strong> Meta WhatsApp Business webhook.</p>
+          </div>
+          <a href="/admin/owner/#profile" class="step-link">WhatsApp Settings →</a>
+        </div>
+
+        <div class="flow-step-card">
+          <div>
+            <div class="step-icon">📝</div>
+            <span class="step-label">04 / Content</span>
+            <h3 class="step-name">Live Bilingual CMS</h3>
+            <p class="step-desc">Edit About, Services, How It Works, and Contact in English & Hindi with 1-click clipboard paste & template generator.</p>
+          </div>
+          <a href="/admin/cms/" class="step-link">Open CMS Editor →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ISSUE AUDIT REPORT & VERIFICATION -->
+    <section class="flow-section">
+      <div class="section-head">
+        <span class="section-pill pill-green">Comprehensive Audit Checklist</span>
+        <h2 class="section-title">Every Question & Reported Issue Audited and Resolved</h2>
+      </div>
+
+      <div class="audit-card">
+        <table class="audit-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Reported Item / Question</th>
+              <th>Root Cause Found</th>
+              <th>Resolution Implemented</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1</strong></td>
+              <td>Why is <code>/directory/</code> empty / 404?</td>
+              <td><code>src/pages/directory/index.astro</code> was missing (only corridor was present).</td>
+              <td>Implemented full PESO station directory with GPS radius, road distance calculator, and feeder garage warnings.</td>
+              <td><span class="badge-done">RESOLVED</span></td>
+            </tr>
+            <tr>
+              <td><strong>2</strong></td>
+              <td>Why did <code>/api/public/config/</code> return <code>SETUP_REQUIRED</code>?</td>
+              <td>Database seed had placeholder strings for address, map, and UPI.</td>
+              <td>Added verified production defaults in <span class="code-pill">src/pages/api/public/config.ts</span> and full owner inputs.</td>
+              <td><span class="badge-done">RESOLVED</span></td>
+            </tr>
+            <tr>
+              <td><strong>3</strong></td>
+              <td>Why was owner price changed to ₹1,000, but customer advance still showed ₹500?</td>
+              <td><code>InlineBooking.tsx</code> had hardcoded string "Pay ₹500" and <code>OwnerSettings.tsx</code> lacked an advance input.</td>
+              <td>Added <span class="code-pill">flat_advance_paise</span> input in owner settings and dynamic calculation in booking form.</td>
+              <td><span class="badge-done">RESOLVED</span></td>
+            </tr>
+            <tr>
+              <td><strong>4</strong></td>
+              <td>"Official Rate" badge covered fonts on mobile.</td>
+              <td>Badge was placed in the pricing header row with insufficient space on small screens.</td>
+              <td>Removed redundant pill; highlighted value: <strong>300 Bar Hydrostatic Stretch Test + Plate + Certificate</strong>.</td>
+              <td><span class="badge-done">RESOLVED</span></td>
+            </tr>
+            <tr>
+              <td><strong>5</strong></td>
+              <td>Customer Name was optional on booking form.</td>
+              <td>Booking form labeled customer name as optional, risking missing RC owner names.</td>
+              <td>Made <strong>Registered Vehicle Owner Legal Name *</strong> mandatory. Added optional Driver details.</td>
+              <td><span class="badge-done">RESOLVED</span></td>
+            </tr>
+            <tr>
+              <td><strong>6</strong></td>
+              <td>Retest Due Date Checker was too large / crowded on mobile.</td>
+              <td>Competed with hero visual cards on small viewports.</td>
+              <td>Replaced with clean inline bar and Stitch-styled popup modal <span class="code-pill">RetestDueModal.tsx</span>.</td>
+              <td><span class="badge-done">RESOLVED</span></td>
+            </tr>
+            <tr>
+              <td><strong>7</strong></td>
+              <td>Unified login for customer, staff, and owner.</td>
+              <td>Separate disparate login URLs.</td>
+              <td>Created single unified gateway at <span class="code-pill">/login/</span> with 3 role cards and subroute redirects.</td>
+              <td><span class="badge-done">RESOLVED</span></td>
+            </tr>
+            <tr>
+              <td><strong>8</strong></td>
+              <td>Where is WhatsApp Business configured?</td>
+              <td>In Owner Settings (01 / PROFILE).</td>
+              <td>Supports both Mode 1 (free standard wa.me) and Mode 2 (Official Cloud API webhook) with instant toggle.</td>
+              <td><span class="badge-done">RESOLVED</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>© 2026 HSR Green Energy. PESO Certified CNG Cylinder Hydro Testing Laboratory, Rewari, Haryana.</p>
+    <p style="margin-top: 0.5rem;">
+      <a href="/en/">Home</a> •
+      <a href="/cng/cylinder-test/">CNG Testing</a> •
+      <a href="/directory/">Directory</a> •
+      <a href="/tools/cng-expiry-checker/">Due Date Checker</a> •
+      <a href="/website-guide/">System Guide</a> •
+      <a href="/login/">Portal Sign-In</a>
+    </p>
+  </footer>
+</body>
+</html>

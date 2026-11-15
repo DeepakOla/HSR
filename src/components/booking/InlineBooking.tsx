@@ -110,6 +110,9 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
   const [showCompanyDrawer, setShowCompanyDrawer] = useState<boolean>(false);
   const [companyName, setCompanyName] = useState<string>('');
   const [companyGstin, setCompanyGstin] = useState<string>('');
+  const [driverName, setDriverName] = useState<string>('');
+  const [driverPhone, setDriverPhone] = useState<string>('');
+  const [showDriverDrawer, setShowDriverDrawer] = useState<boolean>(false);
 
   // Fleet Multi-vehicle State
   const [fleetVehicles, setFleetVehicles] = useState<MultiVehicleRow[]>([
@@ -320,6 +323,11 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
       return;
     }
 
+    if (!customerName.trim() || customerName.trim().length < 2) {
+      setFormError(hindi ? 'कृपया आरसी / आधार के अनुसार वाहन मालिक का कानूनी नाम दर्ज करें।' : 'Please enter registered vehicle owner legal name as on RC / Aadhaar.');
+      return;
+    }
+
     const cleanPhone = customerPhone.replace(/\D/g, '');
     if (cleanPhone.length < 10) {
       setFormError(hindi ? 'कृपया मान्य 10-अंकों का मोबाइल नंबर दर्ज करें।' : 'Please enter a valid 10-digit mobile phone number.');
@@ -338,7 +346,10 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
         slotSnapshotId: selectedSlotId,
         categoryId: selectedCategory.id,
         vehicleType: `${vehicleClass}${companyName ? ` (${companyName})` : ''}`,
-        customerName: customerName.trim() || (hindi ? 'ग्राहक' : 'Customer'),
+        customerName: customerName.trim(),
+        rcOwnerLegalName: customerName.trim(),
+        driverName: driverName.trim() || undefined,
+        driverPhone: driverPhone.trim() ? driverPhone.replace(/\D/g, '') : undefined,
         mobile: cleanPhone,
         vehicleRegistration: regValidation.normalized,
         source: 'WEB',
@@ -664,18 +675,19 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
 
                   <div className="input-field">
                     <label className="field-label" htmlFor="name-input">
-                      {hindi ? 'ग्राहक का नाम (वैकल्पिक)' : 'Customer Name (Optional)'}
+                      {hindi ? 'पंजीकृत वाहन मालिक का कानूनी नाम *' : 'Registered Vehicle Owner Legal Name *'}
                     </label>
                     <input
                       id="name-input"
                       type="text"
                       className="form-input"
-                      placeholder="e.g. Amit Sharma"
+                      required
+                      placeholder={hindi ? 'आरसी / आधार के अनुसार नाम' : 'As on RC / Aadhaar (PESO Form C)'}
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                     />
                     <span className="field-hint">
-                      {hindi ? 'प्रमाणपत्र हेतु' : 'For test records'}
+                      {hindi ? 'वैधानिक फॉर्म C प्रमाणपत्र हेतु अनिवार्य' : 'Mandatory for statutory PESO Form C certificate'}
                     </span>
                   </div>
 
@@ -701,19 +713,56 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                   </div>
                 </div>
 
-                {/* Optional Company Details Toggle */}
+                {/* Optional Driver & Company Details */}
                 <div className="company-toggle-wrap">
-                  <button
-                    type="button"
-                    className="toggle-link-btn"
-                    onClick={() => setShowCompanyDrawer(!showCompanyDrawer)}
-                  >
-                    {showCompanyDrawer ? '▲ ' : '▼ '}
-                    {hindi ? 'कंपनी / GST इनवॉइस विवरण जोड़ें (वैकल्पिक)' : 'Add Company / GST Tax Invoice details (Optional)'}
-                  </button>
+                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="toggle-link-btn"
+                      onClick={() => setShowDriverDrawer(!showDriverDrawer)}
+                    >
+                      {showDriverDrawer ? '▲ ' : '▼ '}
+                      {hindi ? 'ड्राइवर / ड्रॉप-ऑफ व्यक्ति विवरण (यदि मालिक से भिन्न हो)' : 'Driver / Drop-off Person Details (If different from owner)'}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="toggle-link-btn"
+                      onClick={() => setShowCompanyDrawer(!showCompanyDrawer)}
+                    >
+                      {showCompanyDrawer ? '▲ ' : '▼ '}
+                      {hindi ? 'कंपनी / GST इनवॉइस विवरण जोड़ें (वैकल्पिक)' : 'Add Company / GST Tax Invoice details (Optional)'}
+                    </button>
+                  </div>
+
+                  {showDriverDrawer && (
+                    <div className="drawer-fields-grid" style={{ marginTop: '0.75rem', marginBottom: '0.75rem' }}>
+                      <div className="input-field">
+                        <label className="field-label">{hindi ? 'ड्राइवर का नाम' : 'Driver Name'}</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. Ramesh Singh"
+                          value={driverName}
+                          onChange={(e) => setDriverName(e.target.value)}
+                        />
+                      </div>
+                      <div className="input-field">
+                        <label className="field-label">{hindi ? 'ड्राइवर का मोबाइल' : 'Driver Mobile Phone'}</label>
+                        <input
+                          type="tel"
+                          maxLength={10}
+                          className="form-input font-mono-num"
+                          placeholder="9876543210"
+                          value={driverPhone}
+                          onChange={(e) => setDriverPhone(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   {showCompanyDrawer && (
-                    <div className="drawer-fields-grid">
+                    <div className="drawer-fields-grid" style={{ marginTop: '0.75rem' }}>
                       <div className="input-field">
                         <label className="field-label">{hindi ? 'कंपनी / व्यवसाय का नाम' : 'Company / Business Name'}</label>
                         <input
@@ -740,15 +789,18 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
               </div>
 
               {/* Price Breakdown & Advance Banner */}
-              {selectedCategory && (
+              {publicConfig?.hidePricingUntilVehicleDetails && regNumber.trim().length < 5 ? (
+                <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1', textAlign: 'center', margin: '1rem 0' }}>
+                  <span style={{ fontSize: '0.88rem', color: '#64748b', fontWeight: 600 }}>
+                    🚗 {hindi ? 'सटीक हाइड्रो टेस्टिंग दरें देखने के लिए कृपया ऊपर वाहन पंजीकरण संख्या दर्ज करें।' : 'Enter vehicle registration number above to unlock certified testing rates.'}
+                  </span>
+                </div>
+              ) : selectedCategory && (
                 <div className="pricing-summary-card">
                   <div className="pricing-header-row">
                     <div>
                       <strong className="summary-title">{vehicleClass} — {cylinderCount} {hindi ? 'सिलेंडर' : 'Cylinder(s)'}</strong>
                       <span className="summary-subtitle">{hindi ? '300 बार हाइड्रोस्टेटिक स्ट्रेच टेस्टिंग + प्लेट + प्रमाणन' : '300 Bar Hydrostatic Stretch Test + Plate + Certificate'}</span>
-                    </div>
-                    <div className="summary-badge-pill">
-                      <span className="metric-chip metric-cyan">{hindi ? 'स्थिर शुल्क' : 'Official Rate'}</span>
                     </div>
                   </div>
 
@@ -817,17 +869,27 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                     )}
                   </div>
 
-                  <div className="advance-highlight-banner">
-                    <div className="advance-info">
-                      <span className="adv-tag">{hindi ? 'अग्रिम ऑनलाइन टोकन' : 'Advance Payable Online'}</span>
-                      <strong className="adv-amt">{inr(selectedCategory.advancePaise || 50000)}</strong>
-                      <span className="adv-desc">
-                        {hindi
-                          ? `₹500 अग्रिम ऑनलाइन देकर स्लॉट आरक्षित करें। शेष ${inr(finalTotalPaise - (selectedCategory.advancePaise || 50000))} टेस्टिंग पूर्ण होने पर स्टेशन पर देय होगा।`
-                          : `Pay ₹500 advance online to confirm testing bay. Balance ${inr(finalTotalPaise - (selectedCategory.advancePaise || 50000))} payable on arrival after inspection.`}
-                      </span>
-                    </div>
-                  </div>
+                  {(() => {
+                    const effectiveAdvancePaise = publicConfig?.flatAdvancePaise ?? selectedCategory.advancePaise ?? 50000;
+                    const remainingBalancePaise = Math.max(0, finalTotalPaise - effectiveAdvancePaise);
+                    return (
+                      <div className="advance-highlight-banner">
+                        <div className="advance-info">
+                          <span className="adv-tag">{hindi ? 'अग्रिम ऑनलाइन टोकन' : 'Advance Payable Online'}</span>
+                          <strong className="adv-amt">{inr(effectiveAdvancePaise)}</strong>
+                          <span className="adv-desc">
+                            {effectiveAdvancePaise >= finalTotalPaise
+                              ? (hindi
+                                  ? `कुल ${inr(finalTotalPaise)} का ऑनलाइन भुगतान। स्टेशन पर शून्य देय राशि।`
+                                  : `Full payment of ${inr(finalTotalPaise)} online. Zero balance payable at station.`)
+                              : (hindi
+                                  ? `${inr(effectiveAdvancePaise)} अग्रिम ऑनलाइन देकर स्लॉट आरक्षित करें। शेष ${inr(remainingBalancePaise)} टेस्टिंग पूर्ण होने पर स्टेशन पर देय होगा।`
+                                  : `Pay ${inr(effectiveAdvancePaise)} advance online to confirm testing bay. Balance ${inr(remainingBalancePaise)} payable on arrival after inspection.`)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
@@ -860,7 +922,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                 <span className="metric-chip metric-amber">⏳ {hindi ? 'स्लॉट 15 मिनट के लिए सुरक्षित' : 'Bay Held for 15 Minutes'}</span>
                 <h3 className="hold-title">
                   {hindi ? 'ऑनलाइन टोकन अग्रिम: ' : 'Online Advance Payment: '}
-                  {inr(holdResult.pricing?.advancePaise || 50000)}
+                  {inr(holdResult.pricing?.advancePaise || publicConfig?.flatAdvancePaise || 50000)}
                 </h3>
                 <p className="hold-meta">
                   <strong>{hindi ? 'बुकिंग कोड:' : 'Booking Reference:'}</strong> <code className="booking-code">{holdResult.bookingCode}</code>

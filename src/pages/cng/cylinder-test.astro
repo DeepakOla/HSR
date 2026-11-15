@@ -1,0 +1,323 @@
+---
+// File: src/pages/cng/cylinder-test.astro
+import '../../styles/design-tokens.css';
+
+const pageTitle = "CNG Cylinder Hydro Testing Service & Cost | Rewari, Haryana | HSR Green Energy";
+const pageDescription = "Certified PESO Form GCT CNG cylinder hydro testing in Rewari, Haryana. 300 Bar water jacket stretch test, digital Form C certificate & brass compliance plate. Fixed ₹1,400 per cylinder.";
+const canonicalUrl = "https://hsrgreenenergy.in/cng/cylinder-test/";
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "LocalBusiness",
+      "@id": "https://hsrgreenenergy.in/#station",
+      "name": "HSR Green Energy CNG Cylinder Hydro Testing",
+      "telephone": "+919910055355",
+      "priceRange": "₹1,400 - ₹3,500",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Bhiwadi Road, Near Express Toll Plaza",
+        "addressLocality": "Rewari",
+        "addressRegion": "Haryana",
+        "postalCode": "123401",
+        "addressCountry": "IN"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 28.1950,
+        "longitude": 76.6250
+      },
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+          "opens": "09:00",
+          "closes": "18:00"
+        }
+      ]
+    },
+    {
+      "@type": "Service",
+      "name": "Automotive CNG Cylinder Hydrostatic Testing",
+      "provider": { "@id": "https://hsrgreenenergy.in/#station" },
+      "serviceType": "CNG Cylinder Hydrostatic Stretch Testing",
+      "areaServed": ["Rewari", "Gurugram", "Manesar", "Dharuhera", "Bhiwadi", "Pataudi", "Haryana"],
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "CNG Cylinder Testing Packages",
+        "itemListElement": [
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Single Cylinder Car Hydro Testing (Maruti, Hyundai, Tata)"
+            },
+            "price": "1400",
+            "priceCurrency": "INR"
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Dual Cylinder Vehicle Hydro Testing"
+            },
+            "price": "2600",
+            "priceCurrency": "INR"
+          }
+        ]
+      }
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Why is CNG cylinder hydro testing required every 3 years?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Under Rule 35 of the Gas Cylinders Rules (2016) and Central Motor Vehicles Rules (CMVR), all automotive CNG cylinders must undergo hydrostatic water-jacket expansion testing every 3 years to ensure structural integrity at 300 Bar pressure."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is included in the ₹1,400 test fee?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The flat fee covers nitrogen degassing, ultrasonic wall-thickness scanning, 300 Bar water jacket stretch test, heated dry air baking, statutory brass compliance plate stamping, and digital PESO Form C certificate upload."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How long does the testing process take at HSR Rewari?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "A standard single-cylinder car takes 90–120 minutes from check-in to brass compliance plate punching and Form C certificate generation."
+          }
+        }
+      ]
+    }
+  ]
+};
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{pageTitle}</title>
+  <meta name="description" content={pageDescription} />
+  <link rel="canonical" href={canonicalUrl} />
+  <meta property="og:title" content={pageTitle} />
+  <meta property="og:description" content={pageDescription} />
+  <meta property="og:url" content={canonicalUrl} />
+  <meta property="og:type" content="article" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+
+  <style>
+    :root {
+      --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --primary: #ea580c;
+      --navy: #0a1128;
+      --slate-bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border-color: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-body); background: var(--slate-bg); color: #0f172a; line-height: 1.6; }
+    .nav-bar { background: #fff; border-bottom: 1px solid var(--border-color); padding: 0.85rem 1.25rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 30; }
+    .nav-brand { text-decoration: none; color: var(--navy); font-family: var(--font-heading); font-weight: 800; font-size: 1.15rem; }
+    .nav-links { display: flex; gap: 1rem; align-items: center; }
+    .nav-link { font-size: 0.85rem; font-weight: 600; color: #475569; text-decoration: none; }
+    .nav-btn { background: var(--primary); color: #fff; font-size: 0.82rem; font-weight: 700; padding: 0.45rem 0.9rem; border-radius: 8px; text-decoration: none; }
+    .hero { background: linear-gradient(135deg, #0a1128 0%, #1e293b 100%); color: #fff; padding: 3.5rem 1rem; text-align: center; }
+    .hero-container { max-width: 860px; margin: 0 auto; }
+    .hero-badge { display: inline-block; background: rgba(234, 88, 12, 0.2); border: 1px solid rgba(234, 88, 12, 0.4); color: #fb923c; font-size: 0.75rem; font-weight: 700; padding: 0.3rem 0.85rem; border-radius: 9999px; text-transform: uppercase; margin-bottom: 1rem; }
+    .hero-title { font-family: var(--font-heading); font-size: clamp(2rem, 4.5vw, 2.75rem); font-weight: 800; line-height: 1.2; margin-bottom: 1rem; }
+    .hero-subtitle { font-size: 1.05rem; color: #cbd5e1; max-width: 720px; margin: 0 auto 2rem; }
+    .hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn-hero-primary { background: var(--primary); color: #fff; font-weight: 700; font-size: 0.95rem; padding: 0.75rem 1.75rem; border-radius: 12px; text-decoration: none; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.35); }
+    .btn-hero-secondary { background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: #fff; font-weight: 600; font-size: 0.95rem; padding: 0.75rem 1.75rem; border-radius: 12px; text-decoration: none; }
+    .content-section { max-width: 960px; margin: 3rem auto; padding: 0 1rem; }
+    .section-title { font-family: var(--font-heading); font-size: 1.75rem; font-weight: 800; color: var(--navy); margin-bottom: 0.5rem; text-align: center; }
+    .section-desc { text-align: center; color: #64748b; font-size: 0.95rem; margin-bottom: 2.5rem; }
+    .step-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; }
+    .step-card { background: #fff; border: 1px solid var(--border-color); border-radius: 14px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.03); }
+    .step-num { display: inline-block; font-size: 1.25rem; font-weight: 800; color: var(--primary); font-family: var(--font-heading); margin-bottom: 0.5rem; }
+    .step-title { font-size: 1.1rem; font-weight: 700; color: var(--navy); margin-bottom: 0.5rem; }
+    .step-text { font-size: 0.88rem; color: #475569; line-height: 1.5; }
+    .pricing-table-card { background: #fff; border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.04); margin-top: 2rem; }
+    .pricing-table { width: 100%; border-collapse: collapse; text-align: left; }
+    .pricing-table th { background: #f1f5f9; padding: 1rem 1.25rem; font-size: 0.82rem; font-weight: 700; text-transform: uppercase; color: #475569; }
+    .pricing-table td { padding: 1rem 1.25rem; border-top: 1px solid #e2e8f0; font-size: 0.9rem; }
+    .faq-container { display: flex; flex-direction: column; gap: 1rem; margin-top: 2rem; }
+    .faq-item { background: #fff; border: 1px solid var(--border-color); border-radius: 12px; padding: 1.25rem; }
+    .faq-question { font-size: 1rem; font-weight: 700; color: var(--navy); margin-bottom: 0.4rem; }
+    .faq-answer { font-size: 0.88rem; color: #475569; line-height: 1.5; }
+    .cta-banner { background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%); color: #fff; border-radius: 20px; padding: 3rem 1.5rem; text-align: center; margin: 4rem auto; max-width: 960px; box-shadow: 0 10px 20px -5px rgba(234, 88, 12, 0.3); }
+    .cta-banner h2 { font-family: var(--font-heading); font-size: 2rem; font-weight: 800; margin-bottom: 0.75rem; }
+    .cta-banner p { font-size: 1rem; color: #ffedd5; max-width: 600px; margin: 0 auto 1.75rem; }
+    .btn-cta-white { background: #fff; color: #9a3412; font-weight: 800; font-size: 1rem; padding: 0.85rem 2rem; border-radius: 12px; text-decoration: none; display: inline-block; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    .site-footer { border-top: 1px solid var(--border-color); padding: 2rem 1rem; text-align: center; font-size: 0.8rem; color: #64748b; background: #fff; }
+    .site-footer a { color: var(--primary); text-decoration: none; margin: 0 0.5rem; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <nav class="nav-bar">
+    <a href="/en/" class="nav-brand">⚡ HSR Green Energy</a>
+    <div class="nav-links">
+      <a href="/en/" class="nav-link">Home</a>
+      <a href="/directory/" class="nav-link">Find Station</a>
+      <a href="/tools/cng-expiry-checker/" class="nav-link">Due Date Checker</a>
+      <a href="/website-guide/" class="nav-link">System Guide</a>
+      <a href="/en/#booking-form" class="nav-btn">Reserve Bay Slot →</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="hero-container">
+      <span class="hero-badge">Statutory PESO Form GCT Certified Testing Plant</span>
+      <h1 class="hero-title">Automotive CNG Cylinder Hydro Testing in Rewari, Haryana</h1>
+      <p class="hero-subtitle">
+        300 Bar Water-Jacket Hydrostatic Stretch Testing conforming to Gas Cylinders Rules (2016) & IS 8451 standards. Instant digital Form C certificate and brass compliance plate.
+      </p>
+      <div class="hero-actions">
+        <a href="/en/#booking-form" class="btn-hero-primary">Book Testing Bay Slot (From ₹1,400) →</a>
+        <a href="/tools/cng-expiry-checker/" class="btn-hero-secondary">Check 3-Year Retest Due Date</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="content-section">
+      <h2 class="section-title">The Certified 5-Step Hydrostatic Testing Standard</h2>
+      <p class="section-desc">Every automotive CNG cylinder is tested to 1.5x working pressure in accordance with statutory Gas Cylinders Rules and MoRTH safety guidelines.</p>
+
+      <div class="step-grid">
+        <div class="step-card">
+          <span class="step-num">01</span>
+          <h3 class="step-title">Degassing & Residual Gas Purging</h3>
+          <p class="step-text">Controlled explosion-proof evacuation of residual methane gas, valve removal, and nitrogen inerting before water filling.</p>
+        </div>
+        <div class="step-card">
+          <span class="step-num">02</span>
+          <h3 class="step-title">Internal Optical & Ultrasonic Scan</h3>
+          <p class="step-text">Optical endoscopy inspection of internal cylinder walls followed by multi-point ultrasonic wall thickness measurement to detect pitting or micro-cracks.</p>
+        </div>
+        <div class="step-card">
+          <span class="step-num">03</span>
+          <h3 class="step-title">300 Bar Water Jacket Expansion Test</h3>
+          <p class="step-text">The cylinder is pressurized to 300 Bar hydraulic pressure in a sealed water chamber. Volumetric stretch and permanent expansion are digitally recorded.</p>
+        </div>
+        <div class="step-card">
+          <span class="step-num">04</span>
+          <h3 class="step-title">Internal Hot-Air Dehydration & Drying</h3>
+          <p class="step-text">Heated dry air circulation at 80°C ensures zero residual moisture or water droplets remain inside the cylinder to prevent internal rust.</p>
+        </div>
+        <div class="step-card">
+          <span class="step-num">05</span>
+          <h3 class="step-title">Compliance Brass Plate & PESO Form C</h3>
+          <p class="step-text">Stamped brass verification plate is securely mounted onto the cylinder, and the official PESO Form C compliance certificate is generated and issued.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="content-section">
+      <h2 class="section-title">Transparent Testing Rates — No Hidden Middleman Fees</h2>
+      <p class="section-desc">Fixed rates including 300 Bar water jacket stretch test, brass compliance plate, and digital PESO Form C certificate.</p>
+
+      <div class="pricing-table-card">
+        <table class="pricing-table">
+          <thead>
+            <tr>
+              <th>Vehicle Type</th>
+              <th>Cylinders Fitted</th>
+              <th>Test Time</th>
+              <th>All-Inclusive Price (₹)</th>
+              <th>Online Advance</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Passenger Car / Taxi</strong> (Maruti, Hyundai, Tata)</td>
+              <td>1 Cylinder (60L / 65L)</td>
+              <td>~90 Mins</td>
+              <td><strong>₹1,400</strong></td>
+              <td>₹500 / ₹1,000</td>
+            </tr>
+            <tr>
+              <td><strong>Dual-Cylinder Car / Underbody Eeco</strong></td>
+              <td>2 Cylinders</td>
+              <td>~120 Mins</td>
+              <td><strong>₹2,600</strong></td>
+              <td>₹500 / ₹1,000</td>
+            </tr>
+            <tr>
+              <td><strong>Commercial LCV / Maxi Truck</strong></td>
+              <td>3 - 4 Cylinders</td>
+              <td>~150 Mins</td>
+              <td><strong>₹3,600 - ₹4,800</strong></td>
+              <td>₹1,000</td>
+            </tr>
+            <tr>
+              <td><strong>Heavy Bus / Multi-Axle Fleet Cascade</strong></td>
+              <td>5 - 8 Cylinders</td>
+              <td>~180 - 240 Mins</td>
+              <td><strong>Custom Fleet Quote</strong></td>
+              <td>₹1,000</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="content-section">
+      <h2 class="section-title">Frequently Asked Questions</h2>
+      <p class="section-desc">Important regulatory and procedural information regarding automotive CNG cylinder hydro testing.</p>
+
+      <div class="faq-container">
+        <div class="faq-item">
+          <h3 class="faq-question">Why is CNG cylinder hydro testing mandatory every 3 years?</h3>
+          <p class="faq-answer">
+            Under Rule 35 of the Gas Cylinders Rules (2016) and Central Motor Vehicles Rules (CMVR), all automotive CNG cylinders must undergo hydrostatic water-jacket expansion testing every 3 years. Without a valid PESO certificate and brass plate, CNG filling stations will deny fuel, and vehicle fitness renewals are blocked.
+          </p>
+        </div>
+        <div class="faq-item">
+          <h3 class="faq-question">What documents do I need to bring for the test?</h3>
+          <p class="faq-answer">
+            Bring the original vehicle Registration Certificate (RC) and an identification document (Aadhaar or Driving License). If a previous hydro test was conducted, bring the old compliance plate or certificate.
+          </p>
+        </div>
+        <div class="faq-item">
+          <h3 class="faq-question">Can I wait while my vehicle is tested?</h3>
+          <p class="faq-answer">
+            Yes! Our Rewari testing facility features an air-conditioned customer lounge with live CCTV bay monitoring and high-speed Wi-Fi while your vehicle is inspected.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <div class="cta-banner">
+      <h2>Reserve Your Testing Bay Slot Today</h2>
+      <p>Secure a confirmed appointment window, avoid queues, and get your certified Form C certificate in under 2 hours.</p>
+      <a href="/en/#booking-form" class="btn-cta-white">Book Priority Slot (From ₹1,400) →</a>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>© 2026 HSR Green Energy. Certified Class-A PESO CNG Hydro Testing Plant, Rewari, Haryana.</p>
+    <p style="margin-top: 0.5rem;">
+      <a href="/en/">Home</a> •
+      <a href="/cng/cylinder-test/">Hydro Testing</a> •
+      <a href="/directory/">Directory</a> •
+      <a href="/tools/cng-expiry-checker/">Due Date Checker</a> •
+      <a href="/website-guide/">System Guide</a> •
+      <a href="/login/">Portal Login</a>
+    </p>
+  </footer>
+</body>
+</html>
