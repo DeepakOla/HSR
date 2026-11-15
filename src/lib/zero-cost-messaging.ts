@@ -90,3 +90,45 @@ export async function dispatchWhatsAppNotification(
     link
   };
 }
+
+export function buildWhatsAppDeepLinks(params: {
+  stationWaDigits: string;
+  customerPhoneE164: string;
+  groupReference: string;
+  displayRegNo: string;
+  slotDate: string;
+  slotTime: string;
+  statusTrackerUrl: string;
+}) {
+  const cleanDigits = params.stationWaDigits.replace(/\D/g, '');
+  const message = `Hello HSR Green Energy, I would like to track my booking ${params.groupReference} for vehicle ${params.displayRegNo} on ${params.slotDate}.`;
+  return {
+    customerClickToChatUrl: `https://wa.me/${cleanDigits}?text=${encodeURIComponent(message)}`,
+    message
+  };
+}
+
+export async function sendMetaFreeServiceReply(env: any, toDigits: string, text: string): Promise<boolean> {
+  const token = env?.META_WA_ACCESS_TOKEN;
+  const phoneId = env?.META_WA_PHONE_NUMBER_ID;
+  if (!token || !phoneId) return false;
+  try {
+    const res = await fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: toDigits.replace(/\D/g, ''),
+        type: 'text',
+        text: { body: text }
+      })
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+

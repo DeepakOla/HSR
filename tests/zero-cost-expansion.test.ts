@@ -6,6 +6,7 @@ vi.mock('cloudflare:workers', () => ({
 
 import { generateUpiSvgQr, buildUpiUri, parseBankAlertEmail, recordAndAutoReconcileUpiCredit } from '../src/lib/zero-cost-upi';
 import { formatZohoBooksCsv, generateDailyB2cConsolidation, type ZohoInvoiceExportRow } from '../src/lib/zoho-books-free';
+import { buildWhatsAppDeepLinks } from '../src/lib/zero-cost-messaging';
 import { createMockD1 } from './helpers/d1-mock';
 import { extendFutureSnapshots } from '../src/lib/booking-engine';
 
@@ -149,4 +150,21 @@ Ref: HSR-BK-9912
     expect(csv).toContain('35000.00');
     expect(csv).toContain('41300.00');
   });
+
+  it('builds valid WhatsApp deep links with customer phone and booking message', () => {
+    const links = buildWhatsAppDeepLinks({
+      stationWaDigits: '+919910055355',
+      customerPhoneE164: '+919876543210',
+      groupReference: 'HSR-BK-9912',
+      displayRegNo: 'HR 26 AB 1234',
+      slotDate: '2026-11-15',
+      slotTime: '10:00',
+      statusTrackerUrl: 'https://hsr.kumardeepakola.workers.dev/booking-status/token123'
+    });
+
+    expect(links.customerClickToChatUrl).toContain('https://wa.me/919910055355');
+    expect(links.customerClickToChatUrl).toContain('HSR-BK-9912');
+    expect(links.message).toContain('HR 26 AB 1234');
+  });
 });
+
