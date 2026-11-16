@@ -101,8 +101,10 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
   const [vehicleClass, setVehicleClass] = useState<string>('Passenger Cars & Taxis');
   const [cylinderCount, setCylinderCount] = useState<number>(1);
   const [serviceDate, setServiceDate] = useState<string>(() => todayInIndia());
+  const [hasUserSelectedDate, setHasUserSelectedDate] = useState<boolean>(false);
   const [selectedHour, setSelectedHour] = useState<string>('');
   const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
 
   const [regNumber, setRegNumber] = useState<string>('');
   const [customerName, setCustomerName] = useState<string>('');
@@ -187,28 +189,39 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
       .catch(() => {});
   }, []);
 
-  // Fetch slots and pricing categories
+  // Fetch vehicle pricing categories once on mount
   useEffect(() => {
     let cancelled = false;
-    const loadData = async () => {
+    fetch(`/api/public/vehicle-categories/?locale=${locale}`)
+      .then((res) => readApiJson(res))
+      .then((catData: any) => {
+        if (!cancelled && catData?.data?.categories) {
+          setCategories(catData.data.categories);
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [locale]);
+
+  // Fetch slots ONLY when customer selects a date or opens slot selection (0 requests on initial mount)
+  useEffect(() => {
+    if (!hasUserSelectedDate || !serviceDate) return;
+    let cancelled = false;
+    const loadSlots = async () => {
       setLoadingAvailability(true);
       setLoadError('');
       setSelectedSlotId(null);
       setSelectedHour('');
       try {
-        const [availRes, catRes] = await Promise.all([
-          fetch(`/api/public/availability/?locale=${locale}&fromDate=${encodeURIComponent(todayInIndia())}&days=30&cylinderCount=${cylinderCount}`),
-          fetch(`/api/public/vehicle-categories/?locale=${locale}`),
-        ]);
+        const availRes = await fetch(
+          `/api/public/availability/?locale=${locale}&fromDate=${encodeURIComponent(serviceDate)}&days=1&cylinderCount=${cylinderCount}`
+        );
         const availData: any = await readApiJson(availRes);
-        const catData: any = await readApiJson(catRes);
-
-        if (!availRes.ok || !catRes.ok) {
-          throw new Error(availData?.error?.message || catData?.error?.message || 'Could not load availability');
+        if (!availRes.ok) {
+          throw new Error(availData?.error?.message || 'Could not load availability');
         }
         if (!cancelled) {
           setSlots(availData?.data?.slots || []);
-          setCategories(catData?.data?.categories || []);
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -219,13 +232,28 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
         if (!cancelled) setLoadingAvailability(false);
       }
     };
-    loadData();
+    loadSlots();
     return () => { cancelled = true; };
-  }, [locale, cylinderCount]);
+  }, [hasUserSelectedDate, serviceDate, cylinderCount, locale]);
 
-  // Current category pricing match
+  // Current category pricing match with immediate mathematical fallback
   const selectedCategory = useMemo(() => {
-    return categories.find((c) => c.cylinderCount === cylinderCount) || categories[0] || null;
+    const match = categories.find((c) => c.cylinderCount === cylinderCount);
+    if (match) return match;
+    if (categories.length > 0) return categories[0];
+    const base = 250000 * cylinderCount;
+    const gst = Math.round(base * 0.18);
+    return {
+      id: cylinderCount,
+      code: `CYL_0${cylinderCount}`,
+      name: `${cylinderCount} CNG cylinder(s)`,
+      cylinderCount,
+      basePricePaise: base,
+      gstRateBps: 1800,
+      gstPaise: gst,
+      totalPaise: base + gst,
+      advancePaise: 50000,
+    };
   }, [categories, cylinderCount]);
 
   const discountPaise = useMemo(() => {
@@ -318,6 +346,15 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
   const handleCreateHold = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setFormError('');
+
+    if (!termsAccepted) {
+      setFormError(
+        hindi
+          ? 'कृपया आगे बढ़ने के लिए नियम व शर्तें स्वीकार करें (अप्रतिदेय अग्रिम नीति)।'
+          : 'Please accept the Terms & Conditions (non-refundable advance policy) to proceed.'
+      );
+      return;
+    }
 
     if (!selectedSlotId) {
       setFormError(hindi ? 'कृपया परीक्षण का समय (स्लॉट) चुनें।' : 'Please select an appointment time slot.');
@@ -565,21 +602,27 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                       <button
                         type="button"
                         key={qd.dateStr}
-                        className={`date-pill ${serviceDate === qd.dateStr ? 'selected' : ''}`}
-                        onClick={() => setServiceDate(qd.dateStr)}
+                        className={`date-pill ${serviceDate === qd.dateStr && hasUserSelectedDate ? 'selected' : ''}`}
+                        onClick={() => {
+                          setServiceDate(qd.dateStr);
+                          setHasUserSelectedDate(true);
+                        }}
                       >
                         {qd.label}
                       </button>
                     ))}
                     <button
                       type="button"
-                      className={`date-pill calendar-pill-btn ${!quickDates.some((q) => q.dateStr === serviceDate) ? 'selected' : ''}`}
-                      onClick={handleOpenCalendar}
+                      className={`date-pill calendar-pill-btn ${hasUserSelectedDate && !quickDates.some((q) => q.dateStr === serviceDate) ? 'selected' : ''}`}
+                      onClick={() => {
+                        handleOpenCalendar();
+                        setHasUserSelectedDate(true);
+                      }}
                       title={hindi ? 'कैलेंडर से तारीख चुनें (30 दिन)' : 'Choose date from calendar (30 days)'}
                     >
                       <span className="cal-btn-icon">📅</span>
                       <span className="cal-btn-text">
-                        {!quickDates.some((q) => q.dateStr === serviceDate) ? serviceDate : (hindi ? 'कैलेंडर...' : 'Calendar...')}
+                        {hasUserSelectedDate && !quickDates.some((q) => q.dateStr === serviceDate) ? serviceDate : (hindi ? 'कैलेंडर...' : 'Calendar...')}
                       </span>
                       <input
                         ref={datePickerRef}
@@ -589,7 +632,10 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                         max={addDays(todayInIndia(), 30)}
                         value={serviceDate}
                         onChange={(e) => {
-                          if (e.target.value) setServiceDate(e.target.value);
+                          if (e.target.value) {
+                            setServiceDate(e.target.value);
+                            setHasUserSelectedDate(true);
+                          }
                         }}
                         className="calendar-hidden-input"
                       />
@@ -597,8 +643,22 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                   </div>
                 </div>
 
-                {/* Slots Loading or Hour Grid */}
-                {loadingAvailability ? (
+                {/* Slots Loading or Hour Grid (0 network queries before date interaction) */}
+                {!hasUserSelectedDate ? (
+                  <div className="select-date-prompt" style={{ padding: '1.25rem', background: '#f8fafc', borderRadius: '12px', border: '1.5px dashed #cbd5e1', textAlign: 'center', margin: '0.75rem 0' }}>
+                    <p style={{ margin: '0 0 0.65rem 0', color: '#334155', fontSize: '0.9rem', fontWeight: 600 }}>
+                      👉 {hindi ? 'उपलब्ध 20-मिनट टेस्टिंग स्लॉट देखने के लिए ऊपर तारीख चुनें' : 'Select an appointment date above to view available testing bays'}
+                    </p>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ fontSize: '0.82rem', padding: '0.45rem 1.15rem' }}
+                      onClick={() => setHasUserSelectedDate(true)}
+                    >
+                      ⚡ {hindi ? 'आज के उपलब्ध स्लॉट देखें' : "View Today's Testing Bays"}
+                    </button>
+                  </div>
+                ) : loadingAvailability ? (
                   <div className="loading-slots-notice">
                     <span className="spinner"></span> {hindi ? 'उपलब्ध स्लॉट लोड हो रहे हैं...' : 'Checking bay capacity...'}
                   </div>
@@ -900,6 +960,54 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                 </div>
               )}
 
+              {/* Statutory Non-Refundable Policy & Terms Checkbox */}
+              <div
+                className="terms-agreement-box"
+                style={{
+                  margin: '1.25rem 0 0.75rem 0',
+                  padding: '0.85rem 1rem',
+                  background: '#f8fafc',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '0.65rem',
+                }}
+              >
+                <input
+                  id="booking-terms-checkbox"
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  style={{
+                    marginTop: '0.2rem',
+                    width: '18px',
+                    height: '18px',
+                    cursor: 'pointer',
+                    accentColor: '#ea580c',
+                    flexShrink: 0,
+                  }}
+                  required
+                />
+                <label
+                  htmlFor="booking-terms-checkbox"
+                  style={{
+                    fontSize: '0.84rem',
+                    color: '#334155',
+                    lineHeight: 1.45,
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                  }}
+                >
+                  <strong>
+                    {hindi ? 'मैं नियम व शर्तें स्वीकार करता हूँ।' : 'I accept the Terms & Conditions.'}
+                  </strong>{' '}
+                  {hindi
+                    ? 'स्लॉट पुष्टि के बाद बुकिंग अग्रिम अप्रतिदेय (non-refundable) है क्योंकि यह समर्पित टेस्टिंग बे और तकनीशियन समय आरक्षित करता है।'
+                    : 'The booking advance is non-refundable upon slot confirmation as it locks dedicated testing bay and technician capacity.'}
+                </label>
+              </div>
+
               {/* Form Error Banner */}
               {formError && (
                 <div className="form-error-banner" role="alert">
@@ -912,7 +1020,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                 <button
                   type="submit"
                   className="btn btn-primary submit-book-btn"
-                  disabled={isSubmitting || !selectedSlotId}
+                  disabled={isSubmitting || !selectedSlotId || !termsAccepted}
                 >
                   {isSubmitting ? (
                     <span>⏳ {hindi ? 'स्लॉट सुरक्षित हो रहा है...' : 'Reserving Testing Bay...'}</span>
@@ -939,6 +1047,9 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                     </span>
                   )}
                 </p>
+                <div style={{ marginTop: '0.4rem', fontSize: '0.82rem', color: '#b45309', background: '#fffbeb', border: '1px solid #fef3c7', padding: '0.35rem 0.65rem', borderRadius: '6px' }}>
+                  ⚠️ {hindi ? 'सूचना: स्लॉट पुष्टि के बाद टोकन अग्रिम अप्रतिदेय (non-refundable) है।' : 'Notice: The booking advance is non-refundable upon slot confirmation.'}
+                </div>
               </div>
 
               <div className="upi-payment-grid">
@@ -1036,6 +1147,10 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                 <div className="receipt-row">
                   <span>{hindi ? 'स्थान' : 'Station'}:</span>
                   <strong>{stationCity}, Haryana</strong>
+                </div>
+                <div className="receipt-row">
+                  <span>{hindi ? 'अग्रिम नीति' : 'Advance Policy'}:</span>
+                  <strong style={{ color: '#0f172a' }}>{hindi ? 'अप्रतिदेय (कन्फर्म स्लॉट)' : 'Non-Refundable (Confirmed Bay)'}</strong>
                 </div>
               </div>
 

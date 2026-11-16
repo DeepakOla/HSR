@@ -65,11 +65,15 @@ const customPromoBanner = (effectiveSettings.promo_banner_active !== 0 && effect
     <link rel="alternate" hreflang={alternate} href={alternateHref.toString()} />
     <link rel="alternate" hreflang={locale} href={canonical.toString()} />
 
-    <!-- High-Performance Web Fonts (Inter & Plus Jakarta Sans with display=swap) -->
+    <!-- High-Performance Web Fonts (Route-Specific Subsetting: Latin only on English, Devanagari on Hindi) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://images.unsplash.com" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+    {locale === 'hi' ? (
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+    ) : (
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+    )}
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
@@ -88,7 +92,7 @@ const customPromoBanner = (effectiveSettings.promo_banner_active !== 0 && effect
     <script type="application/ld+json" set:html={JSON.stringify(schema)} />
   </head>
   <body>
-    <!-- Animated Announcement Ticker Bar (Moving Right to Left) -->
+    <!-- Clean Static Top Announcement Bar (0 Main Thread Animation Overhead) -->
     <aside class="announcement-ticker-bar demo-banner" role="status" aria-label={locale === 'en' ? 'Station Announcements' : 'स्टेशन सूचना'}>
       <div class="ticker-track-container">
         <div class="ticker-track">
@@ -109,21 +113,6 @@ const customPromoBanner = (effectiveSettings.promo_banner_active !== 0 && effect
           <span class="ticker-item">
             <span class="ticker-badge">🛡️ {locale === 'en' ? 'COMPLIANCE' : 'अनुपालन'}</span>
             <span>{locale === 'en' ? '300 Bar Water Jacket Test | Stamped Brass Compliance Plate & Certificate' : 'प्रमाणित 300 बार वाटर जैकेट टेस्ट | मोहरबंद पीतल प्लेट एवं प्रमाणपत्र'}</span>
-          </span>
-          <!-- Duplicate for seamless loop -->
-          {customPromoBanner && (
-            <span class="ticker-item ticker-promo-item">
-              <span class="ticker-badge promo-tag">🎉 {locale === 'en' ? 'SPECIAL OFFER' : 'विशेष ऑफ़र'}</span>
-              <strong class="promo-text">{customPromoBanner}</strong>
-            </span>
-          )}
-          <span class="ticker-item">
-            <span class="ticker-badge demo-tag">⚡ {locale === 'en' ? 'GOVERNMENT APPROVED' : 'सरकारी प्रमाणित'}</span>
-            <span class="demo-text">{locale === 'en' ? 'Government Approved Testing Facility (PESO Certified) — Rewari, Haryana' : 'सरकारी प्रमाणित टेस्टिंग सुविधा (PESO Certified) — रेवाड़ी, हरियाणा'}</span>
-          </span>
-          <span class="ticker-item">
-            <span class="ticker-badge">⏱️ {locale === 'en' ? 'FAST' : 'त्वरित'}</span>
-            <span>{locale === 'en' ? '2 to 3 Hour Express Turnaround | Avoid Fuel Pump Refusal' : '2 से 3 घंटे में एक्सप्रेस टेस्टिंग | पंप पर गैस रिफिलिंग इंकार से बचें'}</span>
           </span>
         </div>
       </div>

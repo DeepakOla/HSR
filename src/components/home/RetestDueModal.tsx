@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { Locale } from '../../lib/constants';
+import { inr } from '../../lib/booking-wizard-helpers';
 
 interface DueDateRecord {
   registration: string;
@@ -52,6 +53,16 @@ export default function RetestDueModal({
   const [reminderMobile, setReminderMobile] = useState<string>('');
   const [reminderLoading, setReminderLoading] = useState<boolean>(false);
   const [reminderSuccess, setReminderSuccess] = useState<string>('');
+  const [flatAdvancePaise, setFlatAdvancePaise] = useState<number>(50000);
+
+  useEffect(() => {
+    fetch('/api/public/config/')
+      .then((r) => r.json())
+      .then((d: any) => {
+        if (d?.data?.flatAdvancePaise) setFlatAdvancePaise(d.data.flatAdvancePaise);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -597,7 +608,7 @@ export default function RetestDueModal({
                       textDecoration: 'none',
                     }}
                   >
-                    ⚡ {hindi ? 'अभी ₹1,000 अग्रिम पर स्लॉट बुक करें' : 'Book Testing Slot (From ₹1,000 Advance) →'}
+                    ⚡ {hindi ? `अभी ${inr(flatAdvancePaise)} अग्रिम पर स्लॉट बुक करें` : `Book Testing Slot (From ${inr(flatAdvancePaise)} Advance) →`}
                   </a>
                   <button
                     type="button"
@@ -697,7 +708,7 @@ export default function RetestDueModal({
                           textDecoration: 'none',
                         }}
                       >
-                        ⚡ {hindi ? 'स्लॉट बुक करें (₹1,000 अग्रिम)' : 'Book Retest Slot (From ₹1,000 Advance) →'}
+                        ⚡ {hindi ? `स्लॉट बुक करें (${inr(flatAdvancePaise)} अग्रिम)` : `Book Retest Slot (From ${inr(flatAdvancePaise)} Advance) →`}
                       </a>
                     </div>
                   );

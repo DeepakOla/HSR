@@ -3,6 +3,7 @@
 // Unified Customer-Facing CNG Cylinder Hydro Testing Landing Page
 import { getCollection } from 'astro:content';
 import { getDb, getBusinessSettings } from '../../lib/db';
+import { inr } from '../../lib/booking-wizard-helpers';
 import InlineBooking from '../../components/booking/InlineBooking';
 import RetestDueLauncher from '../../components/home/RetestDueLauncher';
 import FloatingWhatsApp from '../../components/FloatingWhatsApp.astro';
@@ -19,6 +20,7 @@ const brandLogo = settings.brand_logo_url || '/images/hsr-gauge-logo.jpg';
 const stationAddress = settings.address_line && settings.address_line !== 'SETUP_REQUIRED'
   ? settings.address_line
   : `${cityName} Industrial Corridor (NH-48), Haryana 123401`;
+const advanceFormatted = inr(settings.flat_advance_paise || 50000);
 
 const pageTitle = "CNG Cylinder Hydro Testing & 3-Year Retest Station | Rewari, Haryana | HSR";
 const pageDescription = "Avoid CNG pump refusals. Certified PESO Form GCT CNG cylinder hydrostatic stretch testing in Rewari, Haryana. Instant digital Form C certificate and brass compliance plate in 2 hours.";
@@ -35,34 +37,34 @@ const nearbyStationsSeed = [
     id: 'hsr-flagship-rewari',
     station_name: `${businessName} Hydro Testing Plant (Flagship Center)`,
     is_hsr_flagship: 1,
-    peso_approval_no: 'PESO/NC/GCT/HR-041/2023',
-    peso_doc_no: 'FORM-GCT-HR-984',
+    peso_approval_no: 'SETUP_REQUIRED',
+    peso_doc_no: 'FORM-GCT',
     address_line: stationAddress,
     landmark: 'Near NH-48 Express Exit & Toll Plaza',
     pincode: '123401',
-    car_price_inr: 1400,
-    price_transparency_note: '₹1,400 All-Inclusive (300 Bar Hydro Stretch Test + Brass Plate + Form C Certificate)',
+    car_price_inr: 2950,
+    price_transparency_note: '₹2,500 Base + 18% GST (300 Bar Hydro Stretch Test + Brass Plate + Form C Certificate)',
     median_turnaround_mins: 90,
     accepts_maruti_eeco: 1,
     supports_heavy_trucks: 1,
     lat: 28.1950,
     lng: 76.6250,
     distance_km: 1.2,
-    booking_mode_summary: 'Online priority reservation with ₹500 advance or walk-in',
-    refund_policy_summary: '100% advance refund if cancelled 2 hrs prior or non-compliant cylinder',
+    booking_mode_summary: `Online priority reservation with ${advanceFormatted} advance or walk-in`,
+    refund_policy_summary: 'Non-refundable advance upon slot confirmation (locks dedicated testing bay)',
     license_verification_badge: 'PESO_VERIFIED_ACTIVE_2028',
   },
   {
     id: 'sugam-technical-manesar',
     station_name: 'IMT Manesar Regional Authorized Facility',
     is_hsr_flagship: 0,
-    peso_approval_no: 'PESO/NC/GCT/HR-019/2021',
-    peso_doc_no: 'FORM-GCT-HR-412',
+    peso_approval_no: 'SETUP_REQUIRED',
+    peso_doc_no: 'FORM-GCT',
     address_line: 'IMT Manesar Corridor (NH-48), Gurugram District, Haryana',
     landmark: 'NH-48 Bilaspur Chowk / Manesar Corridor',
     pincode: '122050',
-    car_price_inr: 1800,
-    price_transparency_note: '₹1,800 + ₹200 counter processing charge',
+    car_price_inr: 3200,
+    price_transparency_note: 'Commercial counter processing fee applicable',
     median_turnaround_mins: 150,
     accepts_maruti_eeco: 0,
     supports_heavy_trucks: 1,
@@ -77,12 +79,12 @@ const nearbyStationsSeed = [
     id: 'axn-hydro-gurugram',
     station_name: 'Gurugram Central Testing Facility',
     is_hsr_flagship: 0,
-    peso_approval_no: 'PESO/NC/GCT/HR-007/2019',
-    peso_doc_no: 'FORM-GCT-HR-109',
+    peso_approval_no: 'SETUP_REQUIRED',
+    peso_doc_no: 'FORM-GCT',
     address_line: 'Old Delhi Road / Rajiv Chowk Corridor, Gurugram, Haryana',
     landmark: 'Delhi-Gurugram Expressway Link',
     pincode: '122016',
-    car_price_inr: 3000,
+    car_price_inr: 3500,
     price_transparency_note: '₹3,000 standard counter retail middleman rate',
     median_turnaround_mins: 240,
     accepts_maruti_eeco: 1,
@@ -550,7 +552,7 @@ const structuredData = {
         <a href="#articles-section">Safety Articles</a>
         <a href="#faqs-section">FAQs</a>
         <a href="/login/" style="color: #64748b;">Sign-In</a>
-        <a href="#booking-section" class="btn-header-cta">Book Slot (₹500 Advance) →</a>
+        <a href="#booking-section" class="btn-header-cta">Book Slot ({advanceFormatted} Advance) →</a>
       </nav>
     </div>
   </header>
@@ -572,7 +574,7 @@ const structuredData = {
       <!-- THREE PROMINENT ACTIONS -->
       <div class="hero-cta-group">
         <a href="#booking-section" class="btn-book-advance">
-          <span>⚡</span> Book CNG Cylinder Bay (₹500 Flat Advance) →
+          <span>⚡</span> Book CNG Cylinder Bay ({advanceFormatted} Flat Advance) →
         </a>
 
         <a href="#nearby-stations" class="btn-find-plant">
@@ -687,11 +689,11 @@ const structuredData = {
                 <div>
                   {isFlagship ? (
                     <a href="#booking-form" style="display: block; text-align: center; background: #ea580c; color: #fff; padding: 0.75rem; border-radius: 10px; font-weight: 800; font-size: 0.9rem; text-decoration: none; box-shadow: 0 4px 10px rgba(234, 88, 12, 0.25);">
-                      Book Priority Bay (From ₹1,000 Advance) →
+                      Book Priority Bay (From {advanceFormatted} Advance) →
                     </a>
                   ) : (
                     <a href="#booking-form" style="display: block; text-align: center; background: #0a1128; color: #fff; padding: 0.75rem; border-radius: 10px; font-weight: 700; font-size: 0.85rem; text-decoration: none;">
-                      Choose HSR Flagship (Save ₹{st.car_price_inr - 1400 + 200})
+                      Choose HSR Flagship (Save ₹{st.car_price_inr - 2950 > 0 ? st.car_price_inr - 2950 : 300})
                     </a>
                   )}
                 </div>
@@ -706,7 +708,7 @@ const structuredData = {
     <section class="page-section" id="booking-section">
       <div id="booking-form" style="position: relative; top: -80px; height: 0; width: 0; overflow: hidden; pointer-events: none;"></div>
       <span class="section-eyebrow">Zero Friction Bay Reservation</span>
-      <h2 class="section-heading">Book CNG Cylinder Test (From ₹1,000 Advance)</h2>
+      <h2 class="section-heading">Book CNG Cylinder Test ({advanceFormatted} Advance)</h2>
       <p class="section-lead">
         Select your vehicle type, choose a 20-minute arrival window, and lock your bay. Pay advance via instant UPI QR with zero payment gateway surcharge.
       </p>
@@ -749,7 +751,7 @@ const structuredData = {
             <span class="step-num-badge">Step 03</span>
           </div>
           <h3 style="font-size: 1.05rem; font-weight: 800; color: #0a1128; margin-bottom: 0.4rem;">Direct UPI QR Advance</h3>
-          <p style="font-size: 0.82rem; color: #475569; line-height: 1.45;">Instant dynamic UPI QR code generated with ₹1,000 flat advance. Pay via GPay, PhonePe, or Paytm.</p>
+          <p style="font-size: 0.82rem; color: #475569; line-height: 1.45;">Instant dynamic UPI QR code generated with {advanceFormatted} flat advance. Pay via GPay, PhonePe, or Paytm.</p>
         </div>
 
         <div class="guide-step-card">
@@ -823,29 +825,29 @@ const structuredData = {
               <td style="padding: 1.1rem 1.25rem;"><strong>Passenger Car / Taxi</strong> (Maruti, Hyundai, Tata)</td>
               <td style="padding: 1.1rem 1.25rem;">1 Cylinder (60L / 65L)</td>
               <td style="padding: 1.1rem 1.25rem;">~90 Mins</td>
-              <td style="padding: 1.1rem 1.25rem;"><strong style="color: #0a1128; font-size: 1.05rem;">₹1,400</strong></td>
-              <td style="padding: 1.1rem 1.25rem;">₹1,000 (Advance)</td>
+              <td style="padding: 1.1rem 1.25rem;"><strong style="color: #0a1128; font-size: 1.05rem;">₹2,950</strong> (₹2,500 + 18% GST)</td>
+              <td style="padding: 1.1rem 1.25rem;">{advanceFormatted} (Advance)</td>
             </tr>
             <tr style="border-bottom: 1px solid #f1f5f9;">
               <td style="padding: 1.1rem 1.25rem;"><strong>Dual-Cylinder Car / Maruti Eeco</strong></td>
               <td style="padding: 1.1rem 1.25rem;">2 Cylinders</td>
               <td style="padding: 1.1rem 1.25rem;">~120 Mins</td>
-              <td style="padding: 1.1rem 1.25rem;"><strong style="color: #0a1128; font-size: 1.05rem;">₹2,600</strong></td>
-              <td style="padding: 1.1rem 1.25rem;">₹1,000 (Advance)</td>
+              <td style="padding: 1.1rem 1.25rem;"><strong style="color: #0a1128; font-size: 1.05rem;">₹5,900</strong> (₹5,000 + 18% GST)</td>
+              <td style="padding: 1.1rem 1.25rem;">{advanceFormatted} (Advance)</td>
             </tr>
             <tr style="border-bottom: 1px solid #f1f5f9;">
               <td style="padding: 1.1rem 1.25rem;"><strong>Commercial LCV / Maxi Truck</strong></td>
               <td style="padding: 1.1rem 1.25rem;">3 - 4 Cylinders</td>
               <td style="padding: 1.1rem 1.25rem;">~150 Mins</td>
-              <td style="padding: 1.1rem 1.25rem;"><strong style="color: #0a1128; font-size: 1.05rem;">₹3,600 - ₹4,800</strong></td>
-              <td style="padding: 1.1rem 1.25rem;">₹1,000 (Advance)</td>
+              <td style="padding: 1.1rem 1.25rem;"><strong style="color: #0a1128; font-size: 1.05rem;">₹8,850 - ₹11,800</strong></td>
+              <td style="padding: 1.1rem 1.25rem;">{advanceFormatted} (Advance)</td>
             </tr>
             <tr>
               <td style="padding: 1.1rem 1.25rem;"><strong>Heavy Bus / Commercial Cascade</strong></td>
               <td style="padding: 1.1rem 1.25rem;">5 - 8 Cylinders</td>
               <td style="padding: 1.1rem 1.25rem;">~180 - 240 Mins</td>
               <td style="padding: 1.1rem 1.25rem;"><strong>Custom Fleet Quote</strong></td>
-              <td style="padding: 1.1rem 1.25rem;">₹1,000 (Advance)</td>
+              <td style="padding: 1.1rem 1.25rem;">{advanceFormatted} (Advance)</td>
             </tr>
           </tbody>
         </table>
@@ -912,6 +914,15 @@ const structuredData = {
           </h3>
           <p style="font-size: 0.88rem; color: #475569; line-height: 1.5;">
             Bring your original vehicle Registration Certificate (RC) and an identification document (Aadhaar or Driving License). If a previous hydro test was conducted, bring the old compliance plate or certificate.
+          </p>
+        </div>
+
+        <div style="background: #fff; border: 1px solid var(--border-color); border-radius: 14px; padding: 1.35rem;">
+          <h3 style="font-size: 1.05rem; font-weight: 800; color: #0a1128; margin-bottom: 0.4rem;">
+            What is the booking advance and cancellation policy?
+          </h3>
+          <p style="font-size: 0.88rem; color: #475569; line-height: 1.5;">
+            Online reservations require a flat {advanceFormatted} advance to lock your designated express testing bay and technician allocation. The booking advance is strictly non-refundable upon slot confirmation. The balance amount is payable on-site after testing and brass compliance plate stamping.
           </p>
         </div>
 

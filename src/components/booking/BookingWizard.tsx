@@ -1687,7 +1687,7 @@ export default function BookingWizard({ locale }: Props) {
             }}
           >
             <h4 style={{ margin: '0 0 .75rem 0', color: '#0F172A', fontSize: '1.05rem' }}>
-              {hindi ? 'अग्रिम भुगतान (₹500 टोकन)' : 'Advance Payment (₹500 Flat)'}
+              {hindi ? `अग्रिम भुगतान (${inr(result.pricing?.advancePaise || 50000)} टोकन)` : `Advance Payment (${inr(result.pricing?.advancePaise || 50000)} Flat)`}
             </h4>
 
             {result.upiUri && (
