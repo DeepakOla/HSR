@@ -1,0 +1,313 @@
+---
+import type { Locale } from '../lib/constants';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const isHi = locale === 'hi';
+---
+
+<!-- Floating Feedback pill on bottom right -->
+<button
+  type="button"
+  class="feedback-floating-btn"
+  id="open-feedback-btn-pill"
+  aria-label={isHi ? 'प्रतिक्रिया साझा करें' : 'Share Feedback'}
+>
+  <span class="feedback-icon" aria-hidden="true">💬</span>
+  <span class="feedback-btn-label">{isHi ? 'प्रतिक्रिया दें' : 'Give Feedback'}</span>
+</button>
+
+<div class="feedback-modal-backdrop" id="feedback-modal-backdrop" style="display: none;">
+  <div
+    class="feedback-modal-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="feedback-title"
+  >
+    <div class="feedback-modal-header">
+      <h2 id="feedback-title" class="feedback-title">
+        {isHi ? 'पूर्वावलोकन प्रतिक्रिया (Demo Feedback)' : 'Preview Experience Feedback'}
+      </h2>
+      <button
+        type="button"
+        class="feedback-close-btn"
+        id="feedback-close-btn"
+        aria-label={isHi ? 'बंद करें' : 'Close'}
+      >
+        &times;
+      </button>
+    </div>
+
+    <div id="feedback-success-pane" class="feedback-success-pane" style="display: none;">
+      <div class="success-icon-badge" aria-hidden="true">✓</div>
+      <h3>{isHi ? 'धन्यवाद!' : 'Thank you!'}</h3>
+      <p>
+        {isHi
+          ? 'आपकी प्रतिक्रिया सफलतापूर्वक प्राप्त हो गई है। हम परीक्षण अनुभव को बेहतर बनाने के लिए इस पर काम करेंगे।'
+          : 'Your feedback has been recorded. Thank you for testing the HSR platform with us!'}
+      </p>
+      <div class="success-actions">
+        <button type="button" class="btn btn-secondary" id="feedback-success-close-btn">
+          {isHi ? 'बंद करें' : 'Close'}
+        </button>
+        <button type="button" class="btn btn-primary" id="feedback-submit-another-btn">
+          {isHi ? 'एक और प्रतिक्रिया दें' : 'Submit Another'}
+        </button>
+      </div>
+    </div>
+
+    <form id="feedback-form" class="feedback-form">
+      <p class="feedback-desc">
+        {isHi
+          ? 'यह HSR का प्रारंभिक पूर्वावलोकन संस्करण (v0.0.3) है। कृपया अपने सुझाव, कोई त्रुटि (बग) या अनुभव हमारे साथ साझा करें।'
+          : 'You are testing HSR preview v0.0.3. Please let us know if you encountered any bugs, confusing steps, or ideas for improvement.'}
+      </p>
+
+      <!-- Star rating -->
+      <div class="form-group">
+        <label class="form-label">{isHi ? 'आपका समग्र अनुभव:' : 'Your Overall Experience:'}</label>
+        <div class="star-rating-row" role="radiogroup" aria-label="Rating" id="feedback-star-row">
+          <button type="button" class="star-btn active" data-rating="1" aria-label="1 star">★</button>
+          <button type="button" class="star-btn active" data-rating="2" aria-label="2 stars">★</button>
+          <button type="button" class="star-btn active" data-rating="3" aria-label="3 stars">★</button>
+          <button type="button" class="star-btn active" data-rating="4" aria-label="4 stars">★</button>
+          <button type="button" class="star-btn active" data-rating="5" aria-label="5 stars">★</button>
+          <span class="rating-text" id="feedback-rating-label">{isHi ? 'उत्कृष्ट (5/5)' : 'Excellent (5/5)'}</span>
+        </div>
+      </div>
+
+      <!-- Category Pills -->
+      <div class="form-group">
+        <label class="form-label">{isHi ? 'श्रेणी चुनें:' : 'Feedback Category:'}</label>
+        <div class="category-pills" id="feedback-category-pills">
+          <button type="button" class="pill-btn selected" data-cat="general">{isHi ? 'सामान्य' : 'General'}</button>
+          <button type="button" class="pill-btn" data-cat="bug">{isHi ? 'बग / त्रुटि' : 'Bug / Issue'}</button>
+          <button type="button" class="pill-btn" data-cat="ui_ux">{isHi ? 'डिज़ाइन' : 'UI / Design'}</button>
+          <button type="button" class="pill-btn" data-cat="booking_flow">{isHi ? 'बुकिंग प्रक्रिया' : 'Booking Flow'}</button>
+        </div>
+      </div>
+
+      <!-- Comment box -->
+      <div class="form-group">
+        <label for="feedback-comment" class="form-label">
+          {isHi ? 'विस्तार से बताएं (अनिवार्य):' : 'Details / Comments (Required):'}
+        </label>
+        <textarea
+          id="feedback-comment"
+          class="form-textarea"
+          rows="4"
+          placeholder={
+            isHi
+              ? 'उदा. मुझे स्लॉट चुनना आसान लगा, लेकिन कार मॉडल का नाम दिखना चाहिए...'
+              : 'e.g., Slot booking was fast and smooth, but truck category cylinder selection could be clearer...'
+          }
+          required
+        ></textarea>
+      </div>
+
+      <!-- Name & Contact (optional) -->
+      <div class="form-row-2">
+        <div class="form-group">
+          <label for="feedback-name" class="form-label">
+            {isHi ? 'आपका नाम (वैकल्पिक):' : 'Your Name (Optional):'}
+          </label>
+          <input
+            id="feedback-name"
+            type="text"
+            class="form-input"
+            placeholder={isHi ? 'उदा. राहुल' : 'e.g. Rahul'}
+          />
+        </div>
+        <div class="form-group">
+          <label for="feedback-contact" class="form-label">
+            {isHi ? 'फोन या ईमेल (वैकल्पिक):' : 'Phone or Email (Optional):'}
+          </label>
+          <input
+            id="feedback-contact"
+            type="text"
+            class="form-input"
+            placeholder={isHi ? '9876543210' : '9876543210'}
+          />
+        </div>
+      </div>
+
+      <div id="feedback-error-banner" class="form-error-banner" role="alert" style="display: none;"></div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" id="feedback-cancel-btn">
+          {isHi ? 'रद्द करें' : 'Cancel'}
+        </button>
+        <button type="submit" class="btn btn-primary" id="feedback-submit-btn">
+          {isHi ? 'प्रतिक्रिया सबमिट करें' : 'Submit Feedback'}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script is:inline define:vars={{ locale, isHi }}>
+  (function() {
+    var backdrop = document.getElementById('feedback-modal-backdrop');
+    var form = document.getElementById('feedback-form');
+    var successPane = document.getElementById('feedback-success-pane');
+    var errorBanner = document.getElementById('feedback-error-banner');
+    var closeBtn = document.getElementById('feedback-close-btn');
+    var cancelBtn = document.getElementById('feedback-cancel-btn');
+    var successCloseBtn = document.getElementById('feedback-success-close-btn');
+    var submitAnotherBtn = document.getElementById('feedback-submit-another-btn');
+    var submitBtn = document.getElementById('feedback-submit-btn');
+    var commentEl = document.getElementById('feedback-comment');
+    var nameEl = document.getElementById('feedback-name');
+    var contactEl = document.getElementById('feedback-contact');
+    var ratingLabel = document.getElementById('feedback-rating-label');
+
+    var currentRating = 5;
+    var currentCategory = 'general';
+
+    function openModal() {
+      if (backdrop) backdrop.style.display = 'flex';
+    }
+
+    function closeModal() {
+      if (backdrop) backdrop.style.display = 'none';
+    }
+
+    function resetForm() {
+      currentRating = 5;
+      currentCategory = 'general';
+      if (form) form.reset();
+      if (form) form.style.display = 'block';
+      if (successPane) successPane.style.display = 'none';
+      if (errorBanner) errorBanner.style.display = 'none';
+      updateRating(5);
+      updateCategory('general');
+    }
+
+    function updateRating(val) {
+      currentRating = val;
+      var stars = document.querySelectorAll('#feedback-star-row .star-btn');
+      stars.forEach(function(s) {
+        var r = parseInt(s.getAttribute('data-rating') || '0', 10);
+        if (r <= val) s.classList.add('active');
+        else s.classList.remove('active');
+      });
+      if (ratingLabel) {
+        ratingLabel.textContent = val === 5 ? (isHi ? 'उत्कृष्ट (5/5)' : 'Excellent (5/5)') :
+                                  val === 4 ? (isHi ? 'अच्छा (4/5)' : 'Good (4/5)') :
+                                  val === 3 ? (isHi ? 'ठीक (3/5)' : 'Fair (3/5)') :
+                                  val === 2 ? (isHi ? 'सुधार चाहिए (2/5)' : 'Needs Work (2/5)') :
+                                              (isHi ? 'कठिन (1/5)' : 'Poor (1/5)');
+      }
+    }
+
+    function updateCategory(cat) {
+      currentCategory = cat;
+      var pills = document.querySelectorAll('#feedback-category-pills .pill-btn');
+      pills.forEach(function(p) {
+        if (p.getAttribute('data-cat') === cat) p.classList.add('selected');
+        else p.classList.remove('selected');
+      });
+    }
+
+    // Attach open triggers
+    var pillBtn = document.getElementById('open-feedback-btn-pill');
+    if (pillBtn) pillBtn.addEventListener('click', openModal);
+
+    var tickerBtn = document.getElementById('open-feedback-btn');
+    if (tickerBtn) tickerBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      openModal();
+    });
+
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+    if (successCloseBtn) successCloseBtn.addEventListener('click', closeModal);
+    if (submitAnotherBtn) submitAnotherBtn.addEventListener('click', resetForm);
+
+    if (backdrop) {
+      backdrop.addEventListener('click', function(e) {
+        if (e.target === backdrop) closeModal();
+      });
+    }
+
+    window.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    // Star clicks
+    document.querySelectorAll('#feedback-star-row .star-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var val = parseInt(btn.getAttribute('data-rating') || '5', 10);
+        updateRating(val);
+      });
+    });
+
+    // Category clicks
+    document.querySelectorAll('#feedback-category-pills .pill-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var cat = btn.getAttribute('data-cat') || 'general';
+        updateCategory(cat);
+      });
+    });
+
+    // Form submission
+    if (form) {
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        var comment = commentEl ? commentEl.value.trim() : '';
+        if (comment.length < 3) {
+          if (errorBanner) {
+            errorBanner.textContent = isHi ? 'कृपया कम से कम 3 अक्षर दर्ज करें।' : 'Please enter at least 3 characters.';
+            errorBanner.style.display = 'block';
+          }
+          return;
+        }
+
+        if (errorBanner) errorBanner.style.display = 'none';
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = isHi ? 'भेजा जा रहा है...' : 'Sending...';
+        }
+
+        try {
+          var res = await fetch('/api/feedback/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              rating: currentRating,
+              category: currentCategory,
+              name: nameEl && nameEl.value.trim() ? nameEl.value.trim() : undefined,
+              contact: contactEl && contactEl.value.trim() ? contactEl.value.trim() : undefined,
+              comment: comment,
+              locale: locale,
+              url: window.location.href,
+            }),
+          });
+          var data = await res.json();
+          if (res.ok && data.success) {
+            if (form) form.style.display = 'none';
+            if (successPane) successPane.style.display = 'block';
+          } else {
+            if (errorBanner) {
+              errorBanner.textContent = data.error || (isHi ? 'प्रतिक्रिया भेजने में विफल।' : 'Failed to submit feedback.');
+              errorBanner.style.display = 'block';
+            }
+          }
+        } catch (err) {
+          if (errorBanner) {
+            errorBanner.textContent = isHi ? 'नेटवर्क त्रुटि। कृपया पुनः प्रयास करें।' : 'Network error. Please try again.';
+            errorBanner.style.display = 'block';
+          }
+        } finally {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = isHi ? 'प्रतिक्रिया सबमिट करें' : 'Submit Feedback';
+          }
+        }
+      });
+    }
+  })();
+</script>

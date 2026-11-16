@@ -3,7 +3,7 @@ import type { Locale } from '../lib/constants';
 import type { BusinessSettings } from '../lib/types';
 import { localizePath, otherLocale, t } from '../lib/i18n';
 import { buildLocalBusinessSchema } from '../lib/seo';
-import FeedbackModal from '../components/FeedbackModal';
+import FeedbackModal from '../components/FeedbackModal.astro';
 import FloatingWhatsApp from '../components/FloatingWhatsApp.astro';
 import '../styles/design-tokens.css';
 
@@ -68,7 +68,6 @@ const customPromoBanner = (effectiveSettings.promo_banner_active !== 0 && effect
     <!-- High-Performance Web Fonts (Route-Specific Subsetting: Latin only on English, Devanagari on Hindi) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preconnect" href="https://images.unsplash.com" />
     {locale === 'hi' ? (
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
     ) : (
@@ -80,6 +79,7 @@ const customPromoBanner = (effectiveSettings.promo_banner_active !== 0 && effect
     <meta property="og:url" content={canonical.toString()} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
+    <meta property="og:image" content={new URL(effectiveSettings.brand_logo_url || '/images/hsr-gauge-logo.jpg', Astro.url.origin).toString()} />
     <meta property="og:locale" content={locale === 'hi' ? 'hi_IN' : 'en_IN'} />
 
     <!-- Twitter -->
@@ -87,6 +87,7 @@ const customPromoBanner = (effectiveSettings.promo_banner_active !== 0 && effect
     <meta property="twitter:url" content={canonical.toString()} />
     <meta property="twitter:title" content={title} />
     <meta property="twitter:description" content={description} />
+    <meta property="twitter:image" content={new URL(effectiveSettings.brand_logo_url || '/images/hsr-gauge-logo.jpg', Astro.url.origin).toString()} />
 
     <!-- Schema.org JSON-LD -->
     <script type="application/ld+json" set:html={JSON.stringify(schema)} />
@@ -307,8 +308,8 @@ const customPromoBanner = (effectiveSettings.promo_banner_active !== 0 && effect
       </div>
     </footer>
 
-    <!-- Interactive Feedback Component (React Island) -->
-    <FeedbackModal client:idle locale={locale} />
+    <!-- Lightweight Accessible Feedback Modal (0 KB React Island) -->
+    <FeedbackModal locale={locale} />
 
     <!-- Accessible Mobile Navigation Toggle Script -->
     <script is:inline>

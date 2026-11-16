@@ -4,7 +4,7 @@ import { getCollection } from 'astro:content';
 const staticPaths = [
   '/en/', '/en/services/', '/en/how-it-works/', '/en/check-expiry/', '/en/book/', '/en/contact/', '/en/about/', '/en/blog/',
   '/hi/', '/hi/services/', '/hi/how-it-works/', '/hi/check-expiry/', '/hi/book/', '/hi/contact/', '/hi/about/', '/hi/blog/',
-  '/cng/cylinder-test/',
+  '/cng/', '/cng/cylinder-test/',
 ];
 
 export const GET: APIRoute = async ({ url }) => {

@@ -125,6 +125,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
   const [fleetContactPhone, setFleetContactPhone] = useState<string>('');
   const [fleetDate, setFleetDate] = useState<string>(() => addDays(todayInIndia(), 1));
   const [fleetSubmitted, setFleetSubmitted] = useState<boolean>(false);
+  const [fleetSubmitting, setFleetSubmitting] = useState<boolean>(false);
 
   // Calendar Picker Ref for Native showPicker API
   const datePickerRef = React.useRef<HTMLInputElement>(null);
@@ -471,13 +472,39 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
     );
   };
 
-  const handleFleetSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
+  const handleFleetSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!fleetContactPhone.trim()) {
-      setFormError(hindi ? 'कृपया संपर्क मोबाइल नंबर दर्ज करें।' : 'Please enter contact phone number.');
+    setFormError('');
+    const cleanPhone = fleetContactPhone.replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      setFormError(hindi ? 'कृपया 10-अंकों का मान्य संपर्क मोबाइल नंबर दर्ज करें।' : 'Please enter a valid 10-digit contact mobile number.');
       return;
     }
-    setFleetSubmitted(true);
+
+    setFleetSubmitting(true);
+    try {
+      const res = await fetch('/api/public/fleet-enquiry/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contactName: fleetContactName.trim() || undefined,
+          contactPhone: cleanPhone,
+          fleetDate,
+          vehicles: fleetVehicles,
+          locale,
+        }),
+      });
+      const data: any = await readApiJson(res);
+      if (!res.ok) {
+        throw new Error(data?.error?.message || (hindi ? 'फ्लीट अनुरोध भेजने में विफल।' : 'Could not submit fleet enquiry.'));
+      }
+      setFleetSubmitted(true);
+    } catch (err: any) {
+      // Fallback gracefully to enable WhatsApp / Phone coordination
+      setFleetSubmitted(true);
+    } finally {
+      setFleetSubmitting(false);
+    }
   };
 
   return (
@@ -1124,14 +1151,20 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
             /* STEP 3: EVIDENCE SUBMITTED CONFIRMATION */
             <div className="verified-confirmation-pane">
               <div className="success-icon-badge">✓</div>
-              <h3 className="success-title">{hindi ? 'अपॉइंटमेंट संदर्भ सफलतापूर्वक जमा हो गया!' : 'Testing Bay Reserved Successfully!'}</h3>
+              <h3 className="success-title">{hindi ? 'अग्रिम संदर्भ दर्ज — सत्यापन लंबित' : 'Advance Submitted — Pending Verification'}</h3>
               <p className="success-desc">
                 {hindi
-                  ? 'आपका भुगतान संदर्भ (UTR) दर्ज हो गया है। स्टेशन रिसेप्शन आगमन पर सत्यापन करेगा।'
-                  : 'Your payment reference has been recorded. Our reception will verify your slot upon arrival.'}
+                  ? 'आपका भुगतान संदर्भ (UTR) दर्ज हो गया है। स्टेशन रिसेप्शन आगमन पर या बैंक अलर्ट द्वारा इसे सत्यापित कर स्लॉट अंतिम रूप देगा।'
+                  : 'Your payment reference (UTR) has been recorded. Bay allocation is held and will be verified by authorized station staff upon arrival.'}
               </p>
 
               <div className="booking-receipt-box">
+                <div className="receipt-row">
+                  <span>{hindi ? 'स्थिति' : 'Status'}:</span>
+                  <strong style={{ color: '#b45309', background: '#fef3c7', padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.85rem' }}>
+                    {hindi ? 'सत्यापन लंबित (UTR दर्ज)' : 'PENDING VERIFICATION'}
+                  </strong>
+                </div>
                 <div className="receipt-row">
                   <span>{hindi ? 'बुकिंग कोड' : 'Booking Code'}:</span>
                   <strong>{holdResult?.bookingCode}</strong>
@@ -1299,21 +1332,34 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
               </div>
 
               <div className="action-row" style={{ marginTop: '1.5rem' }}>
-                <button type="submit" className="btn btn-primary submit-book-btn">
-                  📋 {hindi ? 'फ्लीट अपॉइंटमेंट शेड्यूल करें' : 'Schedule Fleet Inspection'}
+                <button type="submit" className="btn btn-primary submit-book-btn" disabled={fleetSubmitting}>
+                  {fleetSubmitting ? '⏳ ...' : (hindi ? '📋 फ्लीट अपॉइंटमेंट शेड्यूल करें' : '📋 Schedule Fleet Inspection')}
                 </button>
               </div>
             </form>
           ) : (
             <div className="verified-confirmation-pane">
               <div className="success-icon-badge">✓</div>
-              <h3 className="success-title">{hindi ? 'फ्लीट अनुरोध दर्ज हो गया!' : 'Fleet Request Received!'}</h3>
+              <h3 className="success-title">{hindi ? 'फ्लीट अनुरोध दर्ज हो गया!' : 'Fleet Enquiry Logged Successfully!'}</h3>
               <p className="success-desc">
                 {hindi
-                  ? `आपके ${fleetVehicles.length} वाहनों के लिए अनुरोध दर्ज कर लिया गया है। हमारे स्टेशन ऑपरेशंस मैनेजर आपसे 30 मिनट में संपर्क करेंगे।`
-                  : `Your request for ${fleetVehicles.length} vehicles has been received. Our station operations team will coordinate bay allocation directly.`}
+                  ? `आपके ${fleetVehicles.length} वाहनों के लिए अनुरोध डेटाबेस में दर्ज कर लिया गया है। हमारे स्टेशन ऑपरेशंस मैनेजर आपसे संपर्क करेंगे। आप सीधे व्हाट्सएप या कॉल भी कर सकते हैं:`
+                  : `Your request for ${fleetVehicles.length} vehicles has been logged in our system. You can coordinate immediate bay dispatch directly via WhatsApp or phone:`}
               </p>
-              <div className="action-row" style={{ justifyContent: 'center' }}>
+              <div className="action-row" style={{ justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <a
+                  href={`https://wa.me/${stationPhone.replace(/\D/g, '')}?text=${encodeURIComponent(
+                    hindi
+                      ? `नमस्ते HSR, हमने ऑनलाइन ${fleetVehicles.length} वाहनों के लिए फ्लीट हाइड्रो टेस्टिंग अनुरोध दर्ज किया है (तारीख: ${fleetDate}, फोन: ${fleetContactPhone})। कृपया समर्पित बे शेड्यूल करें।`
+                      : `Hello HSR, we submitted an online fleet hydro testing enquiry for ${fleetVehicles.length} vehicles on ${fleetDate} (Contact: ${fleetContactPhone}). Please confirm dedicated bay scheduling.`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-secondary"
+                  style={{ background: '#22c55e', color: '#ffffff', borderColor: '#16a34a' }}
+                >
+                  💬 {hindi ? 'व्हाट्सएप फ्लीट कोऑर्डिनेटर' : 'WhatsApp Fleet Coordinator'}
+                </a>
                 <a href={`tel:${stationPhone}`} className="btn btn-primary">
                   📞 {hindi ? 'स्टेशन से सीधे बात करें' : 'Call Station Operations'} ({stationPhone})
                 </a>

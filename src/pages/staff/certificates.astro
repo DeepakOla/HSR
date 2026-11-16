@@ -37,6 +37,14 @@ if (env?.DB) {
     // Fallback
   }
 }
+
+let flatAdvanceInr = 500;
+if (env?.DB) {
+  try {
+    const s = await env.DB.prepare('SELECT flat_advance_paise FROM business_settings LIMIT 1').first<any>();
+    if (s?.flat_advance_paise) flatAdvanceInr = Math.round(s.flat_advance_paise / 100);
+  } catch {}
+}
 ---
 
 <StaffLayout title="PESO Portal Staging & Certificate Queue | HSR Operations" activeTab="certificates">
@@ -152,7 +160,7 @@ if (env?.DB) {
     </div>
   )}
 
-  <script is:inline>
+  <script is:inline define:vars={{ flatAdvanceInr }}>
     function copyPesoPayload(item) {
       const payload = {
         serialNumber: item.serialNo || 'EKC-0001',
@@ -194,8 +202,8 @@ if (env?.DB) {
           baseAmountInr: 2500,
           gstAmountInr: 450,
           totalAmountInr: 2950,
-          advancePaidInr: 500,
-          balanceDueInr: 2450,
+          advancePaidInr: flatAdvanceInr,
+          balanceDueInr: 2950 - flatAdvanceInr,
           paymentMode: 'UPI / Counter',
           retestDueDate: new Date(Date.now() + 3 * 365 * 86400000).toISOString().slice(0, 10)
         });

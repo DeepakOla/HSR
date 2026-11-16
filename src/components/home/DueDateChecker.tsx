@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import type { Locale } from '../../lib/constants';
-import RetestDueModal from './RetestDueModal';
+
+const RetestDueModal = lazy(() => import('./RetestDueModal'));
 
 interface DueDateRecord {
   registration: string;
@@ -483,13 +484,17 @@ export default function DueDateChecker({ locale, bookUrl = `/${locale}/book/`, s
         </p>
       </div>
 
-      <RetestDueModal
-        locale={locale}
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        bookUrl={bookUrl}
-        initialPath={modalInitialPath}
-      />
+      {modalOpen && (
+        <Suspense fallback={null}>
+          <RetestDueModal
+            locale={locale}
+            isOpen={modalOpen}
+            onClose={() => setModalOpen(false)}
+            bookUrl={bookUrl}
+            initialPath={modalInitialPath}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

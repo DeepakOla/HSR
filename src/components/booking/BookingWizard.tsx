@@ -137,13 +137,13 @@ export function PricingBreakdownCard({
       <div style={{ display: 'grid', gap: '.35rem', fontSize: '.9rem', color: '#334155' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span>
-            {labels.price} <small style={{ color: '#64748B' }}>(₹2,500 × {cylinders})</small>:
+            {labels.price} <small style={{ color: '#64748B' }}>({inr(basePricePaise / Math.max(1, cylinders))} × {cylinders})</small>:
           </span>
           <span style={{ fontWeight: 600 }}>{inr(basePricePaise)}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span>
-            {labels.gst} <small style={{ color: '#64748B' }}>(₹450 × {cylinders})</small>:
+            {labels.gst} <small style={{ color: '#64748B' }}>({inr(gstPaise / Math.max(1, cylinders))} × {cylinders})</small>:
           </span>
           <span style={{ fontWeight: 600 }}>{inr(gstPaise)}</span>
         </div>
