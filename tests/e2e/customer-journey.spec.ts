@@ -6,13 +6,13 @@ test.describe('Customer Booking & Demo Preview Journeys (E2E)', () => {
     await page.goto('/en/');
     const enBanner = page.locator('.announcement-ticker-bar');
     await expect(enBanner).toBeVisible();
-    await expect(page.locator('.ticker-badge').first()).toContainText('GOVERNMENT APPROVED');
+    await expect(page.locator('.ticker-badge.demo-tag')).toContainText('GOVERNMENT APPROVED');
 
     // Hindi Home
     await page.goto('/hi/');
     const hiBanner = page.locator('.announcement-ticker-bar');
     await expect(hiBanner).toBeVisible();
-    await expect(page.locator('.ticker-badge').first()).toContainText('सरकारी प्रमाणित');
+    await expect(page.locator('.ticker-badge.demo-tag')).toContainText('सरकारी प्रमाणित');
   });
 
   test('floating feedback button opens interactive feedback dialog', async ({ page }) => {
