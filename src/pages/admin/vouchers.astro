@@ -1,0 +1,304 @@
+---
+import { requireRole } from '../../lib/auth';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+import AdminLayout from '../../layouts/AdminLayout.astro';
+
+const env = getRuntimeEnv(Astro.locals);
+const auth = await requireRole(Astro.request, env, ['OWNER', 'RECEPTIONIST']);
+if (!auth.ok) return auth.response;
+
+let vouchers: any[] = [];
+let stats = {
+  total: 0,
+  pending: 0,
+  contacted: 0,
+  booked: 0,
+  totalDiscountPaise: 0,
+};
+
+if (env?.DB) {
+  try {
+    const statsRow = await env.DB.prepare(`
+      SELECT 
+        COUNT(*) as total,
+        SUM(CASE WHEN status = 'PENDING_ASSISTANCE' THEN 1 ELSE 0 END) as pending,
+        SUM(CASE WHEN status = 'CONTACTED' THEN 1 ELSE 0 END) as contacted,
+        SUM(CASE WHEN status = 'BOOKED' THEN 1 ELSE 0 END) as booked,
+        SUM(voucher_discount_paise) as totalDiscountPaise
+      FROM due_date_assistance_requests
+    `).first<any>();
+
+    if (statsRow) {
+      stats.total = statsRow.total || 0;
+      stats.pending = statsRow.pending || 0;
+      stats.contacted = statsRow.contacted || 0;
+      stats.booked = statsRow.booked || 0;
+      stats.totalDiscountPaise = statsRow.totalDiscountPaise || 0;
+    }
+
+    const rows = await env.DB.prepare(`
+      SELECT id, vehicle_registration, display_reg_no, mobile, email, cylinder_info,
+             voucher_code, voucher_discount_paise, status, notes, created_at
+      FROM due_date_assistance_requests
+      ORDER BY created_at DESC LIMIT 100
+    `).all<any>();
+
+    vouchers = rows.results || [];
+  } catch (e) {
+    console.error('Failed to query vouchers:', e);
+  }
+}
+---
+
+<AdminLayout title="Customer Vouchers & Due Date Assistance" owner={auth.staff.role === 'OWNER'} activeNav="vouchers">
+  <div class="admin-app">
+    <!-- Header -->
+    <div class="admin-heading">
+      <div>
+        <p class="admin-eyebrow">CUSTOMER LOYALTY & REVISION INCENTIVES</p>
+        <h1>Customer Vouchers & Due Date Requests</h1>
+        <p class="admin-subtitle">
+          Track customer assistance requests from the retest lookup flow, link ₹200 voucher codes with vehicle registration numbers, and convert pending inquiries into booked bay appointments.
+        </p>
+      </div>
+
+      <div class="admin-actions">
+        <a href="/admin/reception/" class="admin-button secondary">
+          📋 Go to Reception Queue
+        </a>
+      </div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="admin-metrics">
+      <div class="admin-card">
+        <div class="admin-metric-label">Total Vouchers Issued</div>
+        <div class="admin-metric-value text-steel">{stats.total}</div>
+        <div class="admin-metric-note">Lifetime customer claims</div>
+      </div>
+      <div class="admin-card">
+        <div class="admin-metric-label">Pending Assistance</div>
+        <div class="admin-metric-value text-warn">{stats.pending}</div>
+        <div class="admin-metric-note">Awaiting reception callback</div>
+      </div>
+      <div class="admin-card">
+        <div class="admin-metric-label">Converted to Bookings</div>
+        <div class="admin-metric-value text-pass">{stats.booked}</div>
+        <div class="admin-metric-note">Voucher applied to testing bay</div>
+      </div>
+      <div class="admin-card">
+        <div class="admin-metric-label">Total Discount Vault</div>
+        <div class="admin-metric-value">₹{(stats.totalDiscountPaise / 100).toLocaleString('en-IN')}</div>
+        <div class="admin-metric-note">₹200 per active customer request</div>
+      </div>
+    </div>
+
+    <!-- Search & Filter Controls -->
+    <div class="admin-card" style="margin-bottom: 1.5rem; padding: 1rem 1.25rem;">
+      <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 260px;">
+          <input
+            type="text"
+            id="voucher-search-input"
+            class="admin-input"
+            placeholder="Search by Car Reg (e.g. HR26...), Voucher Code (HSR200-...), or Mobile..."
+            oninput="filterVouchersTable()"
+          />
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" class="admin-button secondary" onclick="filterStatus('')">All</button>
+          <button type="button" class="admin-button secondary" onclick="filterStatus('PENDING_ASSISTANCE')">Pending</button>
+          <button type="button" class="admin-button secondary" onclick="filterStatus('CONTACTED')">Contacted</button>
+          <button type="button" class="admin-button secondary" onclick="filterStatus('BOOKED')">Booked</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <section class="admin-card">
+      <div class="admin-section-head">
+        <div>
+          <h2 class="admin-section-title">Issued Vouchers & Vehicle Register</h2>
+          <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.2rem;">
+            Match customer registration numbers at reception desk to apply the ₹200 discount voucher on their booking.
+          </p>
+        </div>
+        <span id="vouchers-count-badge" class="admin-badge info">{vouchers.length} Records</span>
+      </div>
+
+      <div class="admin-table-wrap">
+        <table class="admin-table" id="vouchers-table">
+          <thead>
+            <tr>
+              <th>Vehicle Reg No</th>
+              <th>Voucher Code</th>
+              <th>Discount</th>
+              <th>Customer Contact</th>
+              <th>Cylinder / Issue Notes</th>
+              <th>Issued At</th>
+              <th>Status</th>
+              <th>Desk Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {vouchers.length === 0 ? (
+              <tr>
+                <td colspan="8" class="table-empty-cell">
+                  No vouchers or assistance requests generated yet.
+                </td>
+              </tr>
+            ) : (
+              vouchers.map((v) => (
+                <tr class="voucher-row" data-reg={v.vehicle_registration || ''} data-code={v.voucher_code || ''} data-phone={v.mobile || ''} data-status={v.status || ''}>
+                  <td>
+                    <strong class="reg-pill" style="font-size: 0.95rem;">
+                      {v.display_reg_no || v.vehicle_registration}
+                    </strong>
+                  </td>
+                  <td>
+                    <span class="font-mono-col" style="font-weight: 800; color: #0284c7; background: #e0f2fe; padding: 0.25rem 0.6rem; border-radius: 6px; font-size: 0.9rem;">
+                      {v.voucher_code}
+                    </span>
+                  </td>
+                  <td>
+                    <strong style="color: #16a34a;">
+                      ₹{Math.round((v.voucher_discount_paise || 20000) / 100)}
+                    </strong>
+                  </td>
+                  <td>
+                    {v.mobile ? (
+                      <div>
+                        <a href={`tel:${v.mobile}`} class="font-mono-col" style="color: #0a1128; font-weight: 700; text-decoration: none;">
+                          +91 {v.mobile}
+                        </a>
+                        <div style="margin-top: 0.25rem;">
+                          <a
+                            href={`https://wa.me/91${v.mobile.replace(/\D/g, '')}?text=${encodeURIComponent(`Namaste, this is HSR CNG Testing Plant Rewari regarding your vehicle ${v.display_reg_no || v.vehicle_registration} and ₹200 discount voucher ${v.voucher_code}. How may we assist with your hydro test booking?`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style="font-size: 0.75rem; color: #16a34a; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 0.2rem;"
+                          >
+                            <span>💬</span> WhatsApp
+                          </a>
+                        </div>
+                      </div>
+                    ) : (
+                      <span style="color: #94a3b8;">—</span>
+                    )}
+                    {v.email && (
+                      <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.15rem;">
+                        {v.email}
+                      </div>
+                    )}
+                  </td>
+                  <td style="max-width: 220px; font-size: 0.82rem; color: #475569;">
+                    <div style="white-space: pre-wrap; line-height: 1.4;">
+                      {v.cylinder_info || v.notes || 'Plate date lookup assistance requested'}
+                    </div>
+                  </td>
+                  <td class="font-mono-col" style="font-size: 0.8rem; color: #64748b;">
+                    {v.created_at ? v.created_at.slice(0, 16).replace('T', ' ') : '—'}
+                  </td>
+                  <td>
+                    <span class={`admin-status ${
+                      v.status === 'BOOKED' ? 'pass' :
+                      v.status === 'CONTACTED' ? 'pending' :
+                      v.status === 'PENDING_ASSISTANCE' ? 'warn' : ''
+                    }`}>
+                      {v.status === 'PENDING_ASSISTANCE' ? 'PENDING' : v.status}
+                    </span>
+                  </td>
+                  <td>
+                    <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+                      {v.status !== 'BOOKED' && (
+                        <button
+                          type="button"
+                          class="admin-button secondary small"
+                          style="font-size: 0.75rem; padding: 0.25rem 0.5rem;"
+                          onclick={`updateVoucherStatus('${v.id}', 'BOOKED')`}
+                          title="Mark as redeemed for a booking"
+                        >
+                          ✓ Booked
+                        </button>
+                      )}
+                      {v.status === 'PENDING_ASSISTANCE' && (
+                        <button
+                          type="button"
+                          class="admin-button secondary small"
+                          style="font-size: 0.75rem; padding: 0.25rem 0.5rem;"
+                          onclick={`updateVoucherStatus('${v.id}', 'CONTACTED')`}
+                          title="Mark customer as contacted"
+                        >
+                          📞 Contacted
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</AdminLayout>
+
+<script is:inline>
+  let activeStatusFilter = '';
+
+  window.filterVouchersTable = function() {
+    const input = document.getElementById('voucher-search-input');
+    const term = (input ? input.value : '').trim().toUpperCase();
+    const rows = document.querySelectorAll('.voucher-row');
+    let visibleCount = 0;
+
+    rows.forEach((row) => {
+      const reg = (row.getAttribute('data-reg') || '').toUpperCase();
+      const code = (row.getAttribute('data-code') || '').toUpperCase();
+      const phone = (row.getAttribute('data-phone') || '').toUpperCase();
+      const status = row.getAttribute('data-status') || '';
+
+      const matchesSearch = !term || reg.includes(term) || code.includes(term) || phone.includes(term);
+      const matchesStatus = !activeStatusFilter || status === activeStatusFilter;
+
+      if (matchesSearch && matchesStatus) {
+        row.style.display = '';
+        visibleCount++;
+      } else {
+        row.style.display = 'none';
+      }
+    });
+
+    const badge = document.getElementById('vouchers-count-badge');
+    if (badge) {
+      badge.textContent = visibleCount + ' Records';
+    }
+  };
+
+  window.filterStatus = function(status) {
+    activeStatusFilter = status;
+    window.filterVouchersTable();
+  };
+
+  window.updateVoucherStatus = async function(id, newStatus) {
+    if (!confirm(`Update voucher status to ${newStatus}?`)) return;
+
+    try {
+      const res = await fetch('/api/admin/vouchers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: newStatus }),
+      });
+
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || 'Failed to update status');
+      }
+    } catch (err) {
+      alert('Network error updating voucher status');
+    }
+  };
+</script>

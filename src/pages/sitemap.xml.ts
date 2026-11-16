@@ -4,16 +4,21 @@ import { getCollection } from 'astro:content';
 const staticPaths = [
   '/en/', '/en/services/', '/en/how-it-works/', '/en/check-expiry/', '/en/book/', '/en/contact/', '/en/about/', '/en/blog/',
   '/hi/', '/hi/services/', '/hi/how-it-works/', '/hi/check-expiry/', '/hi/book/', '/hi/contact/', '/hi/about/', '/hi/blog/',
+  '/cng/', '/cng/cylinder-test/',
 ];
 
 export const GET: APIRoute = async ({ url }) => {
-  const posts = await getCollection('blog', ({ data }) => !data.draft);
-
-  const blogPaths = posts.map((post) => {
-    const isHi = post.data.locale === 'hi';
-    const slug = post.id.replace(/^(en|hi)\//, '').replace(/\.(md|mdx)$/, '');
-    return isHi ? `/hi/blog/${slug}/` : `/en/blog/${slug}/`;
-  });
+  let blogPaths: string[] = [];
+  try {
+    const posts = await getCollection('blog', ({ data }) => !data.draft);
+    blogPaths = posts.map((post) => {
+      const isHi = post.data.locale === 'hi';
+      const slug = post.id.replace(/^(en|hi)\//, '').replace(/\.(md|mdx)$/, '');
+      return isHi ? `/hi/blog/${slug}/` : `/en/blog/${slug}/`;
+    });
+  } catch {
+    // fallback
+  }
 
   const allPaths = Array.from(new Set([...staticPaths, ...blogPaths]));
 
@@ -22,7 +27,7 @@ export const GET: APIRoute = async ({ url }) => {
 ${allPaths
   .map((path) => {
     const loc = new URL(path, url.origin).toString();
-    const isBook = path.includes('/book/');
+    const isBook = path.includes('/book/') || path.includes('/cng/cylinder-test/');
     const isHome = path === '/en/' || path === '/hi/';
     const priority = isBook ? '1.0' : isHome ? '0.9' : '0.8';
     return `  <url>\n    <loc>${loc}</loc>\n    <changefreq>daily</changefreq>\n    <priority>${priority}</priority>\n  </url>`;

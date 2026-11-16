@@ -1,0 +1,241 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { requireRole } from '../../lib/auth';
+import { getDb } from '../../lib/db';
+import { getRuntimeEnv } from '../../lib/runtime-env';
+
+const auth = await requireRole(Astro.request, getRuntimeEnv(Astro.locals), ['OWNER', 'RECEPTIONIST']);
+if (!auth.ok) {
+  return Astro.redirect('/login/?role=OWNER&redirect=/admin/cms/');
+}
+
+const db = getDb({ locals: Astro.locals } as any);
+const postsResult = await db.prepare('SELECT * FROM cms_posts ORDER BY published_at DESC LIMIT 50').all();
+const posts = postsResult.results || [];
+---
+
+<AdminLayout title="HSR Green Energy — Content CMS & Media Vault">
+  <div class="admin-content-header">
+    <div>
+      <h1 class="admin-title">Website Content, Media & Guides CMS</h1>
+      <p class="admin-subtitle">Publish bilingual safety guides, customer tutorial videos, and news announcements with zero hosting costs.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+      <a href="/api/admin/zoho-export/" class="admin-btn-secondary" download="hsr_zoho_books_today.csv">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16">
+          <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+        <span>Export Zoho Books CSV</span>
+      </a>
+      <button type="button" id="btn-new-post" class="admin-btn-primary">
+        + Create New Article / Video
+      </button>
+    </div>
+  </div>
+
+  <div class="admin-grid" style="grid-template-columns: 1fr 340px; gap: 1.5rem; align-items: start;">
+    <!-- Main Editor Section -->
+    <div class="admin-card">
+      <h2 class="card-heading" id="editor-heading">Draft New Content</h2>
+      <form id="form-cms-post" class="admin-form">
+        <input type="hidden" id="postId" name="id" />
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <label class="admin-field">
+            Slug (URL Key)
+            <input class="admin-input font-mono" id="postSlug" name="slug" placeholder="e.g. 5-step-cng-hydro-testing-safety" required />
+          </label>
+          <label class="admin-field">
+            Category
+            <select class="admin-select" id="postCategory" name="category">
+              <option value="SAFETY_GUIDE">Safety Guide (Rule 35)</option>
+              <option value="NEWS_ANNOUNCEMENT">News & Station Announcement</option>
+              <option value="VIDEO_TUTORIAL">Video Tutorial</option>
+              <option value="COMMERCIAL_FLEET">Commercial Fleet Advisory</option>
+            </select>
+          </label>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <label class="admin-field">
+            Article Title (English)
+            <input class="admin-input" id="postTitleEn" name="title_en" placeholder="e.g. 5 Signs Your CNG Cylinder is Overdue" required />
+          </label>
+          <label class="admin-field">
+            लेख शीर्षक (हिंदी)
+            <input class="admin-input" id="postTitleHi" name="title_hi" placeholder="उदा. सीएनजी सिलेंडर हाइड्रो टेस्टिंग के 5 महत्वपूर्ण चरण" required />
+          </label>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <label class="admin-field">
+            Summary / Meta Description (English)
+            <textarea class="admin-textarea" id="postSummaryEn" name="summary_en" rows="2" placeholder="Brief 2-line preview"></textarea>
+          </label>
+          <label class="admin-field">
+            संक्षिप्त सारांश (हिंदी)
+            <textarea class="admin-textarea" id="postSummaryHi" name="summary_hi" rows="2" placeholder="संक्षिप्त सारांश"></textarea>
+          </label>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="admin-field">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <label for="postContentEn" style="margin: 0; font-weight: 700; font-size: 0.8rem;">Markdown Body (English)</label>
+              <div style="display: flex; gap: 0.35rem;">
+                <button type="button" id="btn-paste-en" style="padding: 0.2rem 0.5rem; font-size: 0.72rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer;">📋 Paste Clipboard</button>
+                <button type="button" id="btn-template-en" style="padding: 0.2rem 0.5rem; font-size: 0.72rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer;">📄 Safety Template</button>
+              </div>
+            </div>
+            <textarea class="admin-textarea font-mono" id="postContentEn" name="content_markdown_en" rows="8" placeholder="Full markdown formatted text" required></textarea>
+          </div>
+          <div class="admin-field">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <label for="postContentHi" style="margin: 0; font-weight: 700; font-size: 0.8rem;">मुख्य सामग्री - मार्कडाउन (हिंदी)</label>
+              <div style="display: flex; gap: 0.35rem;">
+                <button type="button" id="btn-paste-hi" style="padding: 0.2rem 0.5rem; font-size: 0.72rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer;">📋 पेस्ट करें</button>
+                <button type="button" id="btn-template-hi" style="padding: 0.2rem 0.5rem; font-size: 0.72rem; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; cursor: pointer;">📄 हिंदी टेम्पलेट</button>
+              </div>
+            </div>
+            <textarea class="admin-textarea font-mono" id="postContentHi" name="content_markdown_hi" rows="8" placeholder="हिंदी सामग्री" required></textarea>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <label class="admin-field">
+            YouTube / Video Embed URL (Optional)
+            <input class="admin-input" id="postVideoUrl" name="video_url" placeholder="https://youtube.com/watch?v=..." />
+          </label>
+          <label class="admin-field">
+            R2 Cover Image Key (Optional)
+            <input class="admin-input font-mono" id="postCoverImage" name="cover_image_r2_key" placeholder="media/cng_jacket_inspection.webp" />
+          </label>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+          <label class="admin-check">
+            <input type="checkbox" id="postPublished" name="is_published" value="1" checked />
+            <span>Publish Immediately on Public Website</span>
+          </label>
+          <button type="submit" id="btn-save-post" class="admin-btn-primary">
+            Save & Publish Content
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Existing Content List -->
+    <div class="admin-card">
+      <h3 class="card-heading" style="font-size: 1.05rem;">Published Articles ({posts.length})</h3>
+      {posts.length === 0 ? (
+        <p class="admin-empty">No articles or guides published yet.</p>
+      ) : (
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          {posts.map((p: any) => (
+            <div class="post-item" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.75rem; background: #f8fafc;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                <span style="font-size: 0.72rem; font-weight: 700; color: #0284c7; text-transform: uppercase;">{p.category}</span>
+                <span style={`font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.4rem; border-radius: 4px; background: ${p.is_published ? '#dcfce7' : '#fee2e2'}; color: ${p.is_published ? '#15803d' : '#b91c1c'}`}>
+                  {p.is_published ? 'Live' : 'Draft'}
+                </span>
+              </div>
+              <div style="font-size: 0.88rem; font-weight: 700; color: #0a1128; margin-bottom: 0.2rem;">{p.title_en}</div>
+              <div style="font-size: 0.76rem; color: #64748b; font-family: monospace;">/{p.slug}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+</AdminLayout>
+
+<script>
+  const form = document.getElementById('form-cms-post') as HTMLFormElement;
+  const btnSave = document.getElementById('btn-save-post') as HTMLButtonElement;
+  const btnNew = document.getElementById('btn-new-post');
+  const txtEn = document.getElementById('postContentEn') as HTMLTextAreaElement;
+  const txtHi = document.getElementById('postContentHi') as HTMLTextAreaElement;
+
+  document.getElementById('btn-paste-en')?.addEventListener('click', async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (txtEn && text) txtEn.value = text;
+    } catch {
+      alert('Clipboard access denied. Please paste directly using Ctrl+V.');
+    }
+  });
+
+  document.getElementById('btn-paste-hi')?.addEventListener('click', async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (txtHi && text) txtHi.value = text;
+    } catch {
+      alert('Clipboard access denied. Please paste directly using Ctrl+V.');
+    }
+  });
+
+  document.getElementById('btn-template-en')?.addEventListener('click', () => {
+    if (!txtEn) return;
+    txtEn.value = `## Statutory Hydro Testing Overview\\n\\nUnder Rule 35 of Gas Cylinders Rules (2016), every CNG cylinder fitted in motor vehicles must be hydrostatically tested every 3 years at 300 Bar pressure.\\n\\n### Key Testing Steps:\\n1. **Degassing**: Methane purging with nitrogen inerting.\\n2. **Ultrasonic Scan**: Internal wall thickness verification.\\n3. **300 Bar Water Jacket Test**: Volumetric expansion measurement.\\n4. **Baking & Drying**: 80°C hot air circulation.\\n5. **Compliance Punching**: Stamped brass plate and PESO Form C digital upload.\\n\\n*Contact HSR Green Energy, Rewari for priority bay booking.*`;
+  });
+
+  document.getElementById('btn-template-hi')?.addEventListener('click', () => {
+    if (!txtHi) return;
+    txtHi.value = `## वैधानिक सीएनजी सिलेंडर हाइड्रो टेस्टिंग मार्गदर्शिका\\n\\nगैस सिलेंडर नियम (2016) के नियम 35 के तहत, मोटर वाहनों में लगे प्रत्येक सीएनजी सिलेंडर का हर 3 साल में 300 बार हाइड्रोलिक दबाव पर परीक्षण अनिवार्य है।\\n\\n### मुख्य परीक्षण चरण:\\n1. **डीगैसिंग**: नाइट्रोजन द्वारा मीथेन गैस की सुरक्षित निकासी।\\n2. **अल्ट्रासोनिक मोटाई जांच**: आंतरिक दीवारों की सूक्ष्म जांच।\\n3. **300 बार वाटर जैकेट टेस्ट**: हाइड्रोलिक विस्तार का मापन।\\n4. **हॉट-एयर बेकिंग**: 80°C गर्म हवा से सिलेंडर को सुखाना।\\n5. **प्रमाणपत्र एवं ब्रास प्लेट**: वैधानिक फॉर्म C और कॉपर/ब्रास प्लेट पंचिंग।\\n\\n*एचएसआर ग्रीन एनर्जी, रीवाड़ी में तत्काल स्लॉट बुक करें।*`;
+  });
+
+  if (btnNew) {
+    btnNew.addEventListener('click', () => {
+      form.reset();
+      (document.getElementById('postId') as HTMLInputElement).value = '';
+      (document.getElementById('editor-heading') as HTMLElement).textContent = 'Draft New Content';
+    });
+  }
+
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      btnSave.disabled = true;
+      btnSave.textContent = 'Saving...';
+
+      const formData = new FormData(form);
+      const isPublished = (document.getElementById('postPublished') as HTMLInputElement).checked ? 1 : 0;
+      const idVal = (document.getElementById('postId') as HTMLInputElement).value;
+
+      const payload: any = {
+        slug: formData.get('slug'),
+        title_en: formData.get('title_en'),
+        title_hi: formData.get('title_hi'),
+        summary_en: formData.get('summary_en'),
+        summary_hi: formData.get('summary_hi'),
+        content_markdown_en: formData.get('content_markdown_en'),
+        content_markdown_hi: formData.get('content_markdown_hi'),
+        category: formData.get('category'),
+        video_url: formData.get('video_url') || undefined,
+        cover_image_r2_key: formData.get('cover_image_r2_key') || undefined,
+        is_published: isPublished
+      };
+
+      if (idVal) payload.id = idVal;
+
+      try {
+        const res = await fetch('/api/admin/cms/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data: any = await res.json();
+        if (!res.ok) throw new Error(data.error?.message || 'Save failed');
+
+        alert('Article successfully saved and published!');
+        window.location.reload();
+      } catch (err: any) {
+        alert(err.message || 'Error saving post');
+      } finally {
+        btnSave.disabled = false;
+        btnSave.textContent = 'Save & Publish Content';
+      }
+    });
+  }
+</script>

@@ -1,0 +1,1092 @@
+---
+// File: src/pages/cng/cylinder-test.astro
+// Unified Customer-Facing CNG Cylinder Hydro Testing Landing Page
+import { getCollection } from 'astro:content';
+import { getDb, getBusinessSettings } from '../../lib/db';
+import { inr } from '../../lib/booking-wizard-helpers';
+import InlineBooking from '../../components/booking/InlineBooking';
+import RetestDueLauncher from '../../components/home/RetestDueLauncher';
+import FloatingWhatsApp from '../../components/FloatingWhatsApp.astro';
+import '../../styles/design-tokens.css';
+
+const db = getDb(Astro);
+const settings = await getBusinessSettings(db);
+
+const businessName = settings.business_name_en || 'HSR Green Energy';
+const cityName = settings.city || 'Rewari';
+const contactPhone = settings.contact_phone || '+919910055355';
+const whatsappNumber = settings.whatsapp_number || '+919910055355';
+const brandLogo = settings.brand_logo_url || '/images/hsr-gauge-logo.jpg';
+const stationAddress = settings.address_line && settings.address_line !== 'SETUP_REQUIRED'
+  ? settings.address_line
+  : `${cityName} Industrial Corridor (NH-48), Haryana 123401`;
+const advanceFormatted = inr(settings.flat_advance_paise || 50000);
+
+const pageTitle = "CNG Cylinder Hydro Testing & 3-Year Retest Station | Rewari, Haryana | HSR";
+const pageDescription = "Avoid CNG pump refusals. Certified PESO Form GCT CNG cylinder hydrostatic stretch testing in Rewari, Haryana. Instant digital Form C certificate and brass compliance plate in 2 hours.";
+const canonicalUrl = "https://hsrgreenenergy.in/cng/cylinder-test/";
+
+// Preload blog articles
+const allPosts = await getCollection('blog', ({ data }) => !data.draft && data.locale === 'en');
+allPosts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const articles = allPosts.slice(0, 3);
+
+// Fallback seed stations so directory comparison is 100% pre-rendered server-side (zero loading fail)
+const nearbyStationsSeed = [
+  {
+    id: 'hsr-flagship-rewari',
+    station_name: `${businessName} Hydro Testing Plant (Flagship Center)`,
+    is_hsr_flagship: 1,
+    peso_approval_no: 'SETUP_REQUIRED',
+    peso_doc_no: 'FORM-GCT',
+    address_line: stationAddress,
+    landmark: 'Near NH-48 Express Exit & Toll Plaza',
+    pincode: '123401',
+    car_price_inr: 2950,
+    price_transparency_note: '₹2,500 Base + 18% GST (300 Bar Hydro Stretch Test + Brass Plate + Form C Certificate)',
+    median_turnaround_mins: 90,
+    accepts_maruti_eeco: 1,
+    supports_heavy_trucks: 1,
+    lat: 28.1950,
+    lng: 76.6250,
+    distance_km: 1.2,
+    booking_mode_summary: `Online priority reservation with ${advanceFormatted} advance or walk-in`,
+    refund_policy_summary: 'Non-refundable advance upon slot confirmation (locks dedicated testing bay)',
+    license_verification_badge: 'SETUP_REQUIRED',
+  },
+  {
+    id: 'sugam-technical-manesar',
+    station_name: 'IMT Manesar Regional Authorized Facility',
+    is_hsr_flagship: 0,
+    peso_approval_no: 'SETUP_REQUIRED',
+    peso_doc_no: 'FORM-GCT',
+    address_line: 'IMT Manesar Corridor (NH-48), Gurugram District, Haryana',
+    landmark: 'NH-48 Bilaspur Chowk / Manesar Corridor',
+    pincode: '122050',
+    car_price_inr: 3200,
+    price_transparency_note: 'Commercial counter processing fee applicable',
+    median_turnaround_mins: 150,
+    accepts_maruti_eeco: 0,
+    supports_heavy_trucks: 1,
+    lat: 28.3588,
+    lng: 76.9425,
+    distance_km: 28.4,
+    booking_mode_summary: 'Online portal requires full advance payment; Eeco vans not permitted',
+    refund_policy_summary: 'Non-refundable if arrival delayed by 15 mins',
+    license_verification_badge: 'SETUP_REQUIRED',
+  },
+  {
+    id: 'axn-hydro-gurugram',
+    station_name: 'Gurugram Central Testing Facility',
+    is_hsr_flagship: 0,
+    peso_approval_no: 'SETUP_REQUIRED',
+    peso_doc_no: 'FORM-GCT',
+    address_line: 'Old Delhi Road / Rajiv Chowk Corridor, Gurugram, Haryana',
+    landmark: 'Delhi-Gurugram Expressway Link',
+    pincode: '122016',
+    car_price_inr: 3500,
+    price_transparency_note: '₹3,000 standard counter retail middleman rate',
+    median_turnaround_mins: 240,
+    accepts_maruti_eeco: 1,
+    supports_heavy_trucks: 0,
+    lat: 28.5020,
+    lng: 77.0680,
+    distance_km: 49.5,
+    booking_mode_summary: 'Phone booking or walk-in queue',
+    refund_policy_summary: 'Non-refundable token deposit',
+    license_verification_badge: 'SETUP_REQUIRED',
+  },
+];
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "LocalBusiness",
+      "@id": "https://hsrgreenenergy.in/#station",
+      "name": `${businessName} CNG Cylinder Hydro Testing`,
+      "telephone": contactPhone,
+      "priceRange": "₹1,400 - ₹3,500",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": stationAddress,
+        "addressLocality": cityName,
+        "addressRegion": "Haryana",
+        "postalCode": "123401",
+        "addressCountry": "IN"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 28.1950,
+        "longitude": 76.6250
+      },
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+          "opens": "09:00",
+          "closes": "18:00"
+        }
+      ]
+    },
+    {
+      "@type": "Service",
+      "name": "Automotive CNG Cylinder Hydrostatic Testing",
+      "provider": { "@id": "https://hsrgreenenergy.in/#station" },
+      "serviceType": "CNG Cylinder Hydrostatic Stretch Testing",
+      "areaServed": ["Rewari", "Gurugram", "Manesar", "Dharuhera", "Bhiwadi", "Pataudi", "Haryana"]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Why is CNG cylinder hydro testing required every 3 years?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Under Rule 35 of the Gas Cylinders Rules (2016) and Central Motor Vehicles Rules (CMVR), all automotive CNG cylinders must undergo hydrostatic water-jacket expansion testing every 3 years to ensure structural integrity at 300 Bar pressure."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Why do CNG fuel pumps refuse to fill gas?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Fuel pump attendants are statutorily required to check the brass compliance plate riveted near the fuel filling valve. If the 3-year validity date has passed or the plate is missing/damaged, fuel filling is immediately blocked."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What documents do I need to bring for the test?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Bring your original vehicle Registration Certificate (RC) and old compliance plate or hydro certificate if previously tested. The test takes 90–120 minutes."
+          }
+        }
+      ]
+    }
+  ]
+};
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{pageTitle}</title>
+  <meta name="description" content={pageDescription} />
+  <link rel="canonical" href={canonicalUrl} />
+  <link rel="icon" type="image/jpeg" href={brandLogo} />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content={pageTitle} />
+  <meta property="og:description" content={pageDescription} />
+  <meta property="og:url" content={canonicalUrl} />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content={brandLogo} />
+
+  <!-- High-Performance Web Fonts (Inter & Plus Jakarta Sans with display=swap) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+
+  <script type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+
+  <style>
+    :root {
+      --font-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-body: 'Inter', system-ui, sans-serif;
+      --primary: #ea580c;
+      --primary-dark: #c2410c;
+      --navy: #0a1128;
+      --navy-dark: #050b18;
+      --steel: #0284c7;
+      --slate-bg: #f8fafc;
+      --border-color: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: var(--font-body); background: var(--slate-bg); color: #0f172a; line-height: 1.6; }
+
+    /* Sticky Top Header (Permanently Visible) */
+    .top-scroll-header {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border-color);
+      padding: 0.75rem 1.25rem;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+    .header-inner {
+      max-width: 1140px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand-link {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      text-decoration: none;
+      color: var(--navy);
+      font-family: var(--font-heading);
+      font-weight: 800;
+      font-size: 1.15rem;
+    }
+    .header-nav { display: flex; gap: 1rem; align-items: center; }
+    .header-nav a { font-size: 0.85rem; font-weight: 600; color: #475569; text-decoration: none; }
+    .header-nav a:hover { color: var(--primary); }
+    .btn-header-cta {
+      background: var(--primary);
+      color: #fff !important;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-weight: 700 !important;
+      box-shadow: 0 2px 4px rgba(234, 88, 12, 0.3);
+    }
+
+    /* Hero Section */
+    .hero-section {
+      background: linear-gradient(135deg, #0a1128 0%, #1e293b 100%);
+      color: #ffffff;
+      padding: 4.5rem 1.25rem 4rem;
+      text-align: center;
+      position: relative;
+    }
+    .hero-container { max-width: 920px; margin: 0 auto; }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(234, 88, 12, 0.2);
+      border: 1px solid rgba(234, 88, 12, 0.45);
+      color: #fb923c;
+      font-size: 0.78rem;
+      font-weight: 800;
+      padding: 0.35rem 0.95rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1.25rem;
+    }
+    .hero-title {
+      font-family: var(--font-heading);
+      font-size: clamp(2rem, 4.8vw, 3.1rem);
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.2rem;
+    }
+    .hero-title-alert {
+      display: block;
+      color: #fb923c;
+      font-size: clamp(1.15rem, 2.6vw, 1.55rem);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.5rem;
+    }
+    .hero-title-main {
+      display: block;
+      color: #ffffff;
+    }
+    .hero-subtitle {
+      font-size: 1.1rem;
+      color: #cbd5e1;
+      max-width: 760px;
+      margin: 0 auto 2.2rem;
+      line-height: 1.6;
+    }
+    .hero-cta-group {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 1.75rem;
+    }
+    .btn-book-advance {
+      background: var(--primary);
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 1rem;
+      padding: 0.9rem 1.9rem;
+      border-radius: 14px;
+      text-decoration: none;
+      box-shadow: 0 6px 20px rgba(234, 88, 12, 0.4);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+    .btn-book-advance:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+    .btn-find-plant {
+      background: #0284c7;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 0.85rem 1.6rem;
+      border-radius: 12px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+    .btn-find-plant:hover {
+      background: #0369a1;
+      transform: translateY(-2px);
+    }
+    .hero-ranked-strip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      padding: 0.55rem 1.25rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      color: #e2e8f0;
+      text-decoration: none;
+      transition: background 0.15s ease;
+    }
+    .hero-ranked-strip:hover {
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+    }
+
+    /* Sections Common */
+    .page-section {
+      max-width: 1100px;
+      margin: 3.5rem auto;
+      padding: 0 1.25rem;
+    }
+    .section-eyebrow {
+      text-align: center;
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.35rem;
+    }
+    .section-heading {
+      font-family: var(--font-heading);
+      font-size: clamp(1.6rem, 3.2vw, 2.2rem);
+      font-weight: 800;
+      color: var(--navy);
+      text-align: center;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+    .section-lead {
+      text-align: center;
+      color: #64748b;
+      font-size: 0.98rem;
+      max-width: 720px;
+      margin: 0 auto 2.5rem;
+    }
+
+    /* Nearby Stations Discovery */
+    .nearby-box {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 1.75rem;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);
+    }
+    .search-bar-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 640px) {
+      .search-bar-grid { grid-template-columns: 1fr; }
+    }
+    .station-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.25rem;
+    }
+    .station-card {
+      background: #f8fafc;
+      border: 1.5px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.35rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+    }
+    .station-card.flagship-card {
+      border: 2px solid var(--primary);
+      background: #fffaf5;
+      box-shadow: 0 8px 16px -4px rgba(234, 88, 12, 0.12);
+    }
+    .badge-flagship-pill {
+      display: inline-block;
+      background: #ffedd5;
+      color: #9a3412;
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    /* 8-Step System Guide */
+    .guide-steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.25rem;
+    }
+    .guide-step-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.4rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .step-icon-num {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+    .step-num-badge {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--primary);
+      background: #fff7ed;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+    }
+
+    /* Articles Section */
+    .articles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+    .article-preview-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .article-preview-card h3 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--navy);
+      margin: 0.4rem 0 0.6rem;
+      line-height: 1.35;
+    }
+    .article-preview-card p {
+      font-size: 0.88rem;
+      color: #475569;
+      line-height: 1.5;
+    }
+    .article-link {
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    /* Footer */
+    .site-footer {
+      background: #ffffff;
+      border-top: 1px solid var(--border-color);
+      padding: 3rem 1.25rem;
+      text-align: center;
+    }
+    .footer-social-bar {
+      display: flex;
+      gap: 0.85rem;
+      justify-content: center;
+      margin: 1.25rem 0;
+      flex-wrap: wrap;
+    }
+    .social-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      color: #fff;
+      font-weight: 700;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. STICKY TOP BAR -->
+  <header class="top-scroll-header" id="top-sticky-header">
+    <div class="header-inner">
+      <a href="/cng/cylinder-test/" class="brand-link">
+        <img src={brandLogo} alt={`${businessName} Logo`} style="width: 28px; height: 28px; border-radius: 6px; object-fit: cover;" />
+        <span>⚡ {businessName}</span>
+      </a>
+      <nav class="header-nav">
+        <a href="#nearby-stations">Nearby Testing</a>
+        <a href="#guide-steps">8-Step Guide</a>
+        <a href="#pricing-section">Pricing</a>
+        <a href="#articles-section">Safety Articles</a>
+        <a href="#faqs-section">FAQs</a>
+        <a href="/login/" style="color: #64748b;">Sign-In</a>
+        <a href="#booking-section" class="btn-header-cta">Book Slot ({advanceFormatted} Advance) →</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- 2. HERO SECTION -->
+  <section class="hero-section">
+    <div class="hero-container">
+      <span class="hero-badge">Statutory PESO Certified Testing Plant • {cityName}, Haryana</span>
+      
+      <h1 class="hero-title">
+        <span class="hero-title-alert">Avoid CNG Pump Refusals</span>
+        <span class="hero-title-main">Certified CNG Cylinder Hydrostatic Testing</span>
+      </h1>
+
+      <p class="hero-subtitle">
+        Every CNG vehicle in India requires mandatory hydrostatic retesting every 3 years. Without an active compliance plate, CNG pumps will reject refueling. Get tested in our high-pressure water jacket bay and drive away with your official PESO Form C certificate & stamped brass compliance plate in under 2 hours.
+      </p>
+
+      <!-- THREE PROMINENT ACTIONS -->
+      <div class="hero-cta-group">
+        <a href="#booking-section" class="btn-book-advance">
+          <span>⚡</span> Book CNG Cylinder Bay ({advanceFormatted} Flat Advance) →
+        </a>
+
+        <a href="#nearby-stations" class="btn-find-plant">
+          <span>📍</span> Find Nearest PESO Plant ↓
+        </a>
+
+        <RetestDueLauncher client:idle locale="en" />
+      </div>
+
+      <!-- ONE LINE CLICKABLE RANKED BADGE -->
+      <div>
+        <a href="#nearby-stations" class="hero-ranked-strip">
+          <span>🏆</span>
+          <strong>Ranked: #1 Flagship Express Bay (Zero Middleman) + Shortest Distance</strong>
+          <span>• Claim ₹200 Voucher ↗</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <!-- 3. NEARBY TESTING STATIONS DISCOVERY -->
+    <section class="page-section" id="nearby-stations">
+      <span class="section-eyebrow">Corridor Location & Real Capacity</span>
+      <h2 class="section-heading">Avoid CNG Pump Refusals. Find Nearest PESO Plant</h2>
+      <p class="section-lead">
+        Compare authorized testing facilities across Rewari, Manesar, Dharuhera and Gurugram corridors. Real transparent rates with zero retail garage markups.
+      </p>
+
+      <div class="nearby-box">
+        <div class="search-bar-grid">
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase; display: block; margin-bottom: 0.35rem;">
+              Select Highway Corridor / City Hub:
+            </label>
+            <select id="station-hub-select" style="width: 100%; padding: 0.75rem 1rem; border-radius: 12px; border: 1.5px solid #cbd5e1; font-weight: 600; font-size: 0.95rem; background: #fff;">
+              <option value="rewari">Rewari City & Industrial Corridor (HSR Flagship)</option>
+              <option value="manesar">IMT Manesar / Bilaspur Chowk (NH-48)</option>
+              <option value="dharuhera">Dharuhera / Bhiwadi Bypass (NH-48)</option>
+              <option value="gurugram">Gurugram City (Rajiv Chowk / Sohna Rd)</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: #475569; text-transform: uppercase; display: block; margin-bottom: 0.35rem;">
+              GPS Auto-Detection:
+            </label>
+            <button id="station-gps-btn" type="button" style="width: 100%; padding: 0.75rem; border-radius: 12px; border: 1.5px solid #0284c7; background: #e0f2fe; color: #0369a1; font-weight: 700; font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
+              <span>📍</span> Use My Live GPS
+            </button>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+          <strong id="stations-count-label" style="font-size: 0.95rem; color: #0a1128;">
+            Showing 3 PESO Verified Testing Stations
+          </strong>
+          <span style="font-size: 0.78rem; color: #64748b;">
+            Zero Middleman Guarantee
+          </span>
+        </div>
+
+        <!-- Station Comparison Cards -->
+        <div class="station-grid" id="stations-card-container">
+          {nearbyStationsSeed.map((st) => {
+            const isFlagship = st.is_hsr_flagship === 1;
+            return (
+              <div
+                class={`station-card ${isFlagship ? 'flagship-card' : ''}`}
+                data-id={st.id}
+                data-lat={st.lat}
+                data-lng={st.lng}
+                data-distance={st.distance_km}
+                data-flagship={st.is_hsr_flagship}
+              >
+                <div>
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    {isFlagship ? (
+                      <span class="badge-flagship-pill">#1 Recommended • ₹200 Voucher</span>
+                    ) : (
+                      <span style="background: #e2e8f0; color: #475569; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 9999px;">
+                        Independent Center
+                      </span>
+                    )}
+                    <span class="station-distance-badge" style="font-family: monospace; font-size: 0.75rem; font-weight: 700; color: #64748b;">
+                      {st.distance_km} km away
+                    </span>
+                  </div>
+
+                  <h3 style="font-size: 1.15rem; font-weight: 800; color: #0a1128; margin: 0 0 0.35rem;">
+                    {st.station_name}
+                  </h3>
+                  <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 0.75rem;">
+                    📍 {st.address_line}
+                  </p>
+
+                  <div style="background: rgba(0,0,0,0.02); padding: 0.75rem; border-radius: 10px; margin-bottom: 1rem; font-size: 0.82rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                      <span>Passenger Car Price:</span>
+                      <strong style="color: #0a1128; font-size: 0.95rem;">₹{st.car_price_inr}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                      <span>Turnaround Time:</span>
+                      <strong>~{st.median_turnaround_mins} Mins</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                      <span>Maruti Eeco Allowed:</span>
+                      <strong>{st.accepts_maruti_eeco ? '✓ Yes' : '✗ No (Blocked)'}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  {isFlagship ? (
+                    <a href="#booking-form" style="display: block; text-align: center; background: #ea580c; color: #fff; padding: 0.75rem; border-radius: 10px; font-weight: 800; font-size: 0.9rem; text-decoration: none; box-shadow: 0 4px 10px rgba(234, 88, 12, 0.25);">
+                      Book Priority Bay (From {advanceFormatted} Advance) →
+                    </a>
+                  ) : (
+                    <a href="#booking-form" style="display: block; text-align: center; background: #0a1128; color: #fff; padding: 0.75rem; border-radius: 10px; font-weight: 700; font-size: 0.85rem; text-decoration: none;">
+                      Choose HSR Flagship (Save ₹{st.car_price_inr - 2950 > 0 ? st.car_price_inr - 2950 : 300})
+                    </a>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. EMBEDDED INLINE BOOKING WIZARD -->
+    <section class="page-section" id="booking-section">
+      <div id="booking-form" style="position: relative; top: -80px; height: 0; width: 0; overflow: hidden; pointer-events: none;"></div>
+      <span class="section-eyebrow">Zero Friction Bay Reservation</span>
+      <h2 class="section-heading">Book CNG Cylinder Test ({advanceFormatted} Advance)</h2>
+      <p class="section-lead">
+        Select your vehicle type, choose a 20-minute arrival window, and lock your bay. Pay advance via instant UPI QR with zero payment gateway surcharge.
+      </p>
+
+      <div style="background: #fff; border: 1px solid var(--border-color); border-radius: 24px; padding: 1.5rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);">
+        <InlineBooking client:visible locale="en" stationPhone={contactPhone} stationCity={cityName} />
+      </div>
+    </section>
+
+    <!-- 5. STARTING 8 POINTS: VISUAL SYSTEM ARCHITECTURE -->
+    <section class="page-section" id="guide-steps">
+      <span class="section-eyebrow">Transparent 8-Point Operational Architecture</span>
+      <h2 class="section-heading">How Testing Works from Arrival to Certificate</h2>
+      <p class="section-lead">
+        Complete end-to-end procedural clarity: 4 customer booking steps followed by the certified 4-step testing laboratory workflow.
+      </p>
+
+      <div class="guide-steps-grid">
+        <div class="guide-step-card">
+          <div class="step-icon-num">
+            <span style="font-size: 1.75rem;">🚗</span>
+            <span class="step-num-badge">Step 01</span>
+          </div>
+          <h3 style="font-size: 1.05rem; font-weight: 800; color: #0a1128; margin-bottom: 0.4rem;">Vehicle & Category</h3>
+          <p style="font-size: 0.82rem; color: #475569; line-height: 1.45;">Choose Car, Eeco, or Heavy Truck. Select convenient 20-minute appointment date and time.</p>
+        </div>
+
+        <div class="guide-step-card">
+          <div class="step-icon-num">
+            <span style="font-size: 1.75rem;">📋</span>
+            <span class="step-num-badge">Step 02</span>
+          </div>
+          <h3 style="font-size: 1.05rem; font-weight: 800; color: #0a1128; margin-bottom: 0.4rem;">RC Legal Name</h3>
+          <p style="font-size: 0.82rem; color: #475569; line-height: 1.45;">Mandatory RC Owner Name + Phone Number for PESO Form C certificate generation.</p>
+        </div>
+
+        <div class="guide-step-card">
+          <div class="step-icon-num">
+            <span style="font-size: 1.75rem;">📲</span>
+            <span class="step-num-badge">Step 03</span>
+          </div>
+          <h3 style="font-size: 1.05rem; font-weight: 800; color: #0a1128; margin-bottom: 0.4rem;">Direct UPI QR Advance</h3>
+          <p style="font-size: 0.82rem; color: #475569; line-height: 1.45;">Instant dynamic UPI QR code generated with {advanceFormatted} flat advance. Pay via GPay, PhonePe, or Paytm.</p>
+        </div>
+
+        <div class="guide-step-card">
+          <div class="step-icon-num">
+            <span style="font-size: 1.75rem;">✅</span>
+            <span class="step-num-badge">Step 04</span>
+          </div>
+          <h3 style="font-size: 1.05rem; font-weight: 800; color: #0a1128; margin-bottom: 0.4rem;">Pass & WhatsApp Link</h3>
+          <p style="font-size: 0.82rem; color: #475569; line-height: 1.45;">Bay locked. Immediate WhatsApp dispatch with directions and gate entry pass.</p>
+        </div>
+
+        <div class="guide-step-card">
+          <div class="step-icon-num">
+            <span style="font-size: 1.75rem;">🏢</span>
+            <span class="step-num-badge">Step 05</span>
+          </div>
+          <h3 style="font-size: 1.05rem; font-weight: 800; color: #0a1128; margin-bottom: 0.4rem;">Reception Check-In</h3>
+          <p style="font-size: 0.82rem; color: #475569; line-height: 1.45;">Vehicle scanned, physical cylinder visual check, and assignment to testing rig.</p>
+        </div>
+
+        <div class="guide-step-card">
+          <div class="step-icon-num">
+            <span style="font-size: 1.75rem;">🔬</span>
+            <span class="step-num-badge">Step 06</span>
+          </div>
+          <h3 style="font-size: 1.05rem; font-weight: 800; color: #0a1128; margin-bottom: 0.4rem;">300 Bar Hydro Rig</h3>
+          <p style="font-size: 0.82rem; color: #475569; line-height: 1.45;">Degassing -> Ultrasonic scan -> 300 Bar water jacket stretch test -> 80°C hot air drying.</p>
+        </div>
+
+        <div class="guide-step-card">
+          <div class="step-icon-num">
+            <span style="font-size: 1.75rem;">🏷️</span>
+            <span class="step-num-badge">Step 07</span>
+          </div>
+          <h3 style="font-size: 1.05rem; font-weight: 800; color: #0a1128; margin-bottom: 0.4rem;">Punching Brass Plate</h3>
+          <p style="font-size: 0.82rem; color: #475569; line-height: 1.45;">Heavy-duty brass compliance plate stamped with statutory 3-year validity dates.</p>
+        </div>
+
+        <div class="guide-step-card">
+          <div class="step-icon-num">
+            <span style="font-size: 1.75rem;">📜</span>
+            <span class="step-num-badge">Step 08</span>
+          </div>
+          <h3 style="font-size: 1.05rem; font-weight: 800; color: #0a1128; margin-bottom: 0.4rem;">PESO Form C Certificate</h3>
+          <p style="font-size: 0.82rem; color: #475569; line-height: 1.45;">Digital compliance certificate uploaded and sent to customer account and WhatsApp.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. TRANSPARENT PRICING SECTION -->
+    <section class="page-section" id="pricing-section">
+      <span class="section-eyebrow">Statutory Fee Schedule</span>
+      <h2 class="section-heading">Transparent Testing Rates — No Middleman Surcharge</h2>
+      <p class="section-lead">
+        All-inclusive pricing covering nitrogen purging, ultrasonic inspection, 300 Bar hydrostatic test, brass plate, and digital PESO certificate.
+      </p>
+
+      <div style="background: #fff; border: 1px solid var(--border-color); border-radius: 20px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+          <thead>
+            <tr style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0;">
+              <th style="padding: 1rem 1.25rem; font-weight: 800; color: #475569; text-transform: uppercase; font-size: 0.75rem;">Vehicle Category</th>
+              <th style="padding: 1rem 1.25rem; font-weight: 800; color: #475569; text-transform: uppercase; font-size: 0.75rem;">Cylinders Fitted</th>
+              <th style="padding: 1rem 1.25rem; font-weight: 800; color: #475569; text-transform: uppercase; font-size: 0.75rem;">Turnaround Time</th>
+              <th style="padding: 1rem 1.25rem; font-weight: 800; color: #475569; text-transform: uppercase; font-size: 0.75rem;">All-Inclusive Fee</th>
+              <th style="padding: 1rem 1.25rem; font-weight: 800; color: #475569; text-transform: uppercase; font-size: 0.75rem;">Online Advance</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 1.1rem 1.25rem;"><strong>Passenger Car / Taxi</strong> (Maruti, Hyundai, Tata)</td>
+              <td style="padding: 1.1rem 1.25rem;">1 Cylinder (60L / 65L)</td>
+              <td style="padding: 1.1rem 1.25rem;">~90 Mins</td>
+              <td style="padding: 1.1rem 1.25rem;"><strong style="color: #0a1128; font-size: 1.05rem;">₹2,950</strong> (₹2,500 + 18% GST)</td>
+              <td style="padding: 1.1rem 1.25rem;">{advanceFormatted} (Advance)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 1.1rem 1.25rem;"><strong>Dual-Cylinder Car / Maruti Eeco</strong></td>
+              <td style="padding: 1.1rem 1.25rem;">2 Cylinders</td>
+              <td style="padding: 1.1rem 1.25rem;">~120 Mins</td>
+              <td style="padding: 1.1rem 1.25rem;"><strong style="color: #0a1128; font-size: 1.05rem;">₹5,900</strong> (₹5,000 + 18% GST)</td>
+              <td style="padding: 1.1rem 1.25rem;">{advanceFormatted} (Advance)</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 1.1rem 1.25rem;"><strong>Commercial LCV / Maxi Truck</strong></td>
+              <td style="padding: 1.1rem 1.25rem;">3 - 4 Cylinders</td>
+              <td style="padding: 1.1rem 1.25rem;">~150 Mins</td>
+              <td style="padding: 1.1rem 1.25rem;"><strong style="color: #0a1128; font-size: 1.05rem;">₹8,850 - ₹11,800</strong></td>
+              <td style="padding: 1.1rem 1.25rem;">{advanceFormatted} (Advance)</td>
+            </tr>
+            <tr>
+              <td style="padding: 1.1rem 1.25rem;"><strong>Heavy Bus / Commercial Cascade</strong></td>
+              <td style="padding: 1.1rem 1.25rem;">5 - 8 Cylinders</td>
+              <td style="padding: 1.1rem 1.25rem;">~180 - 240 Mins</td>
+              <td style="padding: 1.1rem 1.25rem;"><strong>Custom Fleet Quote</strong></td>
+              <td style="padding: 1.1rem 1.25rem;">{advanceFormatted} (Advance)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 7. EDUCATIONAL ARTICLES PREVIEWS -->
+    <section class="page-section" id="articles-section">
+      <span class="section-eyebrow">Safety Knowledge & Compliance Guides</span>
+      <h2 class="section-heading">Essential CNG Cylinder Safety Articles</h2>
+      <p class="section-lead">
+        Learn why CNG pumps refuse fuel, when retesting is mandatory by law, and what happens during the 300 Bar water jacket stretch test.
+      </p>
+
+      <div class="articles-grid">
+        {articles.map((post) => {
+          const cleanSlug = post.id.replace(/^en\//, '').replace(/\.(md|mdx)$/, '');
+          return (
+            <article class="article-preview-card">
+              <div>
+                <span style="font-size: 0.72rem; font-weight: 800; color: #ea580c; text-transform: uppercase;">Technical Guide</span>
+                <h3>{post.data.title}</h3>
+                <p>{post.data.description}</p>
+              </div>
+              <a href={`/en/blog/${cleanSlug}/`} class="article-link">
+                Read Full Guide →
+              </a>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+
+    <!-- 8. FREQUENTLY ASKED QUESTIONS -->
+    <section class="page-section" id="faqs-section">
+      <span class="section-eyebrow">Consumer Knowledge Base</span>
+      <h2 class="section-heading">Frequently Asked Questions</h2>
+      <p class="section-lead">
+        Important regulatory and procedural information regarding automotive CNG cylinder hydro testing.
+      </p>
+
+      <div style="display: flex; flex-direction: column; gap: 1rem; max-width: 860px; margin: 0 auto;">
+        <div style="background: #fff; border: 1px solid var(--border-color); border-radius: 14px; padding: 1.35rem;">
+          <h3 style="font-size: 1.05rem; font-weight: 800; color: #0a1128; margin-bottom: 0.4rem;">
+            Why is CNG cylinder hydro testing mandatory every 3 years?
+          </h3>
+          <p style="font-size: 0.88rem; color: #475569; line-height: 1.5;">
+            Under Rule 35 of the Gas Cylinders Rules (2016) and Central Motor Vehicles Rules (CMVR), all automotive CNG cylinders must undergo hydrostatic water-jacket expansion testing every 3 years. Without a valid PESO certificate and brass plate, CNG filling stations will deny fuel, and vehicle fitness renewals are blocked.
+          </p>
+        </div>
+
+        <div style="background: #fff; border: 1px solid var(--border-color); border-radius: 14px; padding: 1.35rem;">
+          <h3 style="font-size: 1.05rem; font-weight: 800; color: #0a1128; margin-bottom: 0.4rem;">
+            Why do CNG fuel pumps refuse to fill gas in my vehicle?
+          </h3>
+          <p style="font-size: 0.88rem; color: #475569; line-height: 1.5;">
+            CNG stations operate at 200 Bar pressure. Attendants are statutorily required to check the brass compliance plate riveted near the fuel filling valve. If the 3-year validity date has passed or the plate is missing/damaged, fuel filling is immediately blocked for safety.
+          </p>
+        </div>
+
+        <div style="background: #fff; border: 1px solid var(--border-color); border-radius: 14px; padding: 1.35rem;">
+          <h3 style="font-size: 1.05rem; font-weight: 800; color: #0a1128; margin-bottom: 0.4rem;">
+            What documents do I need to bring for the test?
+          </h3>
+          <p style="font-size: 0.88rem; color: #475569; line-height: 1.5;">
+            Bring your original vehicle Registration Certificate (RC) and an identification document (Aadhaar or Driving License). If a previous hydro test was conducted, bring the old compliance plate or certificate.
+          </p>
+        </div>
+
+        <div style="background: #fff; border: 1px solid var(--border-color); border-radius: 14px; padding: 1.35rem;">
+          <h3 style="font-size: 1.05rem; font-weight: 800; color: #0a1128; margin-bottom: 0.4rem;">
+            What is the booking advance and cancellation policy?
+          </h3>
+          <p style="font-size: 0.88rem; color: #475569; line-height: 1.5;">
+            Online reservations require a flat {advanceFormatted} advance to lock your designated express testing bay and technician allocation. The booking advance is strictly non-refundable upon slot confirmation. The balance amount is payable on-site after testing and brass compliance plate stamping.
+          </p>
+        </div>
+
+        <div style="background: #fff; border: 1px solid var(--border-color); border-radius: 14px; padding: 1.35rem;">
+          <h3 style="font-size: 1.05rem; font-weight: 800; color: #0a1128; margin-bottom: 0.4rem;">
+            Can I wait while my vehicle is tested at HSR Rewari?
+          </h3>
+          <p style="font-size: 0.88rem; color: #475569; line-height: 1.5;">
+            Yes! Our Rewari testing facility features an air-conditioned customer lounge with live CCTV bay monitoring and high-speed Wi-Fi while your vehicle is inspected. Standard turnaround is 90 to 120 minutes.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 9. REDESIGNED CLEAN INDUSTRIAL FOOTER -->
+  <footer class="site-footer">
+    <div style="max-width: 960px; margin: 0 auto;">
+      <div style="display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 0.6rem;">
+        <img src={brandLogo} alt={`${businessName} Logo`} style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover;" />
+        <strong style="font-family: var(--font-heading); font-size: 1.35rem; color: var(--navy); display: inline-block;">
+          ⚡ {businessName}
+        </strong>
+      </div>
+      <p style="font-size: 0.9rem; color: #475569; margin-bottom: 1.25rem; font-weight: 500;">
+        Official CNG Cylinder Hydrostatic Testing Facility • {stationAddress}
+      </p>
+
+      <!-- Accessible High-Contrast SVG Social Media Bar -->
+      {settings.show_social_media !== 0 && (
+        <div class="footer-social-bar" role="navigation" aria-label="Social Media Channels">
+          {settings.social_facebook && (
+            <a href={settings.social_facebook} target="_blank" rel="noopener noreferrer" class="social-btn" style="background: #1877f2;" aria-label="Follow HSR on Facebook" title="Facebook">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            </a>
+          )}
+          {settings.social_instagram && (
+            <a href={settings.social_instagram} target="_blank" rel="noopener noreferrer" class="social-btn" style="background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);" aria-label="Follow HSR on Instagram" title="Instagram">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+            </a>
+          )}
+          {settings.social_youtube && (
+            <a href={settings.social_youtube} target="_blank" rel="noopener noreferrer" class="social-btn" style="background: #ff0000;" aria-label="Watch HSR videos on YouTube" title="YouTube">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            </a>
+          )}
+          {settings.social_twitter && (
+            <a href={settings.social_twitter} target="_blank" rel="noopener noreferrer" class="social-btn" style="background: #000000;" aria-label="Follow HSR on X (Twitter)" title="X / Twitter">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </a>
+          )}
+          {whatsappNumber && (
+            <a href={`https://wa.me/${whatsappNumber.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" class="social-btn" style="background: #25d366;" aria-label="Contact HSR on WhatsApp" title="WhatsApp Support">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.031 0C5.397 0 0 5.397 0 12.031c0 2.12.553 4.19 1.605 6.012L.062 24l6.155-1.614a11.97 11.97 0 0 0 5.814 1.488h.005c6.634 0 12.031-5.397 12.031-12.031 0-3.214-1.251-6.236-3.524-8.509A11.954 11.954 0 0 0 12.031 0zm0 22.029h-.004a9.98 9.98 0 0 1-5.088-1.39l-.365-.216-3.778.99.1-3.682-.238-.378a9.986 9.986 0 0 1-1.534-5.322c0-5.525 4.496-10.021 10.026-10.021a9.96 9.96 0 0 1 7.086 2.935 9.96 9.96 0 0 1 2.934 7.085c0 5.526-4.496 10.022-10.025 10.022zm5.494-7.502c-.301-.151-1.782-.88-2.058-.98-.276-.101-.476-.151-.676.151-.2.301-.777.98-.952 1.18-.176.2-.351.226-.652.075-.301-.151-1.272-.469-2.423-1.496-.896-.799-1.5-1.786-1.676-2.087-.175-.301-.019-.464.132-.614.136-.135.301-.351.452-.527.15-.175.2-.301.3-.502.101-.2.05-.376-.025-.526-.075-.151-.677-1.631-.928-2.233-.244-.587-.492-.507-.676-.517-.175-.009-.376-.011-.576-.011s-.527.075-.803.376c-.276.301-1.053 1.029-1.053 2.508 0 1.48 1.078 2.909 1.229 3.11.15.201 2.122 3.24 5.141 4.544.718.31 1.279.496 1.716.635.722.23 1.378.197 1.9.119.58-.087 1.782-.728 2.032-1.431.251-.703.251-1.305.176-1.431-.075-.126-.276-.201-.577-.352z"/></svg>
+            </a>
+          )}
+        </div>
+      )}
+
+      <p style="font-size: 0.8rem; color: #64748b; margin-top: 1rem; line-height: 1.5;">
+        © 2026 {businessName}. All rights reserved. Gas Cylinders Rules (2016) Rule 35 & IS 8451 certified.
+      </p>
+      <p style="font-size: 0.8rem; margin-top: 0.6rem;">
+        <a href="/en/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Home</a> •
+        <a href="/cng/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">CNG Pillar Guide</a> •
+        <a href="/cng/cylinder-test/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Testing Plant</a> •
+        <a href="/website-guide/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">System Architecture</a> •
+        <a href="/user/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Customer Workspace</a> •
+        <a href="/admin/login/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Staff / Admin Login</a>
+      </p>
+    </div>
+  </footer>
+
+  <FloatingWhatsApp
+    whatsappNumber={whatsappNumber}
+    contactPhone={contactPhone}
+    businessName={businessName}
+    showFloating={settings.show_floating_whatsapp ?? 1}
+  />
+
+  <!-- Interactive Scripts (Corridor Hubs & GPS) -->
+  <script is:inline>
+    (function() {
+      // Highway corridor coordinates
+      const corridorHubs = {
+        rewari: { lat: 28.1950, lng: 76.6250, name: 'Rewari Corridor (HSR Flagship)' },
+        manesar: { lat: 28.3588, lng: 76.9425, name: 'IMT Manesar (NH-48)' },
+        dharuhera: { lat: 28.2054, lng: 76.7946, name: 'Dharuhera / Bhiwadi Bypass' },
+        gurugram: { lat: 28.4595, lng: 77.0266, name: 'Gurugram City Center' }
+      };
+
+      function calcDistanceKm(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)) * 10) / 10;
+      }
+
+      function updateStationDistances(refLat, refLng, sourceLabel) {
+        const container = document.getElementById('stations-card-container');
+        const countLabel = document.getElementById('stations-count-label');
+        if (!container) return;
+
+        const cards = Array.from(container.querySelectorAll('.station-card'));
+        cards.forEach(function(card) {
+          const lat = parseFloat(card.getAttribute('data-lat') || '0');
+          const lng = parseFloat(card.getAttribute('data-lng') || '0');
+          if (lat && lng) {
+            const dist = calcDistanceKm(refLat, refLng, lat, lng);
+            card.setAttribute('data-distance', dist.toString());
+            const badge = card.querySelector('.station-distance-badge');
+            if (badge) badge.textContent = dist + ' km away';
+          }
+        });
+
+        // Re-sort cards strictly by shortest road distance
+        cards.sort(function(a, b) {
+          const distA = parseFloat(a.getAttribute('data-distance') || '999');
+          const distB = parseFloat(b.getAttribute('data-distance') || '999');
+          return distA - distB;
+        });
+
+        cards.forEach(function(card) {
+          container.appendChild(card);
+        });
+
+        if (countLabel) {
+          countLabel.textContent = 'Showing ' + cards.length + ' PESO Stations • Nearest to ' + sourceLabel;
+        }
+      }
+
+      const hubSelect = document.getElementById('station-hub-select');
+      if (hubSelect) {
+        hubSelect.addEventListener('change', function() {
+          const hub = corridorHubs[hubSelect.value] || corridorHubs.rewari;
+          updateStationDistances(hub.lat, hub.lng, hub.name);
+        });
+      }
+
+      const gpsBtn = document.getElementById('station-gps-btn');
+      if (gpsBtn) {
+        gpsBtn.addEventListener('click', function() {
+          if (!navigator.geolocation) {
+            alert('Geolocation is not supported by your browser.');
+            return;
+          }
+          gpsBtn.innerHTML = '<span>⏳</span> Locating...';
+          navigator.geolocation.getCurrentPosition(
+            function(pos) {
+              gpsBtn.innerHTML = '<span>📍</span> GPS Active';
+              updateStationDistances(pos.coords.latitude, pos.coords.longitude, 'your Live GPS Location');
+            },
+            function() {
+              gpsBtn.innerHTML = '<span>📍</span> Use My Live GPS';
+              alert('Location access denied. Displaying stations for selected highway corridor.');
+            },
+            { enableHighAccuracy: true, timeout: 8000 }
+          );
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

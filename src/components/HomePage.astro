@@ -1,7 +1,10 @@
 ---
 import type { Locale } from '../lib/constants';
 import type { BusinessSettings } from '../lib/types';
+import { inr } from '../lib/booking-wizard-helpers';
 import DueDateChecker from './home/DueDateChecker';
+import ComplianceModal from './ComplianceModal.astro';
+import InlineBooking from './booking/InlineBooking';
 
 interface Props {
   locale: Locale;
@@ -15,36 +18,54 @@ const phoneReady = settings.contact_phone !== 'SETUP_REQUIRED';
 const mapReady = settings.map_url !== 'SETUP_REQUIRED' && settings.map_url.startsWith('https://');
 
 const cityName = cityReady ? settings.city : 'Rewari';
+const advanceFormatted = inr(settings.flat_advance_paise || 50000);
 const heading = locale === 'en'
-  ? 'Government Approved CNG Cylinder Hydro Testing'
-  : 'सरकारी प्रमाणित सीएनजी सिलेंडर हाइड्रो टेस्टिंग';
+  ? 'Avoid CNG Pump Refusals. Get Hydrotested in 2 Hours.'
+  : 'सीएनजी पंप पर गैस रिफिलिंग इंकार से बचें। 2 घंटे में हाइड्रो टेस्टिंग कराएं।';
 const subHeading = locale === 'en'
-  ? `Safe, Reliable & Certified CNG Cylinder Testing in ${cityName}.`
-  : `${cityName} में सुरक्षित, विश्वसनीय एवं प्रमाणित सीएनजी सिलेंडर टेस्टिंग।`;
+  ? 'Stay safe and road-legal with fast, reliable CNG cylinder hydrotesting. Valid across all CNG stations in India.'
+  : 'तेज़, विश्वसनीय एवं प्रमाणित सीएनजी सिलेंडर हाइड्रो टेस्टिंग के साथ सुरक्षित एवं वैधानिक रहें। भारत के सभी सीएनजी स्टेशनों पर मान्य।';
 ---
 
 <!-- SECTION 1: HERO & IDENTITY -->
 <section class="section hero-section" id="hero">
   <div class="container hero-grid">
     <div class="hero-content">
-      <div class="trust-badge trust-badge-amber">
-        ⚡ {locale === 'en' ? 'Government Approved Testing Facility (PESO Certified)' : 'सरकारी प्रमाणित टेस्टिंग सुविधा (PESO Certified)'}
+      <div class="hero-brand-badge">
+        <img src={settings.brand_logo_url || '/images/hsr-gauge-logo.jpg'} alt={`${businessName || 'HSR'} CNG`} class="hero-gauge-logo" width="48" height="48" />
+        <div class="trust-badge trust-badge-amber">
+          ⚡ {locale === 'en' ? 'PESO-Certified Lab • Government Approved CNG Cylinder Hydro Testing Station' : 'PESO-प्रमाणित लैब • सरकारी अनुमोदित सीएनजी हाइड्रो टेस्टिंग स्टेशन'}
+        </div>
       </div>
       <p class="hero-brand">{businessName || 'HSR'}</p>
       <h1 class="hero-title">{heading}</h1>
-      <p class="hero-subtitle-trust" style="font-size: 1.25rem; font-weight: 600; color: var(--color-steel-400); margin: 0.25rem 0 0.75rem;">
+      <p class="hero-subtitle-trust">
         {subHeading}
       </p>
-      <p class="hero-description">
-        {locale === 'en'
-          ? 'Mandatory periodic hydrostatic testing and compliance certification for passenger cars, commercial taxis, delivery tempos, and heavy transport trucks. Ensure safe refueling across all City Gas stations.'
-          : 'निजी कारों, टैक्सियों, कमर्शियल टेम्पो और भारी ट्रकों के लिए अनिवार्य वैधानिक हाइड्रोस्टेटिक परीक्षण एवं अनुपालन प्रमाणन। सभी सीएनजी स्टेशनों पर सुरक्षित एवं निर्बाध गैस रिफिलिंग सुनिश्चित करें।'}
-      </p>
+
+      <!-- Trust Badges (3 key pillars) -->
+      <div class="hero-trust-badges">
+        <div class="trust-badge-pill">
+          <span class="trust-pill-icon">🛡️</span>
+          <span>{locale === 'en' ? 'PESO-Certified Lab' : 'PESO-प्रमाणित लैब'}</span>
+        </div>
+        <div class="trust-badge-pill">
+          <span class="trust-pill-icon">📜</span>
+          <span>{locale === 'en' ? 'Govt-Approved Plate & Certificate' : 'सरकारी अनुमोदित प्लेट एवं प्रमाणपत्र'}</span>
+        </div>
+        <div class="trust-badge-pill">
+          <span class="trust-pill-icon">⚡</span>
+          <span>{locale === 'en' ? '2-Hour Express Service' : '2 घंटे एक्सप्रेस सेवा'}</span>
+        </div>
+      </div>
 
       <div class="hero-actions">
-        <a class="btn btn-primary hero-btn-main" href={`/${locale}/book/`}>
-          ⚡ {locale === 'en' ? 'Book Testing Appointment' : 'टेस्टिंग स्लॉट बुक करें'} →
+        <a class="btn btn-primary hero-btn-main" href="#booking-form">
+          ⚡ {locale === 'en' ? 'Book Hydrotesting Now' : 'अभी हाइड्रो टेस्टिंग बुक करें'} →
         </a>
+        <button type="button" class="btn btn-secondary hero-btn-notice" id="open-compliance-notice-btn">
+          📋 {locale === 'en' ? 'Rule 35 Notice & Checker' : 'नियम 35 सूचना एवं जाँच'}
+        </button>
         {phoneReady && (
           <a class="btn btn-secondary" href={`tel:${settings.contact_phone}`}>
             📞 {locale === 'en' ? 'Call Centre' : 'कॉल करें'}
@@ -56,10 +77,13 @@ const subHeading = locale === 'en'
     <div class="hero-media">
       <div class="hero-visual-card">
         <img
-          src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=1200&q=75"
-          alt={locale === 'en' ? 'High-pressure cylinder hydrostatic testing bay' : 'हाई-प्रेशर सिलेंडर हाइड्रोस्टेटिक टेस्टिंग सुविधा'}
+          src="/images/hydro-test-rig.webp"
+          alt={locale === 'en' ? 'Automated high-pressure hydrostatic testing water jacket apparatus' : 'स्वचालित हाई-प्रेशर हाइड्रोस्टेटिक टेस्टिंग वाटर जैकेट उपकरण'}
           class="hero-img"
           loading="eager"
+          width="600"
+          height="400"
+          fetchpriority="high"
         />
         <div class="hero-overlay-badge">
           <span class="telemetry-dot"></span>
@@ -74,11 +98,66 @@ const subHeading = locale === 'en'
 <section class="section due-date-section" id="check-due-date" style="background: var(--color-slate-100); padding: 1.75rem 0;">
   <div class="container">
     <DueDateChecker
-      client:load
+      client:visible
       locale={locale}
       bookUrl={`/${locale}/book/`}
       stationPhone={phoneReady ? settings.contact_phone : undefined}
     />
+  </div>
+</section>
+
+<!-- SECTION: REFUSED AT CNG PUMP -->
+<section class="section refused-cng-section" id="refused-cng" style="background: #ffffff; padding: 3rem 0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
+  <div class="container">
+    <div style="max-width: 860px; margin: 0 auto;">
+      <div style="display: inline-flex; align-items: center; gap: 0.5rem; background: #fee2e2; color: #991b1b; padding: 0.3rem 0.8rem; border-radius: 9999px; font-size: 0.82rem; font-weight: 700; margin-bottom: 0.75rem;">
+        <span>🛑</span>
+        <span>{locale === 'en' ? 'Refused CNG at the Pump?' : 'सीएनजी पंप पर गैस भरने से इंकार?'}</span>
+      </div>
+      <h2 style="font-size: clamp(1.65rem, 3vw, 2.1rem); color: var(--color-navy-900); margin-bottom: 1rem; line-height: 1.25;">
+        {locale === 'en' ? 'Why Fuel Stations Check Your Brass Compliance Plate' : 'सीएनजी पंप आपकी अनुपालन प्लेट क्यों चेक करते हैं?'}
+      </h2>
+      <p style="font-size: 1rem; color: #475569; line-height: 1.6; margin-bottom: 1.25rem;">
+        {locale === 'en'
+          ? 'Under Rule 35 of the Gas Cylinders Rules 2016 and Section 190(2) of the Motor Vehicles Act, fuel attendants are legally prohibited from refilling any vehicle whose cylinder hydrotest validity has lapsed past 36 months. A missing, unreadable, or expired brass plate means an immediate refusal at all city gas distribution (CGD) pumps across India.'
+          : 'गैस सिलेंडर नियम 2016 के नियम 35 और मोटर वाहन अधिनियम की धारा 190(2) के तहत, यदि किसी वाहन के सिलेंडर की 3-वर्षीय हाइड्रो टेस्टिंग वैधता समाप्त हो चुकी है, तो पंप कर्मी गैस भरने से तुरंत इंकार करने के लिए कानूनी रूप से बाध्य हैं। बिना वैध प्लेट के गैस भरवाना गैरकानूनी व असुरक्षित है।'}
+      </p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+          <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📜</div>
+          <strong style="color: #0a1128; font-size: 0.95rem; display: block; margin-bottom: 0.35rem;">
+            {locale === 'en' ? 'Official Stamped Brass Plate' : 'मोहरबंद पीतल की प्लेट'}
+          </strong>
+          <p style="font-size: 0.85rem; color: #64748b; margin: 0; line-height: 1.45;">
+            {locale === 'en'
+              ? 'Our technicians rivet a permanent stamped brass plate near your filler valve showing the new 3-year expiry date.'
+              : 'हमारे तकनीशियन फिलर वाल्व के पास एक आधिकारिक पीतल की प्लेट लगाते हैं जिस पर अगली 3-वर्षीय देय तारीख अंकित होती है।'}
+          </p>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem;">
+          <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📱</div>
+          <strong style="color: #0a1128; font-size: 0.95rem; display: block; margin-bottom: 0.35rem;">
+            {locale === 'en' ? 'Digital Form C Certificate' : 'डिजिटल फॉर्म सी प्रमाणपत्र'}
+          </strong>
+          <p style="font-size: 0.85rem; color: #64748b; margin: 0; line-height: 1.45;">
+            {locale === 'en'
+              ? 'Download your certified test report on WhatsApp and email, accepted across RTOs and insurance providers.'
+              : 'व्हाट्सएप एवं ईमेल पर अपना आधिकारिक टेस्ट प्रमाणपत्र प्राप्त करें, जो आरटीओ और बीमा कंपनियों में पूर्णतः मान्य है।'}
+          </p>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <a href="#booking-form" class="btn btn-primary">
+          ⚡ {locale === 'en' ? 'Book Slot & Get Certified' : 'स्लॉट बुक करें व प्रमाणपत्र पाएं'} →
+        </a>
+        <a href="#process" class="btn btn-secondary">
+          🔬 {locale === 'en' ? 'See 5-Step Testing Standard' : '5-चरणीय परीक्षण विधि देखें'}
+        </a>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -128,6 +207,126 @@ const subHeading = locale === 'en'
         <p>{locale === 'en' ? 'Stamp test date, fix official brass plate near filler valve, and issue test certificate.' : 'टेस्ट तारीख की मोहर, फिलर वाल्व के पास पीतल की प्लेट लगाना और डिजिटल सर्टिफिकेट जारी करना।'}</p>
       </article>
     </div>
+  </div>
+</section>
+
+<!-- SECTION: TRANSPARENT HSR PRICING -->
+<section class="section pricing-section" id="pricing" style="background: #f8fafc; padding: 3.5rem 0;">
+  <div class="container">
+    <div class="section-title-wrap" style="text-align: center; max-width: 720px; margin: 0 auto 2.5rem;">
+      <span class="trust-badge trust-badge-amber">💰 {locale === 'en' ? 'Statutory Transparency' : 'पारदर्शी शुल्क'}</span>
+      <h2 class="section-heading" style="font-size: clamp(1.85rem, 3.5vw, 2.3rem); margin: 0.5rem 0 0.5rem;">
+        {locale === 'en' ? 'Transparent Cylinder Hydro Testing Tariffs' : 'पारदर्शी सीएनजी सिलेंडर हाइड्रो टेस्टिंग दरें'}
+      </h2>
+      <p class="section-subtext" style="color: #64748b; font-size: 1rem; margin: 0;">
+        {locale === 'en'
+          ? `Flat ${advanceFormatted} advance locks your dedicated express bay. Balance payable on-site after testing & brass plate stamping. Zero hidden middleman markups.`
+          : `फ्लैट ${advanceFormatted} अग्रिम से आपकी समर्पित बे सुरक्षित होती है। शेष राशि परीक्षण पूर्ण होने पर देय। कोई छुपा हुआ शुल्क नहीं।`}
+      </p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; max-width: 1040px; margin: 0 auto 2rem;">
+      <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <span style="font-size: 1.75rem; display: block; margin-bottom: 0.5rem;">🚗</span>
+          <h3 style="font-size: 1.15rem; color: #0a1128; margin-bottom: 0.35rem;">{locale === 'en' ? 'Passenger Car / Taxi' : 'यात्री कार / टैक्सी'}</h3>
+          <p style="font-size: 0.82rem; color: #64748b; margin-bottom: 1rem;">1 Cylinder (Sedan, Hatchback, Cab)</p>
+          <div style="margin-bottom: 1rem;">
+            <div style="font-size: 1.75rem; font-weight: 800; color: #0a1128;">₹2,950</div>
+            <span style="font-size: 0.78rem; color: #64748b;">(₹2,500 Base + 18% GST)</span>
+          </div>
+          <div style="font-size: 0.82rem; color: #334155; line-height: 1.5; border-top: 1px solid #f1f5f9; padding-top: 0.75rem;">
+            <div>⚡ <strong>{advanceFormatted}</strong> {locale === 'en' ? 'Advance to lock slot' : 'अग्रिम स्लॉट बुकिंग'}</div>
+            <div>🏷️ <strong>₹2,450</strong> {locale === 'en' ? 'Balance upon handover' : 'शेष राशि केंद्र पर'}</div>
+          </div>
+        </div>
+        <a href="#booking-form" class="btn btn-primary" style="margin-top: 1.25rem; text-align: center; font-size: 0.88rem; width: 100%;">
+          {locale === 'en' ? 'Book Car Slot →' : 'कार स्लॉट बुक करें →'}
+        </a>
+      </div>
+
+      <div style="background: #ffffff; border: 2px solid #ea580c; border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; position: relative;">
+        <span style="position: absolute; top: -11px; right: 16px; background: #ea580c; color: #fff; font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.6rem; border-radius: 9999px;">
+          POPULAR
+        </span>
+        <div>
+          <span style="font-size: 1.75rem; display: block; margin-bottom: 0.5rem;">🚕</span>
+          <h3 style="font-size: 1.15rem; color: #0a1128; margin-bottom: 0.35rem;">{locale === 'en' ? 'Dual-Cylinder Vehicle' : 'दो-सिलेंडर वाहन'}</h3>
+          <p style="font-size: 0.82rem; color: #64748b; margin-bottom: 1rem;">2 Cylinders (Twin-Tank Cabs & Sedans)</p>
+          <div style="margin-bottom: 1rem;">
+            <div style="font-size: 1.75rem; font-weight: 800; color: #0a1128;">₹5,900</div>
+            <span style="font-size: 0.78rem; color: #64748b;">(₹5,000 Base + 18% GST)</span>
+          </div>
+          <div style="font-size: 0.82rem; color: #334155; line-height: 1.5; border-top: 1px solid #f1f5f9; padding-top: 0.75rem;">
+            <div>⚡ <strong>{advanceFormatted}</strong> {locale === 'en' ? 'Advance to lock slot' : 'अग्रिम स्लॉट बुकिंग'}</div>
+            <div>🏷️ <strong>₹5,400</strong> {locale === 'en' ? 'Balance upon handover' : 'शेष राशि केंद्र पर'}</div>
+          </div>
+        </div>
+        <a href="#booking-form" class="btn btn-primary" style="margin-top: 1.25rem; text-align: center; font-size: 0.88rem; width: 100%;">
+          {locale === 'en' ? 'Book 2-Cyl Slot →' : '2-सिलेंडर स्लॉट बुक करें →'}
+        </a>
+      </div>
+
+      <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <span style="font-size: 1.75rem; display: block; margin-bottom: 0.5rem;">🚐</span>
+          <h3 style="font-size: 1.15rem; color: #0a1128; margin-bottom: 0.35rem;">{locale === 'en' ? 'Commercial Van / Tempo' : 'कमर्शियल वैन / टेम्पो'}</h3>
+          <p style="font-size: 0.82rem; color: #64748b; margin-bottom: 1rem;">4 Cylinders (Delivery Vans, Compact LCVs)</p>
+          <div style="margin-bottom: 1rem;">
+            <div style="font-size: 1.75rem; font-weight: 800; color: #0a1128;">₹11,800</div>
+            <span style="font-size: 0.78rem; color: #64748b;">(₹10,000 Base + 18% GST)</span>
+          </div>
+          <div style="font-size: 0.82rem; color: #334155; line-height: 1.5; border-top: 1px solid #f1f5f9; padding-top: 0.75rem;">
+            <div>⚡ <strong>{advanceFormatted}</strong> {locale === 'en' ? 'Advance to lock slot' : 'अग्रिम स्लॉट बुकिंग'}</div>
+            <div>🏷️ <strong>₹11,300</strong> {locale === 'en' ? 'Balance upon handover' : 'शेष राशि केंद्र पर'}</div>
+          </div>
+        </div>
+        <a href="#booking-form" class="btn btn-primary" style="margin-top: 1.25rem; text-align: center; font-size: 0.88rem; width: 100%;">
+          {locale === 'en' ? 'Book Van Slot →' : 'वैन स्लॉट बुक करें →'}
+        </a>
+      </div>
+
+      <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+          <span style="font-size: 1.75rem; display: block; margin-bottom: 0.5rem;">🚛</span>
+          <h3 style="font-size: 1.15rem; color: #0a1128; margin-bottom: 0.35rem;">{locale === 'en' ? 'Heavy Commercial / Bus' : 'भारी कमर्शियल / बस'}</h3>
+          <p style="font-size: 0.82rem; color: #64748b; margin-bottom: 1rem;">6 Cylinders (Haulage Trucks & Buses)</p>
+          <div style="margin-bottom: 1rem;">
+            <div style="font-size: 1.75rem; font-weight: 800; color: #0a1128;">₹17,700</div>
+            <span style="font-size: 0.78rem; color: #64748b;">(₹15,000 Base + 18% GST)</span>
+          </div>
+          <div style="font-size: 0.82rem; color: #334155; line-height: 1.5; border-top: 1px solid #f1f5f9; padding-top: 0.75rem;">
+            <div>⚡ <strong>{advanceFormatted}</strong> {locale === 'en' ? 'Advance to lock slot' : 'अग्रिम स्लॉट बुकिंग'}</div>
+            <div>🏷️ <strong>₹17,200</strong> {locale === 'en' ? 'Balance upon handover' : 'शेष राशि केंद्र पर'}</div>
+          </div>
+        </div>
+        <a href="#booking-form" class="btn btn-primary" style="margin-top: 1.25rem; text-align: center; font-size: 0.88rem; width: 100%;">
+          {locale === 'en' ? 'Book Truck Slot →' : 'ट्रक स्लॉट बुक करें →'}
+        </a>
+      </div>
+    </div>
+
+    <div style="text-align: center; max-width: 680px; margin: 0 auto; font-size: 0.82rem; color: #64748b; line-height: 1.45;">
+      <span>⚠️ <strong>{locale === 'en' ? 'Advance Policy:' : 'अग्रिम नीति:'}</strong> {locale === 'en' ? `The ${advanceFormatted} advance locks your dedicated 20-minute bay slot and technician capacity, and is strictly non-refundable upon slot reservation.` : `${advanceFormatted} अग्रिम समर्पित बे और तकनीशियन समय आरक्षित करता है, एवं स्लॉट आरक्षण के बाद अप्रतिदेय (non-refundable) है।`}</span>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4: INLINE BOOKING WIZARD -->
+<section class="section booking-section" id="booking-form" style="background: #ffffff; padding: 3.5rem 0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
+  <div class="container">
+    <div class="section-title-wrap" style="text-align: center; max-width: 720px; margin: 0 auto 2.5rem;">
+      <span class="trust-badge trust-badge-amber">⚡ {locale === 'en' ? 'Direct Bay Reservation' : 'सीधी बे बुकिंग'}</span>
+      <h2 class="section-heading" style="font-size: clamp(1.85rem, 3.5vw, 2.3rem); margin: 0.5rem 0 0.5rem;">
+        {locale === 'en' ? 'Book Cylinder Hydro Testing Appointment' : 'सिलेंडर हाइड्रो टेस्टिंग अपॉइंटमेंट बुक करें'}
+      </h2>
+      <p class="section-subtext" style="color: #64748b; font-size: 1rem; margin: 0;">
+        {locale === 'en'
+          ? `Lock your 20-minute bay slot in ${cityName}, Haryana. Official stamped brass plate & WhatsApp certificate in 2 to 3 hours.`
+          : `${cityName}, हरियाणा में अपना स्लॉट बुक करें। 2 से 3 घंटे में पीतल की प्लेट और व्हाट्सएप सर्टिफिकेट।`}
+      </p>
+    </div>
+    <InlineBooking client:visible locale={locale} stationPhone={phoneReady ? settings.contact_phone : '+919910055355'} stationCity={cityName} />
   </div>
 </section>
 
@@ -282,13 +481,13 @@ const subHeading = locale === 'en'
         <details class="faq-item">
           <summary class="faq-question">
             {locale === 'en'
-              ? 'How is payment processed for online booking?'
-              : 'ऑनलाइन बुकिंग के लिए भुगतान प्रक्रिया क्या है?'}
+              ? 'What is the booking advance and cancellation policy?'
+              : 'बुकिंग अग्रिम और रद्दीकरण नीति क्या है?'}
           </summary>
           <p class="faq-answer">
             {locale === 'en'
-              ? 'Online booking collects the statutory hydrostatic testing fee securely via UPI to confirm your dedicated hydraulic bay and technician allocation. Your receipt is verified upon arrival at our facility.'
-              : 'ऑनलाइन बुकिंग के दौरान वैधानिक हाइड्रोस्टेटिक टेस्टिंग शुल्क का भुगतान सुरक्षित UPI द्वारा लिया जाता है जिससे आपकी समर्पित हाइड्रोलिक बे और तकनीशियन का समय सुनिश्चित हो सके। केंद्र पर आगमन पर आपकी रसीद का सत्यापन किया जाता है।'}
+              ? 'Online booking requires a flat advance to lock your dedicated hydraulic bay and technician schedule. To prevent phantom reservations and protect bay capacity for waiting motorists, the booking advance is strictly non-refundable upon slot confirmation. The remaining balance is payable upon certificate and brass plate handover at our station.'
+              : 'समर्पित हाइड्रोलिक टेस्टिंग बे और तकनीशियन का समय आरक्षित करने के लिए ऑनलाइन अग्रिम लिया जाता है। वास्तविक ग्राहकों के लिए बे क्षमता सुरक्षित रखने हेतु, स्लॉट पुष्टि के बाद बुकिंग अग्रिम अप्रतिदेय (non-refundable) है। शेष राशि परीक्षण पूर्ण होने एवं प्लेट लगने पर केंद्र पर देय होती है।'}
           </p>
         </details>
 
@@ -803,4 +1002,53 @@ const subHeading = locale === 'en'
       grid-template-columns: 1fr;
     }
   }
+
+  /* Hero Extensions: Brand Badge, Official Logo & Trust Badges */
+  .hero-brand-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  .hero-gauge-logo {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #ea580c;
+    box-shadow: 0 2px 8px rgba(234, 88, 12, 0.25);
+  }
+  .hero-trust-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin: 1.25rem 0 1.5rem;
+  }
+  .trust-badge-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 9999px;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #1e293b;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  }
+  .trust-pill-icon {
+    font-size: 1rem;
+  }
+  .hero-btn-notice {
+    background: #f1f5f9;
+    color: #0f172a;
+    border: 1px solid #cbd5e1;
+    font-weight: 600;
+  }
+  .hero-btn-notice:hover {
+    background: #e2e8f0;
+  }
 </style>
+
+<ComplianceModal locale={locale} bookUrl={`/${locale}/book/`} />

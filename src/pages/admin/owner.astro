@@ -7,6 +7,6 @@ import OwnerSettings from '../../components/admin/OwnerSettings';
 const auth = await requireRole(Astro.request, getRuntimeEnv(Astro.locals), ['OWNER']);
 if (!auth.ok) return auth.response;
 ---
-<AdminLayout title="Owner settings" owner>
+<AdminLayout title="Owner settings" owner activeNav="owner" breadcrumb="Owner Console & Settings">
   <OwnerSettings client:load />
 </AdminLayout>

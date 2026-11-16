@@ -17,6 +17,7 @@ export function buildLocalBusinessSchema(input: LocalBusinessSchemaInput): Recor
     '@type': 'AutoRepair',
     name: businessName || 'HSR CNG Cylinder Testing',
     url: currentUrl,
+    image: new URL(settings.brand_logo_url || '/images/hsr-gauge-logo.jpg', currentUrl).toString(),
     description: description || 'Certified CNG Cylinder Hydro Testing and Compliance Verification',
     priceRange: '₹₹',
     currenciesAccepted: 'INR',

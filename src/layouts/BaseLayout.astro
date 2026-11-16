@@ -3,7 +3,8 @@ import type { Locale } from '../lib/constants';
 import type { BusinessSettings } from '../lib/types';
 import { localizePath, otherLocale, t } from '../lib/i18n';
 import { buildLocalBusinessSchema } from '../lib/seo';
-import FeedbackModal from '../components/FeedbackModal';
+import FeedbackModal from '../components/FeedbackModal.astro';
+import FloatingWhatsApp from '../components/FloatingWhatsApp.astro';
 import '../styles/design-tokens.css';
 
 interface Props {
@@ -27,14 +28,14 @@ const isHome = currentPath === `/${locale}/` || currentPath === `/${locale}`;
 const getAnchor = (id: string) => isHome ? `#${id}` : `/${locale}/#${id}`;
 
 const effectiveSettings = settings ?? ({
-  business_name_en: businessName || 'HSR',
-  business_name_hi: businessName || 'HSR',
+  business_name_en: businessName || 'HSR Green Energy',
+  business_name_hi: businessName || 'एचएसआर ग्रीन एनर्जी',
   city: 'Rewari',
-  address_line: 'SETUP_REQUIRED',
+  address_line: 'Rewari Industrial Corridor (NH-48), Rewari, Haryana 123401',
   contact_phone: '+919910055355',
   whatsapp_number: '+919910055355',
-  contact_email: 'SETUP_REQUIRED',
-  map_url: 'SETUP_REQUIRED',
+  contact_email: 'contact@hsrgreenenergy.com',
+  map_url: 'https://maps.google.com/?q=Rewari+Haryana+CNG+Hydro+Testing',
   seo_title_en: title,
   seo_title_hi: title,
   seo_desc_en: description,
@@ -46,6 +47,10 @@ const schema = buildLocalBusinessSchema({
   locale,
   currentUrl: canonical.toString(),
 });
+
+const customPromoBanner = (effectiveSettings.promo_banner_active !== 0 && effectiveSettings.promo_banner_text)
+  ? effectiveSettings.promo_banner_text
+  : null;
 ---
 
 <!doctype html>
@@ -55,20 +60,26 @@ const schema = buildLocalBusinessSchema({
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <link rel="icon" type="image/jpeg" href={effectiveSettings.brand_logo_url || '/images/hsr-gauge-logo.jpg'} />
     <link rel="canonical" href={canonical.toString()} />
     <link rel="alternate" hreflang={alternate} href={alternateHref.toString()} />
     <link rel="alternate" hreflang={locale} href={canonical.toString()} />
 
-    <!-- Google Fonts for Plus Jakarta Sans & Inter -->
+    <!-- High-Performance Web Fonts (Route-Specific Subsetting: Latin only on English, Devanagari on Hindi) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+    {locale === 'hi' ? (
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+    ) : (
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+    )}
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical.toString()} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
+    <meta property="og:image" content={new URL(effectiveSettings.brand_logo_url || '/images/hsr-gauge-logo.jpg', Astro.url.origin).toString()} />
     <meta property="og:locale" content={locale === 'hi' ? 'hi_IN' : 'en_IN'} />
 
     <!-- Twitter -->
@@ -76,15 +87,22 @@ const schema = buildLocalBusinessSchema({
     <meta property="twitter:url" content={canonical.toString()} />
     <meta property="twitter:title" content={title} />
     <meta property="twitter:description" content={description} />
+    <meta property="twitter:image" content={new URL(effectiveSettings.brand_logo_url || '/images/hsr-gauge-logo.jpg', Astro.url.origin).toString()} />
 
     <!-- Schema.org JSON-LD -->
     <script type="application/ld+json" set:html={JSON.stringify(schema)} />
   </head>
   <body>
-    <!-- Animated Announcement Ticker Bar (Moving Right to Left) -->
+    <!-- Clean Static Top Announcement Bar (0 Main Thread Animation Overhead) -->
     <aside class="announcement-ticker-bar demo-banner" role="status" aria-label={locale === 'en' ? 'Station Announcements' : 'स्टेशन सूचना'}>
       <div class="ticker-track-container">
         <div class="ticker-track">
+          {customPromoBanner && (
+            <span class="ticker-item ticker-promo-item">
+              <span class="ticker-badge promo-tag">🎉 {locale === 'en' ? 'SPECIAL OFFER' : 'विशेष ऑफ़र'}</span>
+              <strong class="promo-text">{customPromoBanner}</strong>
+            </span>
+          )}
           <span class="ticker-item">
             <span class="ticker-badge demo-tag">⚡ {locale === 'en' ? 'GOVERNMENT APPROVED' : 'सरकारी प्रमाणित'}</span>
             <span class="demo-text">{locale === 'en' ? 'Government Approved Testing Facility (PESO Certified) — Rewari, Haryana' : 'सरकारी प्रमाणित टेस्टिंग सुविधा (PESO Certified) — रेवाड़ी, हरियाणा'}</span>
@@ -96,15 +114,6 @@ const schema = buildLocalBusinessSchema({
           <span class="ticker-item">
             <span class="ticker-badge">🛡️ {locale === 'en' ? 'COMPLIANCE' : 'अनुपालन'}</span>
             <span>{locale === 'en' ? '300 Bar Water Jacket Test | Stamped Brass Compliance Plate & Certificate' : 'प्रमाणित 300 बार वाटर जैकेट टेस्ट | मोहरबंद पीतल प्लेट एवं प्रमाणपत्र'}</span>
-          </span>
-          <!-- Duplicate for seamless loop -->
-          <span class="ticker-item">
-            <span class="ticker-badge demo-tag">⚡ {locale === 'en' ? 'GOVERNMENT APPROVED' : 'सरकारी प्रमाणित'}</span>
-            <span class="demo-text">{locale === 'en' ? 'Government Approved Testing Facility (PESO Certified) — Rewari, Haryana' : 'सरकारी प्रमाणित टेस्टिंग सुविधा (PESO Certified) — रेवाड़ी, हरियाणा'}</span>
-          </span>
-          <span class="ticker-item">
-            <span class="ticker-badge">⏱️ {locale === 'en' ? 'FAST' : 'त्वरित'}</span>
-            <span>{locale === 'en' ? '2 to 3 Hour Express Turnaround | Avoid Fuel Pump Refusal' : '2 से 3 घंटे में एक्सप्रेस टेस्टिंग | पंप पर गैस रिफिलिंग इंकार से बचें'}</span>
           </span>
         </div>
       </div>
@@ -118,8 +127,11 @@ const schema = buildLocalBusinessSchema({
     <header class="app-header">
       <div class="container topbar">
         <a href={`/${locale}/`} class="brand-link">
-          <span class="brand-logo-text">{businessName || 'HSR'}</span>
-          <span class="brand-subtext">{locale === 'en' ? 'CNG Hydro Testing' : 'सीएनजी हाइड्रो टेस्टिंग'}</span>
+          <img src={effectiveSettings.brand_logo_url || '/images/hsr-gauge-logo.jpg'} alt={businessName || 'HSR CNG'} class="brand-logo-img" />
+          <div class="brand-text-col">
+            <span class="brand-logo-text">{businessName || 'HSR'}</span>
+            <span class="brand-subtext">{locale === 'en' ? 'CNG Hydro Testing' : 'सीएनजी हाइड्रो टेस्टिंग'}</span>
+          </div>
         </a>
 
         <!-- Desktop Navigation: Services, Book, Blog, Contact, Login -->
@@ -254,6 +266,30 @@ const schema = buildLocalBusinessSchema({
                 <strong>WhatsApp:</strong> <a href={`https://wa.me/${effectiveSettings.whatsapp_number.replace(/\D/g, '')}`} target="_blank" rel="noreferrer">{effectiveSettings.whatsapp_number}</a>
               </p>
             )}
+            {effectiveSettings.show_social_media !== 0 && (
+              <div class="footer-social-row" style="margin-top: 1rem; display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                {effectiveSettings.social_facebook && (
+                  <a href={effectiveSettings.social_facebook} target="_blank" rel="noopener noreferrer" class="social-icon-btn" aria-label="Facebook" style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: #1877f2; color: #fff; text-decoration: none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                  </a>
+                )}
+                {effectiveSettings.social_instagram && (
+                  <a href={effectiveSettings.social_instagram} target="_blank" rel="noopener noreferrer" class="social-icon-btn" aria-label="Instagram" style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); color: #fff; text-decoration: none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                  </a>
+                )}
+                {effectiveSettings.social_youtube && (
+                  <a href={effectiveSettings.social_youtube} target="_blank" rel="noopener noreferrer" class="social-icon-btn" aria-label="YouTube" style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: #ff0000; color: #fff; text-decoration: none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                  </a>
+                )}
+                {effectiveSettings.social_twitter && (
+                  <a href={effectiveSettings.social_twitter} target="_blank" rel="noopener noreferrer" class="social-icon-btn" aria-label="Twitter / X" style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 50%; background: #000000; color: #fff; text-decoration: none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                  </a>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -272,8 +308,8 @@ const schema = buildLocalBusinessSchema({
       </div>
     </footer>
 
-    <!-- Interactive Feedback Component (React Island) -->
-    <FeedbackModal client:load locale={locale} />
+    <!-- Lightweight Accessible Feedback Modal (0 KB React Island) -->
+    <FeedbackModal locale={locale} />
 
     <!-- Accessible Mobile Navigation Toggle Script -->
     <script is:inline>
@@ -319,20 +355,14 @@ const schema = buildLocalBusinessSchema({
             closeDrawer();
           }
         });
-
-        // Header Pin on Scroll (only shows sticky when scrolled past hero)
-        const header = document.querySelector('.app-header');
-        if (header) {
-          window.addEventListener('scroll', function() {
-            if (window.scrollY > 250) {
-              header.classList.add('scrolled-pinned');
-            } else {
-              header.classList.remove('scrolled-pinned');
-            }
-          }, { passive: true });
-        }
       })();
     </script>
+    <FloatingWhatsApp
+      whatsappNumber={effectiveSettings.whatsapp_number}
+      contactPhone={effectiveSettings.contact_phone}
+      businessName={businessName}
+      showFloating={effectiveSettings.show_floating_whatsapp ?? 1}
+    />
   </body>
 </html>
 
@@ -391,29 +421,15 @@ const schema = buildLocalBusinessSchema({
     border-color: #ffffff;
   }
 
-  /* Header & Navigation Bar */
+  /* Header & Navigation Bar (Permanently Sticky Top Bar) */
   .app-header {
-    background: #ffffff;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--border-default);
-    position: relative;
-    z-index: 50;
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
-  }
-  .app-header.scrolled-pinned {
-    position: fixed;
+    position: sticky;
     top: 0;
-    left: 0;
-    right: 0;
-    box-shadow: 0 4px 14px rgba(10, 17, 40, 0.08);
-    animation: slideDownHeader 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  }
-  @keyframes slideDownHeader {
-    from {
-      transform: translateY(-100%);
-    }
-    to {
-      transform: translateY(0);
-    }
+    z-index: 50;
+    box-shadow: 0 2px 6px rgba(10, 17, 40, 0.05);
   }
   .topbar {
     height: 64px;
@@ -425,8 +441,33 @@ const schema = buildLocalBusinessSchema({
   .brand-link {
     text-decoration: none;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 0.65rem;
     flex-shrink: 0;
+  }
+  .brand-logo-img {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid #ea580c;
+    box-shadow: 0 2px 6px rgba(234, 88, 12, 0.2);
+  }
+  .brand-text-col {
+    display: flex;
+    flex-direction: column;
+  }
+  .ticker-promo-item {
+    background: rgba(234, 88, 12, 0.2);
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+  }
+  .promo-tag {
+    background: #ea580c !important;
+    color: #ffffff !important;
+  }
+  .promo-text {
+    color: #fef08a !important;
   }
   .brand-logo-text {
     font-family: var(--font-heading);

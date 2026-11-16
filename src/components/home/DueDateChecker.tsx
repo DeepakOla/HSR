@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
 import type { Locale } from '../../lib/constants';
+
+const RetestDueModal = lazy(() => import('./RetestDueModal'));
 
 interface DueDateRecord {
   registration: string;
@@ -28,6 +30,8 @@ export default function DueDateChecker({ locale, bookUrl = `/${locale}/book/`, s
   const [error, setError] = useState<string>('');
   const [results, setResults] = useState<DueDateRecord[] | null>(null);
   const [notFoundMsg, setNotFoundMsg] = useState<string>('');
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [modalInitialPath, setModalInitialPath] = useState<'assist' | 'calculate'>('assist');
 
   // Option B: Retest Reminder Notification state
   const [remindersEnabled, setRemindersEnabled] = useState<boolean>(true);
@@ -227,6 +231,54 @@ export default function DueDateChecker({ locale, bookUrl = `/${locale}/book/`, s
             </div>
           </form>
 
+          {/* Quick 2-path action chips for vehicle owners who don't know cylinder dates */}
+          <div style={{ marginTop: '0.85rem', display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setModalInitialPath('assist');
+                setModalOpen(true);
+              }}
+              style={{
+                background: '#fff7ed',
+                border: '1.5px solid #ea580c',
+                color: '#c2410c',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                padding: '0.4rem 0.85rem',
+                borderRadius: '10px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+              }}
+            >
+              <span>🎁</span> {hindi ? 'तारीख नहीं पता? सहायता लें व ₹200 वाउचर पाएँ' : "Don't know test date? Get Help & ₹200 Voucher"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setModalInitialPath('calculate');
+                setModalOpen(true);
+              }}
+              style={{
+                background: '#f8fafc',
+                border: '1px solid #cbd5e1',
+                color: '#475569',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                padding: '0.4rem 0.85rem',
+                borderRadius: '10px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+              }}
+            >
+              <span>🔍</span> {hindi ? 'सिलेंडर प्लेट गाइड' : 'How to Read Cylinder Plate'}
+            </button>
+          </div>
+
           {/* Error Message */}
           {error && (
             <div className="checker-error-alert" role="alert">
@@ -261,8 +313,18 @@ export default function DueDateChecker({ locale, bookUrl = `/${locale}/book/`, s
                 </div>
               </form>
 
-              <div className="fallback-cta-row">
-                <span>{hindi ? 'या सीधे हमारी लैब में टेस्टिंग स्लॉट आरक्षित करें:' : 'Or reserve a certified inspection slot directly:'}</span>
+              <div className="fallback-cta-row" style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginTop: '1rem', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setModalInitialPath('assist');
+                    setModalOpen(true);
+                  }}
+                  style={{ background: '#fff7ed', border: '1.5px solid #ea580c', color: '#c2410c', fontWeight: 700 }}
+                >
+                  🎁 {hindi ? 'तारीख खोजने में सहायता लें (₹200 वाउचर)' : 'Help me find my due date (₹200 Voucher)'}
+                </button>
                 <a href={bookUrl} className="btn btn-primary">
                   ⚡ {hindi ? 'नया स्लॉट बुक करें' : 'Book Testing Bay'}
                 </a>
@@ -326,9 +388,19 @@ export default function DueDateChecker({ locale, bookUrl = `/${locale}/book/`, s
                             ? (hindi ? '⚠️ आपका सिलेंडर रीटेस्ट ओवरड्यू है। सीएनजी पंप पर गैस भरने से इंकार किया जा सकता है।' : '⚠️ Your cylinder testing is overdue. CNG fuel stations may refuse refilling.')
                             : (hindi ? '💡 आपका परीक्षण जल्द ही देय है। पंप पर असुविधा से बचने के लिए समय पूर्व बुक करें।' : '💡 Testing is due shortly. Book in advance to avoid refilling disruption.')}
                         </span>
-                        <a href={bookUrl} className="btn btn-primary result-book-btn">
-                          ⚡ {hindi ? 'तुरंत स्लॉट बुक करें' : 'Book Testing Appointment'}
-                        </a>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.5rem', alignItems: 'center' }}>
+                          <a href={bookUrl} className="btn btn-primary result-book-btn">
+                            ⚡ {hindi ? 'तुरंत स्लॉट बुक करें' : 'Book Testing Appointment'}
+                          </a>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            onClick={() => (window as any).openComplianceModal?.()}
+                            style={{ fontSize: '0.8rem', padding: '0.45rem 0.85rem' }}
+                          >
+                            📋 {hindi ? 'नियम 35 नोटिस देखें' : 'View Rule 35 Notice'}
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <div className="valid-safe-bar">
@@ -411,6 +483,18 @@ export default function DueDateChecker({ locale, bookUrl = `/${locale}/book/`, s
             : 'Informational reminder only. Official cylinder collar markings, stamped brass plate, test certificate, and Gas Cylinders Rules 2016 govern final legal validity.'}
         </p>
       </div>
+
+      {modalOpen && (
+        <Suspense fallback={null}>
+          <RetestDueModal
+            locale={locale}
+            isOpen={modalOpen}
+            onClose={() => setModalOpen(false)}
+            bookUrl={bookUrl}
+            initialPath={modalInitialPath}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

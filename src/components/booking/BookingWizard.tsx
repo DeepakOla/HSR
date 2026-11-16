@@ -137,13 +137,13 @@ export function PricingBreakdownCard({
       <div style={{ display: 'grid', gap: '.35rem', fontSize: '.9rem', color: '#334155' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span>
-            {labels.price} <small style={{ color: '#64748B' }}>(₹2,500 × {cylinders})</small>:
+            {labels.price} <small style={{ color: '#64748B' }}>({inr(basePricePaise / Math.max(1, cylinders))} × {cylinders})</small>:
           </span>
           <span style={{ fontWeight: 600 }}>{inr(basePricePaise)}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span>
-            {labels.gst} <small style={{ color: '#64748B' }}>(₹450 × {cylinders})</small>:
+            {labels.gst} <small style={{ color: '#64748B' }}>({inr(gstPaise / Math.max(1, cylinders))} × {cylinders})</small>:
           </span>
           <span style={{ fontWeight: 600 }}>{inr(gstPaise)}</span>
         </div>
@@ -1687,7 +1687,7 @@ export default function BookingWizard({ locale }: Props) {
             }}
           >
             <h4 style={{ margin: '0 0 .75rem 0', color: '#0F172A', fontSize: '1.05rem' }}>
-              {hindi ? 'अग्रिम भुगतान (₹500 टोकन)' : 'Advance Payment (₹500 Flat)'}
+              {hindi ? `अग्रिम भुगतान (${inr(result.pricing?.advancePaise || 50000)} टोकन)` : `Advance Payment (${inr(result.pricing?.advancePaise || 50000)} Flat)`}
             </h4>
 
             {result.upiUri && (

@@ -11,3 +11,8 @@ test-results/
 .wrangler/
 
 .dev.vars*
+tmp_*
+gemini_share*
+payload_*.json
+step_*
+scratch/

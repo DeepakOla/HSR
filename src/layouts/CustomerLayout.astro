@@ -1,6 +1,7 @@
 ---
 import { getCustomerSessionFromCookie } from '../lib/customer-auth';
 import { getRuntimeEnv } from '../lib/runtime-env';
+import '../styles/design-tokens.css';
 
 interface Props {
   title?: string;
@@ -32,10 +33,12 @@ const userInitials = customerName
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
     <style>
       :root {
-        --color-primary: #15803d;
-        --color-primary-dark: #166534;
-        --color-primary-light: #f0fdf4;
-        --color-text-main: #0f172a;
+        --color-primary: #0a1128;
+        --color-primary-dark: #050b18;
+        --color-primary-light: #f1f5f9;
+        --color-accent: #ea580c;
+        --color-steel: #0284c7;
+        --color-text-main: #0a1128;
         --color-text-muted: #64748b;
         --color-bg: #f8fafc;
         --color-card: #ffffff;
@@ -77,7 +80,7 @@ const userInitials = customerName
       .brand-icon {
         width: 38px;
         height: 38px;
-        background: var(--color-primary-dark);
+        background: linear-gradient(135deg, #0a1128 0%, #0284c7 100%);
         color: #ffffff;
         font-weight: 800;
         font-size: 1.25rem;
@@ -133,8 +136,9 @@ const userInitials = customerName
         color: var(--color-text-main);
       }
       .nav-link.active {
-        background: var(--color-primary-light);
-        color: var(--color-primary-dark);
+        background: #f1f5f9;
+        color: #0a1128;
+        border-left: 3px solid #ea580c;
         font-weight: 700;
       }
       .nav-icon {
@@ -163,7 +167,7 @@ const userInitials = customerName
         margin-bottom: 0.5rem;
       }
       .help-link {
-        color: var(--color-primary-dark);
+        color: #0284c7;
         font-weight: 700;
         text-decoration: none;
       }
@@ -317,22 +321,22 @@ const userInitials = customerName
 
       <div class="sidebar-group-title">Workspace</div>
       <nav class="sidebar-nav">
-        <a href="/app" class={`nav-link ${activeNav === 'overview' ? 'active' : ''}`}>
+        <a href="/user" class={`nav-link ${activeNav === 'overview' ? 'active' : ''}`}>
           <span class="nav-icon">⌂</span> Overview
         </a>
-        <a href="/app/vehicles" class={`nav-link ${activeNav === 'vehicles' ? 'active' : ''}`}>
+        <a href="/user/vehicles" class={`nav-link ${activeNav === 'vehicles' ? 'active' : ''}`}>
           <span class="nav-icon">🚗</span> My vehicles
         </a>
-        <a href="/app/history" class={`nav-link ${activeNav === 'history' ? 'active' : ''}`}>
+        <a href="/user/history" class={`nav-link ${activeNav === 'history' ? 'active' : ''}`}>
           <span class="nav-icon">🕒</span> Test history
         </a>
-        <a href="/app/payments" class={`nav-link ${activeNav === 'payments' ? 'active' : ''}`}>
+        <a href="/user/payments" class={`nav-link ${activeNav === 'payments' ? 'active' : ''}`}>
           <span class="nav-icon">💳</span> Payments
         </a>
-        <a href="/app/documents" class={`nav-link ${activeNav === 'documents' ? 'active' : ''}`}>
+        <a href="/user/documents" class={`nav-link ${activeNav === 'documents' ? 'active' : ''}`}>
           <span class="nav-icon">📄</span> Documents
         </a>
-        <a href="/app/profile" class={`nav-link ${activeNav === 'profile' ? 'active' : ''}`}>
+        <a href="/user/profile" class={`nav-link ${activeNav === 'profile' ? 'active' : ''}`}>
           <span class="nav-icon">⚙</span> Profile
         </a>
       </nav>
@@ -359,7 +363,7 @@ const userInitials = customerName
             </div>
             <a href="/api/auth/logout" style="margin-left: 0.5rem; color: #94a3b8; text-decoration: none; font-size: 0.75rem;" title="Sign out">✕</a>
           </div>
-          <a href="/app/book" class="btn-primary-action">
+          <a href="/user/book" class="btn-primary-action">
             <span>+</span> Book a test
           </a>
         </div>
@@ -371,19 +375,19 @@ const userInitials = customerName
 
       <!-- Mobile Tab Bar -->
       <nav class="mobile-tab-bar">
-        <a href="/app" class={`mobile-tab-item ${activeNav === 'overview' ? 'active' : ''}`}>
+        <a href="/user" class={`mobile-tab-item ${activeNav === 'overview' ? 'active' : ''}`}>
           <span>⌂</span> Overview
         </a>
-        <a href="/app/vehicles" class={`mobile-tab-item ${activeNav === 'vehicles' ? 'active' : ''}`}>
+        <a href="/user/vehicles" class={`mobile-tab-item ${activeNav === 'vehicles' ? 'active' : ''}`}>
           <span>🚗</span> Vehicles
         </a>
-        <a href="/app/history" class={`mobile-tab-item ${activeNav === 'history' ? 'active' : ''}`}>
+        <a href="/user/history" class={`mobile-tab-item ${activeNav === 'history' ? 'active' : ''}`}>
           <span>🕒</span> History
         </a>
-        <a href="/app/payments" class={`mobile-tab-item ${activeNav === 'payments' ? 'active' : ''}`}>
+        <a href="/user/payments" class={`mobile-tab-item ${activeNav === 'payments' ? 'active' : ''}`}>
           <span>💳</span> Payments
         </a>
-        <a href="/app/documents" class={`mobile-tab-item ${activeNav === 'documents' ? 'active' : ''}`}>
+        <a href="/user/documents" class={`mobile-tab-item ${activeNav === 'documents' ? 'active' : ''}`}>
           <span>📄</span> Docs
         </a>
       </nav>

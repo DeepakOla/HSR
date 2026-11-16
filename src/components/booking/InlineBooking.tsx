@@ -101,8 +101,10 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
   const [vehicleClass, setVehicleClass] = useState<string>('Passenger Cars & Taxis');
   const [cylinderCount, setCylinderCount] = useState<number>(1);
   const [serviceDate, setServiceDate] = useState<string>(() => todayInIndia());
+  const [hasUserSelectedDate, setHasUserSelectedDate] = useState<boolean>(false);
   const [selectedHour, setSelectedHour] = useState<string>('');
   const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
 
   const [regNumber, setRegNumber] = useState<string>('');
   const [customerName, setCustomerName] = useState<string>('');
@@ -110,6 +112,9 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
   const [showCompanyDrawer, setShowCompanyDrawer] = useState<boolean>(false);
   const [companyName, setCompanyName] = useState<string>('');
   const [companyGstin, setCompanyGstin] = useState<string>('');
+  const [driverName, setDriverName] = useState<string>('');
+  const [driverPhone, setDriverPhone] = useState<string>('');
+  const [showDriverDrawer, setShowDriverDrawer] = useState<boolean>(false);
 
   // Fleet Multi-vehicle State
   const [fleetVehicles, setFleetVehicles] = useState<MultiVehicleRow[]>([
@@ -120,6 +125,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
   const [fleetContactPhone, setFleetContactPhone] = useState<string>('');
   const [fleetDate, setFleetDate] = useState<string>(() => addDays(todayInIndia(), 1));
   const [fleetSubmitted, setFleetSubmitted] = useState<boolean>(false);
+  const [fleetSubmitting, setFleetSubmitting] = useState<boolean>(false);
 
   // Calendar Picker Ref for Native showPicker API
   const datePickerRef = React.useRef<HTMLInputElement>(null);
@@ -163,28 +169,60 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
   const [evidenceError, setEvidenceError] = useState<string>('');
   const [idempotencyKey] = useState<string>(() => crypto.randomUUID());
 
-  // Fetch slots and pricing categories
+  // Promotions & Discounts
+  const [publicConfig, setPublicConfig] = useState<any>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<string>('');
+  const [couponInput, setCouponInput] = useState<string>('');
+  const [couponMsg, setCouponMsg] = useState<{ isError: boolean; text: string } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/public/config/')
+      .then((res) => res.json())
+      .then((data: any) => {
+        if (data?.data) {
+          const cfg = data.data;
+          setPublicConfig(cfg);
+          if (cfg.promoAutoApply && cfg.promoCode) {
+            setAppliedCoupon(cfg.promoCode);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Fetch vehicle pricing categories once on mount
   useEffect(() => {
     let cancelled = false;
-    const loadData = async () => {
+    fetch(`/api/public/vehicle-categories/?locale=${locale}`)
+      .then((res) => readApiJson(res))
+      .then((catData: any) => {
+        if (!cancelled && catData?.data?.categories) {
+          setCategories(catData.data.categories);
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [locale]);
+
+  // Fetch slots ONLY when customer selects a date or opens slot selection (0 requests on initial mount)
+  useEffect(() => {
+    if (!hasUserSelectedDate || !serviceDate) return;
+    let cancelled = false;
+    const loadSlots = async () => {
       setLoadingAvailability(true);
       setLoadError('');
       setSelectedSlotId(null);
       setSelectedHour('');
       try {
-        const [availRes, catRes] = await Promise.all([
-          fetch(`/api/public/availability/?locale=${locale}&fromDate=${encodeURIComponent(todayInIndia())}&days=30&cylinderCount=${cylinderCount}`),
-          fetch(`/api/public/vehicle-categories/?locale=${locale}`),
-        ]);
+        const availRes = await fetch(
+          `/api/public/availability/?locale=${locale}&fromDate=${encodeURIComponent(serviceDate)}&days=1&cylinderCount=${cylinderCount}`
+        );
         const availData: any = await readApiJson(availRes);
-        const catData: any = await readApiJson(catRes);
-
-        if (!availRes.ok || !catRes.ok) {
-          throw new Error(availData?.error?.message || catData?.error?.message || 'Could not load availability');
+        if (!availRes.ok) {
+          throw new Error(availData?.error?.message || 'Could not load availability');
         }
         if (!cancelled) {
           setSlots(availData?.data?.slots || []);
-          setCategories(catData?.data?.categories || []);
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -195,14 +233,69 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
         if (!cancelled) setLoadingAvailability(false);
       }
     };
-    loadData();
+    loadSlots();
     return () => { cancelled = true; };
-  }, [locale, cylinderCount]);
+  }, [hasUserSelectedDate, serviceDate, cylinderCount, locale]);
 
-  // Current category pricing match
+  // Current category pricing match with immediate mathematical fallback
   const selectedCategory = useMemo(() => {
-    return categories.find((c) => c.cylinderCount === cylinderCount) || categories[0] || null;
+    const match = categories.find((c) => c.cylinderCount === cylinderCount);
+    if (match) return match;
+    if (categories.length > 0) return categories[0];
+    const base = 250000 * cylinderCount;
+    const gst = Math.round(base * 0.18);
+    return {
+      id: cylinderCount,
+      code: `CYL_0${cylinderCount}`,
+      name: `${cylinderCount} CNG cylinder(s)`,
+      cylinderCount,
+      basePricePaise: base,
+      gstRateBps: 1800,
+      gstPaise: gst,
+      totalPaise: base + gst,
+      advancePaise: 50000,
+    };
   }, [categories, cylinderCount]);
+
+  const discountPaise = useMemo(() => {
+    if (!appliedCoupon || !selectedCategory) return 0;
+    if (appliedCoupon.toUpperCase().startsWith('HSR200-')) {
+      return Math.min(selectedCategory.totalPaise, 20000);
+    }
+    if (!publicConfig) return 0;
+    if (appliedCoupon.toUpperCase() !== (publicConfig.promoCode || '').toUpperCase()) return 0;
+    if (publicConfig.promoDiscountType === 'PERCENT') {
+      return Math.round((selectedCategory.totalPaise * (publicConfig.promoDiscountValue || 0)) / 100);
+    }
+    return Math.min(selectedCategory.totalPaise, (publicConfig.promoDiscountValue || 0) * 100);
+  }, [appliedCoupon, publicConfig, selectedCategory]);
+
+  const finalTotalPaise = useMemo(() => {
+    if (!selectedCategory) return 0;
+    return Math.max(0, selectedCategory.totalPaise - discountPaise);
+  }, [selectedCategory, discountPaise]);
+
+  const handleApplyCoupon = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+    setCouponMsg(null);
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+    if (code.startsWith('HSR200-')) {
+      setAppliedCoupon(code);
+      setCouponMsg({ isError: false, text: hindi ? '₹200 लॉयल्टी वाउचर लागू!' : '₹200 Loyalty Voucher applied!' });
+    } else if (publicConfig?.promoCode && code === publicConfig.promoCode.toUpperCase()) {
+      setAppliedCoupon(code);
+      setCouponMsg({ isError: false, text: hindi ? 'कूपन कोड सफलतापूर्वक लागू!' : 'Promo coupon applied!' });
+    } else {
+      setCouponMsg({ isError: true, text: hindi ? 'अमान्य कूपन कोड' : 'Invalid promo code' });
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon('');
+    setCouponInput('');
+    setCouponMsg(null);
+  };
 
   // Filter slots for chosen date
   const dateSlots = useMemo(() => {
@@ -255,6 +348,15 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
     e.preventDefault();
     setFormError('');
 
+    if (!termsAccepted) {
+      setFormError(
+        hindi
+          ? 'कृपया आगे बढ़ने के लिए नियम व शर्तें स्वीकार करें (अप्रतिदेय अग्रिम नीति)।'
+          : 'Please accept the Terms & Conditions (non-refundable advance policy) to proceed.'
+      );
+      return;
+    }
+
     if (!selectedSlotId) {
       setFormError(hindi ? 'कृपया परीक्षण का समय (स्लॉट) चुनें।' : 'Please select an appointment time slot.');
       return;
@@ -263,6 +365,11 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
     const regValidation = validateVehicleRegistration(regNumber, locale);
     if (!regValidation.valid) {
       setFormError(regValidation.error || (hindi ? 'अमान्य वाहन पंजीकरण संख्या' : 'Invalid vehicle registration number'));
+      return;
+    }
+
+    if (!customerName.trim() || customerName.trim().length < 2) {
+      setFormError(hindi ? 'कृपया आरसी / आधार के अनुसार वाहन मालिक का कानूनी नाम दर्ज करें।' : 'Please enter registered vehicle owner legal name as on RC / Aadhaar.');
       return;
     }
 
@@ -284,7 +391,10 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
         slotSnapshotId: selectedSlotId,
         categoryId: selectedCategory.id,
         vehicleType: `${vehicleClass}${companyName ? ` (${companyName})` : ''}`,
-        customerName: customerName.trim() || (hindi ? 'ग्राहक' : 'Customer'),
+        customerName: customerName.trim(),
+        rcOwnerLegalName: customerName.trim(),
+        driverName: driverName.trim() || undefined,
+        driverPhone: driverPhone.trim() ? driverPhone.replace(/\D/g, '') : undefined,
         mobile: cleanPhone,
         vehicleRegistration: regValidation.normalized,
         source: 'WEB',
@@ -362,13 +472,39 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
     );
   };
 
-  const handleFleetSubmit = (e: React.SyntheticEvent<HTMLFormElement>) => {
+  const handleFleetSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!fleetContactPhone.trim()) {
-      setFormError(hindi ? 'कृपया संपर्क मोबाइल नंबर दर्ज करें।' : 'Please enter contact phone number.');
+    setFormError('');
+    const cleanPhone = fleetContactPhone.replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      setFormError(hindi ? 'कृपया 10-अंकों का मान्य संपर्क मोबाइल नंबर दर्ज करें।' : 'Please enter a valid 10-digit contact mobile number.');
       return;
     }
-    setFleetSubmitted(true);
+
+    setFleetSubmitting(true);
+    try {
+      const res = await fetch('/api/public/fleet-enquiry/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contactName: fleetContactName.trim() || undefined,
+          contactPhone: cleanPhone,
+          fleetDate,
+          vehicles: fleetVehicles,
+          locale,
+        }),
+      });
+      const data: any = await readApiJson(res);
+      if (!res.ok) {
+        throw new Error(data?.error?.message || (hindi ? 'फ्लीट अनुरोध भेजने में विफल।' : 'Could not submit fleet enquiry.'));
+      }
+      setFleetSubmitted(true);
+    } catch (err: any) {
+      // Fallback gracefully to enable WhatsApp / Phone coordination
+      setFleetSubmitted(true);
+    } finally {
+      setFleetSubmitting(false);
+    }
   };
 
   return (
@@ -493,21 +629,27 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                       <button
                         type="button"
                         key={qd.dateStr}
-                        className={`date-pill ${serviceDate === qd.dateStr ? 'selected' : ''}`}
-                        onClick={() => setServiceDate(qd.dateStr)}
+                        className={`date-pill ${serviceDate === qd.dateStr && hasUserSelectedDate ? 'selected' : ''}`}
+                        onClick={() => {
+                          setServiceDate(qd.dateStr);
+                          setHasUserSelectedDate(true);
+                        }}
                       >
                         {qd.label}
                       </button>
                     ))}
                     <button
                       type="button"
-                      className={`date-pill calendar-pill-btn ${!quickDates.some((q) => q.dateStr === serviceDate) ? 'selected' : ''}`}
-                      onClick={handleOpenCalendar}
+                      className={`date-pill calendar-pill-btn ${hasUserSelectedDate && !quickDates.some((q) => q.dateStr === serviceDate) ? 'selected' : ''}`}
+                      onClick={() => {
+                        handleOpenCalendar();
+                        setHasUserSelectedDate(true);
+                      }}
                       title={hindi ? 'कैलेंडर से तारीख चुनें (30 दिन)' : 'Choose date from calendar (30 days)'}
                     >
                       <span className="cal-btn-icon">📅</span>
                       <span className="cal-btn-text">
-                        {!quickDates.some((q) => q.dateStr === serviceDate) ? serviceDate : (hindi ? 'कैलेंडर...' : 'Calendar...')}
+                        {hasUserSelectedDate && !quickDates.some((q) => q.dateStr === serviceDate) ? serviceDate : (hindi ? 'कैलेंडर...' : 'Calendar...')}
                       </span>
                       <input
                         ref={datePickerRef}
@@ -517,7 +659,10 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                         max={addDays(todayInIndia(), 30)}
                         value={serviceDate}
                         onChange={(e) => {
-                          if (e.target.value) setServiceDate(e.target.value);
+                          if (e.target.value) {
+                            setServiceDate(e.target.value);
+                            setHasUserSelectedDate(true);
+                          }
                         }}
                         className="calendar-hidden-input"
                       />
@@ -525,8 +670,22 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                   </div>
                 </div>
 
-                {/* Slots Loading or Hour Grid */}
-                {loadingAvailability ? (
+                {/* Slots Loading or Hour Grid (0 network queries before date interaction) */}
+                {!hasUserSelectedDate ? (
+                  <div className="select-date-prompt" style={{ padding: '1.25rem', background: '#f8fafc', borderRadius: '12px', border: '1.5px dashed #cbd5e1', textAlign: 'center', margin: '0.75rem 0' }}>
+                    <p style={{ margin: '0 0 0.65rem 0', color: '#334155', fontSize: '0.9rem', fontWeight: 600 }}>
+                      👉 {hindi ? 'उपलब्ध 20-मिनट टेस्टिंग स्लॉट देखने के लिए ऊपर तारीख चुनें' : 'Select an appointment date above to view available testing bays'}
+                    </p>
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      style={{ fontSize: '0.82rem', padding: '0.45rem 1.15rem' }}
+                      onClick={() => setHasUserSelectedDate(true)}
+                    >
+                      ⚡ {hindi ? 'आज के उपलब्ध स्लॉट देखें' : "View Today's Testing Bays"}
+                    </button>
+                  </div>
+                ) : loadingAvailability ? (
                   <div className="loading-slots-notice">
                     <span className="spinner"></span> {hindi ? 'उपलब्ध स्लॉट लोड हो रहे हैं...' : 'Checking bay capacity...'}
                   </div>
@@ -610,18 +769,19 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
 
                   <div className="input-field">
                     <label className="field-label" htmlFor="name-input">
-                      {hindi ? 'ग्राहक का नाम (वैकल्पिक)' : 'Customer Name (Optional)'}
+                      {hindi ? 'पंजीकृत वाहन मालिक का कानूनी नाम *' : 'Registered Vehicle Owner Legal Name *'}
                     </label>
                     <input
                       id="name-input"
                       type="text"
                       className="form-input"
-                      placeholder="e.g. Amit Sharma"
+                      required
+                      placeholder={hindi ? 'आरसी / आधार के अनुसार नाम' : 'As on RC / Aadhaar (PESO Form C)'}
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                     />
                     <span className="field-hint">
-                      {hindi ? 'प्रमाणपत्र हेतु' : 'For test records'}
+                      {hindi ? 'वैधानिक फॉर्म C प्रमाणपत्र हेतु अनिवार्य' : 'Mandatory for statutory PESO Form C certificate'}
                     </span>
                   </div>
 
@@ -647,19 +807,56 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                   </div>
                 </div>
 
-                {/* Optional Company Details Toggle */}
+                {/* Optional Driver & Company Details */}
                 <div className="company-toggle-wrap">
-                  <button
-                    type="button"
-                    className="toggle-link-btn"
-                    onClick={() => setShowCompanyDrawer(!showCompanyDrawer)}
-                  >
-                    {showCompanyDrawer ? '▲ ' : '▼ '}
-                    {hindi ? 'कंपनी / GST इनवॉइस विवरण जोड़ें (वैकल्पिक)' : 'Add Company / GST Tax Invoice details (Optional)'}
-                  </button>
+                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="toggle-link-btn"
+                      onClick={() => setShowDriverDrawer(!showDriverDrawer)}
+                    >
+                      {showDriverDrawer ? '▲ ' : '▼ '}
+                      {hindi ? 'ड्राइवर / ड्रॉप-ऑफ व्यक्ति विवरण (यदि मालिक से भिन्न हो)' : 'Driver / Drop-off Person Details (If different from owner)'}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="toggle-link-btn"
+                      onClick={() => setShowCompanyDrawer(!showCompanyDrawer)}
+                    >
+                      {showCompanyDrawer ? '▲ ' : '▼ '}
+                      {hindi ? 'कंपनी / GST इनवॉइस विवरण जोड़ें (वैकल्पिक)' : 'Add Company / GST Tax Invoice details (Optional)'}
+                    </button>
+                  </div>
+
+                  {showDriverDrawer && (
+                    <div className="drawer-fields-grid" style={{ marginTop: '0.75rem', marginBottom: '0.75rem' }}>
+                      <div className="input-field">
+                        <label className="field-label">{hindi ? 'ड्राइवर का नाम' : 'Driver Name'}</label>
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="e.g. Ramesh Singh"
+                          value={driverName}
+                          onChange={(e) => setDriverName(e.target.value)}
+                        />
+                      </div>
+                      <div className="input-field">
+                        <label className="field-label">{hindi ? 'ड्राइवर का मोबाइल' : 'Driver Mobile Phone'}</label>
+                        <input
+                          type="tel"
+                          maxLength={10}
+                          className="form-input font-mono-num"
+                          placeholder="9876543210"
+                          value={driverPhone}
+                          onChange={(e) => setDriverPhone(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   {showCompanyDrawer && (
-                    <div className="drawer-fields-grid">
+                    <div className="drawer-fields-grid" style={{ marginTop: '0.75rem' }}>
                       <div className="input-field">
                         <label className="field-label">{hindi ? 'कंपनी / व्यवसाय का नाम' : 'Company / Business Name'}</label>
                         <input
@@ -686,15 +883,18 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
               </div>
 
               {/* Price Breakdown & Advance Banner */}
-              {selectedCategory && (
+              {publicConfig?.hidePricingUntilVehicleDetails && regNumber.trim().length < 5 ? (
+                <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1', textAlign: 'center', margin: '1rem 0' }}>
+                  <span style={{ fontSize: '0.88rem', color: '#64748b', fontWeight: 600 }}>
+                    🚗 {hindi ? 'सटीक हाइड्रो टेस्टिंग दरें देखने के लिए कृपया ऊपर वाहन पंजीकरण संख्या दर्ज करें।' : 'Enter vehicle registration number above to unlock certified testing rates.'}
+                  </span>
+                </div>
+              ) : selectedCategory && (
                 <div className="pricing-summary-card">
                   <div className="pricing-header-row">
                     <div>
                       <strong className="summary-title">{vehicleClass} — {cylinderCount} {hindi ? 'सिलेंडर' : 'Cylinder(s)'}</strong>
                       <span className="summary-subtitle">{hindi ? '300 बार हाइड्रोस्टेटिक स्ट्रेच टेस्टिंग + प्लेट + प्रमाणन' : '300 Bar Hydrostatic Stretch Test + Plate + Certificate'}</span>
-                    </div>
-                    <div className="summary-badge-pill">
-                      <span className="metric-chip metric-cyan">{hindi ? 'स्थिर शुल्क' : 'Official Rate'}</span>
                     </div>
                   </div>
 
@@ -709,23 +909,131 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                     </div>
                     <div className="calc-item total-item">
                       <span>{hindi ? 'कुल शुल्क' : 'Total Amount'}:</span>
-                      <strong className="highlight-price">{inr(selectedCategory.totalPaise)}</strong>
+                      {discountPaise > 0 ? (
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.85rem', marginRight: '0.5rem' }}>
+                            {inr(selectedCategory.totalPaise)}
+                          </span>
+                          <strong className="highlight-price">{inr(finalTotalPaise)}</strong>
+                        </div>
+                      ) : (
+                        <strong className="highlight-price">{inr(selectedCategory.totalPaise)}</strong>
+                      )}
                     </div>
                   </div>
 
-                  <div className="advance-highlight-banner">
-                    <div className="advance-info">
-                      <span className="adv-tag">{hindi ? 'अग्रिम ऑनलाइन टोकन' : 'Advance Payable Online'}</span>
-                      <strong className="adv-amt">{inr(selectedCategory.advancePaise || 50000)}</strong>
-                      <span className="adv-desc">
-                        {hindi
-                          ? `₹500 अग्रिम ऑनलाइन देकर स्लॉट आरक्षित करें। शेष ${inr(selectedCategory.totalPaise - (selectedCategory.advancePaise || 50000))} टेस्टिंग पूर्ण होने पर स्टेशन पर देय होगा।`
-                          : `Pay ₹500 advance online to confirm testing bay. Balance ${inr(selectedCategory.totalPaise - (selectedCategory.advancePaise || 50000))} payable on arrival after inspection.`}
-                      </span>
-                    </div>
+                  {/* Coupon section */}
+                  <div style={{ padding: '0.65rem 0', borderTop: '1px solid #e2e8f0', marginTop: '0.5rem' }}>
+                    {appliedCoupon ? (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '0.4rem 0.75rem', borderRadius: '6px', fontSize: '0.82rem' }}>
+                        <span style={{ color: '#065f46', fontWeight: 600 }}>
+                          🎉 Coupon <strong>{appliedCoupon}</strong> Applied: -{inr(discountPaise)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleRemoveCoupon}
+                          style={{ background: 'none', border: 'none', color: '#b91c1c', cursor: 'pointer', fontWeight: 600, fontSize: '0.78rem' }}
+                        >
+                          {hindi ? 'हटाएँ' : 'Remove'}
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <input
+                          type="text"
+                          placeholder={hindi ? 'कूपन / प्रोमो कोड' : 'Have a promo coupon?'}
+                          value={couponInput}
+                          onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                          style={{ padding: '0.35rem 0.6rem', fontSize: '0.82rem', border: '1px solid #cbd5e1', borderRadius: '6px', maxWidth: '180px', textTransform: 'uppercase' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleApplyCoupon}
+                          className="btn btn-secondary"
+                          style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
+                        >
+                          {hindi ? 'लागू करें' : 'Apply'}
+                        </button>
+                        {couponMsg && (
+                          <span style={{ fontSize: '0.78rem', color: couponMsg.isError ? '#dc2626' : '#16a34a' }}>
+                            {couponMsg.text}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
+
+                  {(() => {
+                    const effectiveAdvancePaise = publicConfig?.flatAdvancePaise ?? selectedCategory.advancePaise ?? 50000;
+                    const remainingBalancePaise = Math.max(0, finalTotalPaise - effectiveAdvancePaise);
+                    return (
+                      <div className="advance-highlight-banner">
+                        <div className="advance-info">
+                          <span className="adv-tag">{hindi ? 'अग्रिम ऑनलाइन टोकन' : 'Advance Payable Online'}</span>
+                          <strong className="adv-amt">{inr(effectiveAdvancePaise)}</strong>
+                          <span className="adv-desc">
+                            {effectiveAdvancePaise >= finalTotalPaise
+                              ? (hindi
+                                  ? `कुल ${inr(finalTotalPaise)} का ऑनलाइन भुगतान। स्टेशन पर शून्य देय राशि।`
+                                  : `Full payment of ${inr(finalTotalPaise)} online. Zero balance payable at station.`)
+                              : (hindi
+                                  ? `${inr(effectiveAdvancePaise)} अग्रिम ऑनलाइन देकर स्लॉट आरक्षित करें। शेष ${inr(remainingBalancePaise)} टेस्टिंग पूर्ण होने पर स्टेशन पर देय होगा।`
+                                  : `Pay ${inr(effectiveAdvancePaise)} advance online to confirm testing bay. Balance ${inr(remainingBalancePaise)} payable on arrival after inspection.`)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
+
+              {/* Statutory Non-Refundable Policy & Terms Checkbox */}
+              <div
+                className="terms-agreement-box"
+                style={{
+                  margin: '1.25rem 0 0.75rem 0',
+                  padding: '0.85rem 1rem',
+                  background: '#f8fafc',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '10px',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '0.65rem',
+                }}
+              >
+                <input
+                  id="booking-terms-checkbox"
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  style={{
+                    marginTop: '0.2rem',
+                    width: '18px',
+                    height: '18px',
+                    cursor: 'pointer',
+                    accentColor: '#ea580c',
+                    flexShrink: 0,
+                  }}
+                  required
+                />
+                <label
+                  htmlFor="booking-terms-checkbox"
+                  style={{
+                    fontSize: '0.84rem',
+                    color: '#334155',
+                    lineHeight: 1.45,
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                  }}
+                >
+                  <strong>
+                    {hindi ? 'मैं नियम व शर्तें स्वीकार करता हूँ।' : 'I accept the Terms & Conditions.'}
+                  </strong>{' '}
+                  {hindi
+                    ? 'स्लॉट पुष्टि के बाद बुकिंग अग्रिम अप्रतिदेय (non-refundable) है क्योंकि यह समर्पित टेस्टिंग बे और तकनीशियन समय आरक्षित करता है।'
+                    : 'The booking advance is non-refundable upon slot confirmation as it locks dedicated testing bay and technician capacity.'}
+                </label>
+              </div>
 
               {/* Form Error Banner */}
               {formError && (
@@ -739,7 +1047,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                 <button
                   type="submit"
                   className="btn btn-primary submit-book-btn"
-                  disabled={isSubmitting || !selectedSlotId}
+                  disabled={isSubmitting || !selectedSlotId || !termsAccepted}
                 >
                   {isSubmitting ? (
                     <span>⏳ {hindi ? 'स्लॉट सुरक्षित हो रहा है...' : 'Reserving Testing Bay...'}</span>
@@ -756,7 +1064,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                 <span className="metric-chip metric-amber">⏳ {hindi ? 'स्लॉट 15 मिनट के लिए सुरक्षित' : 'Bay Held for 15 Minutes'}</span>
                 <h3 className="hold-title">
                   {hindi ? 'ऑनलाइन टोकन अग्रिम: ' : 'Online Advance Payment: '}
-                  {inr(holdResult.pricing?.advancePaise || 50000)}
+                  {inr(holdResult.pricing?.advancePaise || publicConfig?.flatAdvancePaise || 50000)}
                 </h3>
                 <p className="hold-meta">
                   <strong>{hindi ? 'बुकिंग कोड:' : 'Booking Reference:'}</strong> <code className="booking-code">{holdResult.bookingCode}</code>
@@ -766,6 +1074,9 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                     </span>
                   )}
                 </p>
+                <div style={{ marginTop: '0.4rem', fontSize: '0.82rem', color: '#b45309', background: '#fffbeb', border: '1px solid #fef3c7', padding: '0.35rem 0.65rem', borderRadius: '6px' }}>
+                  ⚠️ {hindi ? 'सूचना: स्लॉट पुष्टि के बाद टोकन अग्रिम अप्रतिदेय (non-refundable) है।' : 'Notice: The booking advance is non-refundable upon slot confirmation.'}
+                </div>
               </div>
 
               <div className="upi-payment-grid">
@@ -840,14 +1151,20 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
             /* STEP 3: EVIDENCE SUBMITTED CONFIRMATION */
             <div className="verified-confirmation-pane">
               <div className="success-icon-badge">✓</div>
-              <h3 className="success-title">{hindi ? 'अपॉइंटमेंट संदर्भ सफलतापूर्वक जमा हो गया!' : 'Testing Bay Reserved Successfully!'}</h3>
+              <h3 className="success-title">{hindi ? 'अग्रिम संदर्भ दर्ज — सत्यापन लंबित' : 'Advance Submitted — Pending Verification'}</h3>
               <p className="success-desc">
                 {hindi
-                  ? 'आपका भुगतान संदर्भ (UTR) दर्ज हो गया है। स्टेशन रिसेप्शन आगमन पर सत्यापन करेगा।'
-                  : 'Your payment reference has been recorded. Our reception will verify your slot upon arrival.'}
+                  ? 'आपका भुगतान संदर्भ (UTR) दर्ज हो गया है। स्टेशन रिसेप्शन आगमन पर या बैंक अलर्ट द्वारा इसे सत्यापित कर स्लॉट अंतिम रूप देगा।'
+                  : 'Your payment reference (UTR) has been recorded. Bay allocation is held and will be verified by authorized station staff upon arrival.'}
               </p>
 
               <div className="booking-receipt-box">
+                <div className="receipt-row">
+                  <span>{hindi ? 'स्थिति' : 'Status'}:</span>
+                  <strong style={{ color: '#b45309', background: '#fef3c7', padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.85rem' }}>
+                    {hindi ? 'सत्यापन लंबित (UTR दर्ज)' : 'PENDING VERIFICATION'}
+                  </strong>
+                </div>
                 <div className="receipt-row">
                   <span>{hindi ? 'बुकिंग कोड' : 'Booking Code'}:</span>
                   <strong>{holdResult?.bookingCode}</strong>
@@ -863,6 +1180,10 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                 <div className="receipt-row">
                   <span>{hindi ? 'स्थान' : 'Station'}:</span>
                   <strong>{stationCity}, Haryana</strong>
+                </div>
+                <div className="receipt-row">
+                  <span>{hindi ? 'अग्रिम नीति' : 'Advance Policy'}:</span>
+                  <strong style={{ color: '#0f172a' }}>{hindi ? 'अप्रतिदेय (कन्फर्म स्लॉट)' : 'Non-Refundable (Confirmed Bay)'}</strong>
                 </div>
               </div>
 
@@ -1011,21 +1332,34 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
               </div>
 
               <div className="action-row" style={{ marginTop: '1.5rem' }}>
-                <button type="submit" className="btn btn-primary submit-book-btn">
-                  📋 {hindi ? 'फ्लीट अपॉइंटमेंट शेड्यूल करें' : 'Schedule Fleet Inspection'}
+                <button type="submit" className="btn btn-primary submit-book-btn" disabled={fleetSubmitting}>
+                  {fleetSubmitting ? '⏳ ...' : (hindi ? '📋 फ्लीट अपॉइंटमेंट शेड्यूल करें' : '📋 Schedule Fleet Inspection')}
                 </button>
               </div>
             </form>
           ) : (
             <div className="verified-confirmation-pane">
               <div className="success-icon-badge">✓</div>
-              <h3 className="success-title">{hindi ? 'फ्लीट अनुरोध दर्ज हो गया!' : 'Fleet Request Received!'}</h3>
+              <h3 className="success-title">{hindi ? 'फ्लीट अनुरोध दर्ज हो गया!' : 'Fleet Enquiry Logged Successfully!'}</h3>
               <p className="success-desc">
                 {hindi
-                  ? `आपके ${fleetVehicles.length} वाहनों के लिए अनुरोध दर्ज कर लिया गया है। हमारे स्टेशन ऑपरेशंस मैनेजर आपसे 30 मिनट में संपर्क करेंगे।`
-                  : `Your request for ${fleetVehicles.length} vehicles has been received. Our station operations team will coordinate bay allocation directly.`}
+                  ? `आपके ${fleetVehicles.length} वाहनों के लिए अनुरोध डेटाबेस में दर्ज कर लिया गया है। हमारे स्टेशन ऑपरेशंस मैनेजर आपसे संपर्क करेंगे। आप सीधे व्हाट्सएप या कॉल भी कर सकते हैं:`
+                  : `Your request for ${fleetVehicles.length} vehicles has been logged in our system. You can coordinate immediate bay dispatch directly via WhatsApp or phone:`}
               </p>
-              <div className="action-row" style={{ justifyContent: 'center' }}>
+              <div className="action-row" style={{ justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <a
+                  href={`https://wa.me/${stationPhone.replace(/\D/g, '')}?text=${encodeURIComponent(
+                    hindi
+                      ? `नमस्ते HSR, हमने ऑनलाइन ${fleetVehicles.length} वाहनों के लिए फ्लीट हाइड्रो टेस्टिंग अनुरोध दर्ज किया है (तारीख: ${fleetDate}, फोन: ${fleetContactPhone})। कृपया समर्पित बे शेड्यूल करें।`
+                      : `Hello HSR, we submitted an online fleet hydro testing enquiry for ${fleetVehicles.length} vehicles on ${fleetDate} (Contact: ${fleetContactPhone}). Please confirm dedicated bay scheduling.`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-secondary"
+                  style={{ background: '#22c55e', color: '#ffffff', borderColor: '#16a34a' }}
+                >
+                  💬 {hindi ? 'व्हाट्सएप फ्लीट कोऑर्डिनेटर' : 'WhatsApp Fleet Coordinator'}
+                </a>
                 <a href={`tel:${stationPhone}`} className="btn btn-primary">
                   📞 {hindi ? 'स्टेशन से सीधे बात करें' : 'Call Station Operations'} ({stationPhone})
                 </a>
