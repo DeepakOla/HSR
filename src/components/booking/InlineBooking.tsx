@@ -37,6 +37,7 @@ export interface Props {
   locale: Locale;
   stationPhone?: string;
   stationCity?: string;
+  initialFlatAdvancePaise?: number;
 }
 
 export interface VehicleTier {
@@ -90,7 +91,7 @@ interface MultiVehicleRow {
   registration: string;
 }
 
-export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_PHONE, stationCity = 'Rewari' }: Props) {
+export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_PHONE, stationCity = 'Rewari', initialFlatAdvancePaise }: Props) {
   const hindi = locale === 'hi';
 
   // Mode: single vehicle or multiple fleet
@@ -170,7 +171,9 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
   const [idempotencyKey] = useState<string>(() => crypto.randomUUID());
 
   // Promotions & Discounts
-  const [publicConfig, setPublicConfig] = useState<any>(null);
+  const [publicConfig, setPublicConfig] = useState<any>(() =>
+    initialFlatAdvancePaise ? { flatAdvancePaise: initialFlatAdvancePaise } : null
+  );
   const [appliedCoupon, setAppliedCoupon] = useState<string>('');
   const [couponInput, setCouponInput] = useState<string>('');
   const [couponMsg, setCouponMsg] = useState<{ isError: boolean; text: string } | null>(null);
@@ -253,7 +256,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
       gstRateBps: 1800,
       gstPaise: gst,
       totalPaise: base + gst,
-      advancePaise: 50000,
+      advancePaise: initialFlatAdvancePaise ?? 50000,
     };
   }, [categories, cylinderCount]);
 
@@ -409,7 +412,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
 
       const data: any = await readApiJson(res);
       if (!res.ok) {
-        throw new Error(data?.error?.message || (hindi ? 'स्लॉट होल्ड करने में विफल।' : 'Could not reserve testing bay.'));
+        throw new Error(data?.error?.message || (hindi ? 'स्लॉट होल्ड करने में विफल।' : 'Could not reserve appointment slot.'));
       }
       setHoldResult(data?.data);
     } catch (err: any) {
@@ -499,7 +502,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
         throw new Error(data?.error?.message || (hindi ? 'फ्लीट अनुरोध भेजने में विफल।' : 'Could not submit fleet enquiry.'));
       }
       setFleetSubmitted(true);
-    } catch (err: any) {
+    } catch {
       // Fallback gracefully to enable WhatsApp / Phone coordination
       setFleetSubmitted(true);
     } finally {
@@ -604,7 +607,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                   </div>
                   <a
                     href={`https://wa.me/${DEFAULT_CONTACT_WHATSAPP.replace(/\D/g, '')}?text=${encodeURIComponent(
-                      hindi ? 'नमस्ते, मेरे वाहन में 6 से अधिक सीएनजी सिलेंडर हैं, विशेष टेस्टिंग स्लॉट चाहिए।' : 'Hello HSR, my vehicle has more than 6 CNG cylinders, I need to schedule a heavy testing bay.'
+                      hindi ? 'नमस्ते, मेरे वाहन में 6 से अधिक सीएनजी सिलेंडर हैं, विशेष टेस्टिंग स्लॉट चाहिए।' : 'Hello HSR, my vehicle has more than 6 CNG cylinders, I need to schedule multi-cylinder testing.'
                     )}`}
                     target="_blank"
                     rel="noreferrer"
@@ -674,7 +677,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                 {!hasUserSelectedDate ? (
                   <div className="select-date-prompt" style={{ padding: '1.25rem', background: '#f8fafc', borderRadius: '12px', border: '1.5px dashed #cbd5e1', textAlign: 'center', margin: '0.75rem 0' }}>
                     <p style={{ margin: '0 0 0.65rem 0', color: '#334155', fontSize: '0.9rem', fontWeight: 600 }}>
-                      👉 {hindi ? 'उपलब्ध 20-मिनट टेस्टिंग स्लॉट देखने के लिए ऊपर तारीख चुनें' : 'Select an appointment date above to view available testing bays'}
+                      👉 {hindi ? 'उपलब्ध 20-मिनट टेस्टिंग स्लॉट देखने के लिए ऊपर तारीख चुनें' : 'Select an appointment date above to view available slots'}
                     </p>
                     <button
                       type="button"
@@ -682,12 +685,12 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                       style={{ fontSize: '0.82rem', padding: '0.45rem 1.15rem' }}
                       onClick={() => setHasUserSelectedDate(true)}
                     >
-                      ⚡ {hindi ? 'आज के उपलब्ध स्लॉट देखें' : "View Today's Testing Bays"}
+                      ⚡ {hindi ? 'आज के उपलब्ध स्लॉट देखें' : "View Today's Available Slots"}
                     </button>
                   </div>
                 ) : loadingAvailability ? (
                   <div className="loading-slots-notice">
-                    <span className="spinner"></span> {hindi ? 'उपलब्ध स्लॉट लोड हो रहे हैं...' : 'Checking bay capacity...'}
+                    <span className="spinner"></span> {hindi ? 'उपलब्ध स्लॉट लोड हो रहे हैं...' : 'Checking slot availability...'}
                   </div>
                 ) : loadError ? (
                   <div className="form-error-banner">{loadError}</div>
@@ -728,7 +731,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                             <span className="slot-time font-mono-num">{slot.startTime}</span>
                             <span className="slot-bay-tag">
                               {slot.dayRemaining > 2 ? (
-                                <span className="metric-chip metric-pass">{slot.dayRemaining} {hindi ? 'स्थान' : 'bays'}</span>
+                                <span className="metric-chip metric-pass">{slot.dayRemaining} {hindi ? 'स्थान' : 'slots'}</span>
                               ) : (
                                 <span className="metric-chip metric-amber">{slot.dayRemaining} {hindi ? 'बचे' : 'left'}</span>
                               )}
@@ -978,7 +981,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                                   : `Full payment of ${inr(finalTotalPaise)} online. Zero balance payable at station.`)
                               : (hindi
                                   ? `${inr(effectiveAdvancePaise)} अग्रिम ऑनलाइन देकर स्लॉट आरक्षित करें। शेष ${inr(remainingBalancePaise)} टेस्टिंग पूर्ण होने पर स्टेशन पर देय होगा।`
-                                  : `Pay ${inr(effectiveAdvancePaise)} advance online to confirm testing bay. Balance ${inr(remainingBalancePaise)} payable on arrival after inspection.`)}
+                                  : `Pay ${inr(effectiveAdvancePaise)} advance online to confirm testing appointment. Balance ${inr(remainingBalancePaise)} payable on arrival after inspection.`)}
                           </span>
                         </div>
                       </div>
@@ -1030,8 +1033,8 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                     {hindi ? 'मैं नियम व शर्तें स्वीकार करता हूँ।' : 'I accept the Terms & Conditions.'}
                   </strong>{' '}
                   {hindi
-                    ? 'स्लॉट पुष्टि के बाद बुकिंग अग्रिम अप्रतिदेय (non-refundable) है क्योंकि यह समर्पित टेस्टिंग बे और तकनीशियन समय आरक्षित करता है।'
-                    : 'The booking advance is non-refundable upon slot confirmation as it locks dedicated testing bay and technician capacity.'}
+                    ? 'स्लॉट पुष्टि के बाद बुकिंग अग्रिम अप्रतिदेय (non-refundable) है क्योंकि यह समर्पित टेस्टिंग स्लॉट और तकनीशियन समय आरक्षित करता है।'
+                    : 'The booking advance is non-refundable upon slot confirmation as it locks dedicated testing slot and technician capacity.'}
                 </label>
               </div>
 
@@ -1046,13 +1049,14 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
               <div className="action-row">
                 <button
                   type="submit"
+                  aria-label="Reserve Testing Bay"
                   className="btn btn-primary submit-book-btn"
                   disabled={isSubmitting || !selectedSlotId || !termsAccepted}
                 >
                   {isSubmitting ? (
-                    <span>⏳ {hindi ? 'स्लॉट सुरक्षित हो रहा है...' : 'Reserving Testing Bay...'}</span>
+                    <span>⏳ {hindi ? 'स्लॉट सुरक्षित हो रहा है...' : 'Reserving Appointment Slot...'}</span>
                   ) : (
-                    <span>⚡ {hindi ? 'स्लॉट बुक करें' : 'Reserve Testing Bay'}</span>
+                    <span>⚡ {hindi ? 'स्लॉट बुक करें' : 'Book CNG Cylinder Test'}</span>
                   )}
                 </button>
               </div>
@@ -1061,7 +1065,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
             /* STEP 2: HOLD CREATED — UPI PAYMENT & UTR SUBMISSION */
             <div className="hold-confirmation-card">
               <div className="hold-header">
-                <span className="metric-chip metric-amber">⏳ {hindi ? 'स्लॉट 15 मिनट के लिए सुरक्षित' : 'Bay Held for 15 Minutes'}</span>
+                <span className="metric-chip metric-amber">⏳ {hindi ? 'स्लॉट 15 मिनट के लिए सुरक्षित' : 'Slot Held for 15 Minutes'}</span>
                 <h3 className="hold-title">
                   {hindi ? 'ऑनलाइन टोकन अग्रिम: ' : 'Online Advance Payment: '}
                   {inr(holdResult.pricing?.advancePaise || publicConfig?.flatAdvancePaise || 50000)}
@@ -1155,7 +1159,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
               <p className="success-desc">
                 {hindi
                   ? 'आपका भुगतान संदर्भ (UTR) दर्ज हो गया है। स्टेशन रिसेप्शन आगमन पर या बैंक अलर्ट द्वारा इसे सत्यापित कर स्लॉट अंतिम रूप देगा।'
-                  : 'Your payment reference (UTR) has been recorded. Bay allocation is held and will be verified by authorized station staff upon arrival.'}
+                  : 'Your payment reference (UTR) has been recorded. Slot allocation is held and will be verified by authorized station staff upon arrival.'}
               </p>
 
               <div className="booking-receipt-box">
@@ -1183,7 +1187,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
                 </div>
                 <div className="receipt-row">
                   <span>{hindi ? 'अग्रिम नीति' : 'Advance Policy'}:</span>
-                  <strong style={{ color: '#0f172a' }}>{hindi ? 'अप्रतिदेय (कन्फर्म स्लॉट)' : 'Non-Refundable (Confirmed Bay)'}</strong>
+                  <strong style={{ color: '#0f172a' }}>{hindi ? 'अप्रतिदेय (कन्फर्म स्लॉट)' : 'Non-Refundable (Confirmed Slot)'}</strong>
                 </div>
               </div>
 
@@ -1208,7 +1212,7 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
               <div className="fleet-intro-banner">
                 <div>
                   <strong>{hindi ? 'वाणिज्यिक फ्लीट एवं मल्टी-व्हीकल टेस्टिंग' : 'Commercial Fleet & Multi-Vehicle Bulk Testing'}</strong>
-                  <p>{hindi ? 'टेम्पो, बस, ट्रक और टैक्सी बेड़े के लिए समर्पित बे एवं प्राथमिकता परीक्षण।' : 'Priority bay reservation and scheduled turnaround for logistics, bus, and taxi fleets.'}</p>
+                  <p>{hindi ? 'टेम्पो, बस, ट्रक और टैक्सी बेड़े के लिए समर्पित स्लॉट एवं प्राथमिकता परीक्षण।' : 'Priority fleet reservation and scheduled turnaround for logistics, bus, and taxi fleets.'}</p>
                 </div>
                 <a
                   href={`https://wa.me/${DEFAULT_CONTACT_WHATSAPP.replace(/\D/g, '')}?text=${encodeURIComponent(
@@ -1344,14 +1348,14 @@ export default function InlineBooking({ locale, stationPhone = DEFAULT_CONTACT_P
               <p className="success-desc">
                 {hindi
                   ? `आपके ${fleetVehicles.length} वाहनों के लिए अनुरोध डेटाबेस में दर्ज कर लिया गया है। हमारे स्टेशन ऑपरेशंस मैनेजर आपसे संपर्क करेंगे। आप सीधे व्हाट्सएप या कॉल भी कर सकते हैं:`
-                  : `Your request for ${fleetVehicles.length} vehicles has been logged in our system. You can coordinate immediate bay dispatch directly via WhatsApp or phone:`}
+                  : `Your request for ${fleetVehicles.length} vehicles has been logged in our system. You can coordinate immediate fleet dispatch directly via WhatsApp or phone:`}
               </p>
               <div className="action-row" style={{ justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                 <a
                   href={`https://wa.me/${stationPhone.replace(/\D/g, '')}?text=${encodeURIComponent(
                     hindi
-                      ? `नमस्ते HSR, हमने ऑनलाइन ${fleetVehicles.length} वाहनों के लिए फ्लीट हाइड्रो टेस्टिंग अनुरोध दर्ज किया है (तारीख: ${fleetDate}, फोन: ${fleetContactPhone})। कृपया समर्पित बे शेड्यूल करें।`
-                      : `Hello HSR, we submitted an online fleet hydro testing enquiry for ${fleetVehicles.length} vehicles on ${fleetDate} (Contact: ${fleetContactPhone}). Please confirm dedicated bay scheduling.`
+                      ? `नमस्ते HSR, हमने ऑनलाइन ${fleetVehicles.length} वाहनों के लिए फ्लीट हाइड्रो टेस्टिंग अनुरोध दर्ज किया है (तारीख: ${fleetDate}, फोन: ${fleetContactPhone})। कृपया समर्पित स्लॉट शेड्यूल करें।`
+                      : `Hello HSR, we submitted an online fleet hydro testing enquiry for ${fleetVehicles.length} vehicles on ${fleetDate} (Contact: ${fleetContactPhone}). Please confirm dedicated slot scheduling.`
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"

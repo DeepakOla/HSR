@@ -18,9 +18,10 @@ interface DueDateCheckerProps {
   locale: Locale;
   bookUrl?: string;
   stationPhone?: string;
+  initialFlatAdvancePaise?: number;
 }
 
-export default function DueDateChecker({ locale, bookUrl = `/${locale}/book/`, stationPhone }: DueDateCheckerProps) {
+export default function DueDateChecker({ locale, bookUrl = `/${locale}/book/`, stationPhone, initialFlatAdvancePaise }: DueDateCheckerProps) {
   const hindi = locale === 'hi';
   const [queryInput, setQueryInput] = useState<string>('');
   const [manualDate, setManualDate] = useState<string>('');
@@ -209,7 +210,6 @@ export default function DueDateChecker({ locale, bookUrl = `/${locale}/book/`, s
           <form onSubmit={handleLookup} className="checker-compact-form">
             <div className="checker-compact-input-row">
               <div className="checker-input-wrapper">
-                <span className="checker-input-icon">🚗/📱</span>
                 <input
                   id="checker-query-input"
                   type="text"
@@ -326,7 +326,7 @@ export default function DueDateChecker({ locale, bookUrl = `/${locale}/book/`, s
                   🎁 {hindi ? 'तारीख खोजने में सहायता लें (₹200 वाउचर)' : 'Help me find my due date (₹200 Voucher)'}
                 </button>
                 <a href={bookUrl} className="btn btn-primary">
-                  ⚡ {hindi ? 'नया स्लॉट बुक करें' : 'Book Testing Bay'}
+                  ⚡ {hindi ? 'नया स्लॉट बुक करें' : 'Book Appointment Slot'}
                 </a>
               </div>
             </div>
@@ -492,6 +492,7 @@ export default function DueDateChecker({ locale, bookUrl = `/${locale}/book/`, s
             onClose={() => setModalOpen(false)}
             bookUrl={bookUrl}
             initialPath={modalInitialPath}
+            initialFlatAdvancePaise={initialFlatAdvancePaise}
           />
         </Suspense>
       )}

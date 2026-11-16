@@ -154,7 +154,7 @@ export const GET: APIRoute = async ({ url }) => {
   }
 
   // Filter stations based on vehicle type
-  let filtered = STATIONS.filter((s) => {
+  const filtered = STATIONS.filter((s) => {
     if (vehicleFilter === 'EECO') {
       return s.accepts_maruti_eeco === 1;
     }

@@ -13,15 +13,15 @@ const cityName = settings.city !== 'SETUP_REQUIRED' ? settings.city : 'Rewari';
   <section class="section" style="padding-top: 2.5rem;">
     <div class="container">
       <div style="text-align: center; max-width: 720px; margin: 0 auto 2rem;">
-        <span class="trust-badge trust-badge-amber">⚡ Certified Hydrostatic Testing Bay</span>
+        <span class="trust-badge trust-badge-amber">⚡ Certified Hydrostatic Testing Station</span>
         <h1 style="font-size: clamp(1.85rem, 3.5vw, 2.4rem); color: var(--color-navy-900); margin: 0.65rem 0 0.5rem; letter-spacing: -0.02em;">
           Book CNG Cylinder Hydro Testing Appointment
         </h1>
         <p style="color: var(--color-slate-600); margin: 0; font-size: 1.05rem;">
-          Reserve your dedicated testing bay with fast confirmation. 2 to 3 hours express turnaround in {cityName}, Haryana.
+          Reserve your dedicated appointment slot with fast confirmation. 2 to 3 hours express turnaround in {cityName}, Haryana.
         </p>
       </div>
-      <InlineBooking client:load locale="en" stationPhone={settings.contact_phone} stationCity={cityName} />
+      <InlineBooking client:load locale="en" stationPhone={settings.contact_phone} stationCity={cityName} initialFlatAdvancePaise={settings.flat_advance_paise || 50000} />
     </div>
   </section>
 </BaseLayout>

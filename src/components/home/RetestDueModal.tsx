@@ -19,6 +19,7 @@ interface RetestDueModalProps {
   onClose: () => void;
   bookUrl?: string;
   initialPath?: 'calculate' | 'assist';
+  initialFlatAdvancePaise?: number;
 }
 
 export default function RetestDueModal({
@@ -27,6 +28,7 @@ export default function RetestDueModal({
   onClose,
   bookUrl = `/${locale}/#booking-form`,
   initialPath = 'assist',
+  initialFlatAdvancePaise,
 }: RetestDueModalProps) {
   const hindi = locale === 'hi';
   const [activeTab, setActiveTab] = useState<'assist' | 'calculate'>(initialPath);
@@ -53,7 +55,7 @@ export default function RetestDueModal({
   const [reminderMobile, setReminderMobile] = useState<string>('');
   const [reminderLoading, setReminderLoading] = useState<boolean>(false);
   const [reminderSuccess, setReminderSuccess] = useState<string>('');
-  const [flatAdvancePaise, setFlatAdvancePaise] = useState<number>(50000);
+  const [flatAdvancePaise, setFlatAdvancePaise] = useState<number>(initialFlatAdvancePaise ?? 50000);
 
   useEffect(() => {
     fetch('/api/public/config/')

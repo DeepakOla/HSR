@@ -6,7 +6,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
   const corridor = url.searchParams.get('corridor') || 'gurugram-rewari';
   const db = getDb({ locals } as any);
 
-  let stations = await db.prepare(`
+  const stations = await db.prepare(`
     SELECT * FROM directory_stations 
     WHERE corridor_slug = ? 
     ORDER BY is_hsr_flagship DESC, rating DESC

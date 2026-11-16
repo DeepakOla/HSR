@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test } from '@playwright/test';
 import path from 'path';
 
 const SCREENSHOT_DIR = 'C:/Users/HP/.gemini/antigravity/brain/62898b4b-62e3-434b-aa7b-d9685ecb2d7e/screenshots';
@@ -9,19 +9,22 @@ test.describe('⚡ Visual Screenshots & Interactive Portal Verification', () => 
 
     // 1. Visit Login at Desktop size
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto('/admin/login/', { waitUntil: 'networkidle' });
+    await page.goto('/login/?role=admin', { waitUntil: 'networkidle' });
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '01_login_desktop.png'), fullPage: true });
 
     // Click owner profile chip and log in
-    const ownerChip = page.locator('button.profile-chip[data-email="kumardeepakola@gmail.com"]');
+    const ownerChip = page.locator('button.admin-preset[data-email="kumardeepakola@gmail.com"]');
     if (await ownerChip.count() > 0) {
       await ownerChip.click();
     } else {
-      await page.fill('#staff-email-input', 'kumardeepakola@gmail.com');
+      await page.fill('#admin-email', 'kumardeepakola@gmail.com');
     }
-    await page.click('#submit-login-btn');
-    await page.waitForURL(/\/admin\/?/);
+    await page.click('#admin-submit-btn');
+    await page.waitForURL(/\/admin/);
     await page.waitForLoadState('domcontentloaded');
+
+    // Visit /admin/ for Overview Screen
+    await page.goto('/admin/', { waitUntil: 'networkidle' });
 
     // 2. Overview Screen
     await page.screenshot({ path: path.join(SCREENSHOT_DIR, '02_overview_desktop.png'), fullPage: true });

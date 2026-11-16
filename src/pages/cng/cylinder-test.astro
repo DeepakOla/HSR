@@ -51,7 +51,7 @@ const nearbyStationsSeed = [
     lng: 76.6250,
     distance_km: 1.2,
     booking_mode_summary: `Online priority reservation with ${advanceFormatted} advance or walk-in`,
-    refund_policy_summary: 'Non-refundable advance upon slot confirmation (locks dedicated testing bay)',
+    refund_policy_summary: 'Non-refundable advance upon slot confirmation (locks dedicated appointment slot)',
     license_verification_badge: 'SETUP_REQUIRED',
   },
   {
@@ -246,6 +246,105 @@ const structuredData = {
       border-radius: 8px;
       font-weight: 700 !important;
       box-shadow: 0 2px 4px rgba(234, 88, 12, 0.3);
+    }
+    .cng-mobile-toggle {
+      display: none;
+      background: none;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.5rem;
+      cursor: pointer;
+      flex-direction: column;
+      gap: 4px;
+      justify-content: center;
+      align-items: center;
+      width: 40px;
+      height: 40px;
+    }
+    .cng-hamburger-bar {
+      display: block;
+      width: 20px;
+      height: 2px;
+      background: var(--navy);
+      border-radius: 2px;
+      transition: all 0.2s ease;
+    }
+    @media (max-width: 860px) {
+      .header-nav { display: none !important; }
+      .cng-mobile-toggle { display: flex !important; }
+    }
+    .cng-mobile-drawer[hidden] { display: none; }
+    .cng-mobile-drawer {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+    }
+    .cng-drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 17, 40, 0.6);
+      backdrop-filter: blur(4px);
+    }
+    .cng-drawer-panel {
+      position: relative;
+      margin-left: auto;
+      width: 85%;
+      max-width: 320px;
+      height: 100%;
+      background: #ffffff;
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      padding: 1.25rem;
+      z-index: 101;
+      overflow-y: auto;
+    }
+    .cng-drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 1rem;
+    }
+    .cng-drawer-close {
+      background: none;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      cursor: pointer;
+      color: #64748b;
+    }
+    .cng-drawer-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+    .cng-drawer-link {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #334155;
+      text-decoration: none;
+      padding: 0.4rem 0;
+    }
+    .cng-drawer-link:hover { color: var(--primary); }
+    .cng-drawer-cta {
+      background: var(--primary);
+      color: #ffffff !important;
+      font-weight: 800;
+      font-size: 0.92rem;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      text-align: center;
+      text-decoration: none;
+      box-shadow: 0 2px 6px rgba(234, 88, 12, 0.3);
+      margin-bottom: 0.5rem;
     }
 
     /* Hero Section */
@@ -551,11 +650,49 @@ const structuredData = {
         <a href="#pricing-section">Pricing</a>
         <a href="#articles-section">Safety Articles</a>
         <a href="#faqs-section">FAQs</a>
-        <a href="/login/" style="color: #64748b;">Sign-In</a>
+        <a href="/user/" style="color: #0284c7; font-weight: 700;">Customer Workspace</a>
         <a href="#booking-section" class="btn-header-cta">Book Slot ({advanceFormatted} Advance) →</a>
       </nav>
+      <!-- Mobile Menu Toggle Button -->
+      <button
+        type="button"
+        class="cng-mobile-toggle"
+        id="cng-mobile-toggle"
+        aria-expanded="false"
+        aria-controls="cng-mobile-drawer"
+        aria-label="Toggle Navigation Menu"
+      >
+        <span class="cng-hamburger-bar"></span>
+        <span class="cng-hamburger-bar"></span>
+        <span class="cng-hamburger-bar"></span>
+      </button>
     </div>
   </header>
+
+  <!-- Mobile Navigation Drawer -->
+  <div class="cng-mobile-drawer" id="cng-mobile-drawer" hidden>
+    <div class="cng-drawer-backdrop" id="cng-drawer-backdrop"></div>
+    <div class="cng-drawer-panel">
+      <div class="cng-drawer-header">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <img src={brandLogo} alt={`${businessName} Logo`} style="width: 28px; height: 28px; border-radius: 6px; object-fit: cover;" />
+          <strong>⚡ {businessName}</strong>
+        </div>
+        <button type="button" class="cng-drawer-close" id="cng-drawer-close" aria-label="Close Menu">✕</button>
+      </div>
+      <nav class="cng-drawer-nav">
+        <a href="#booking-section" class="cng-drawer-cta">⚡ Book Slot ({advanceFormatted} Advance) →</a>
+        <a href="#nearby-stations" class="cng-drawer-link">📍 Nearby Testing Plants</a>
+        <a href="#guide-steps" class="cng-drawer-link">🔬 8-Step Testing Guide</a>
+        <a href="#pricing-section" class="cng-drawer-link">💰 Transparent Pricing</a>
+        <a href="#articles-section" class="cng-drawer-link">📖 Safety Articles</a>
+        <a href="#faqs-section" class="cng-drawer-link">❓ FAQs</a>
+        <a href="/cng/" class="cng-drawer-link" style="color: var(--primary); font-weight: 700;">📚 CNG Regulations Guide</a>
+        <a href="/user/" class="cng-drawer-link" style="border-top: 1px solid var(--border-color); margin-top: 0.5rem; padding-top: 0.75rem; color: #0284c7; font-weight: 700;">👤 Customer Workspace</a>
+        <a href="/admin/login/" class="cng-drawer-link" style="color: #64748b; font-size: 0.85rem;">🔒 Staff / Admin Login</a>
+      </nav>
+    </div>
+  </div>
 
   <!-- 2. HERO SECTION -->
   <section class="hero-section">
@@ -568,27 +705,29 @@ const structuredData = {
       </h1>
 
       <p class="hero-subtitle">
-        Every CNG vehicle in India requires mandatory hydrostatic retesting every 3 years. Without an active compliance plate, CNG pumps will reject refueling. Get tested in our high-pressure water jacket bay and drive away with your official PESO Form C certificate & stamped brass compliance plate in under 2 hours.
+        Every CNG vehicle in India requires mandatory hydrostatic retesting every 3 years. Without an active compliance plate, CNG pumps will reject refueling. Get tested at our high-pressure water jacket test station and drive away with your official PESO Form C certificate & stamped brass compliance plate in under 2 hours.
       </p>
 
       <!-- THREE PROMINENT ACTIONS -->
       <div class="hero-cta-group">
         <a href="#booking-section" class="btn-book-advance">
-          <span>⚡</span> Book CNG Cylinder Bay ({advanceFormatted} Flat Advance) →
+          <span>⚡</span> Book CNG Cylinder Test ({advanceFormatted} Flat Advance) →
         </a>
 
         <a href="#nearby-stations" class="btn-find-plant">
           <span>📍</span> Find Nearest PESO Plant ↓
         </a>
 
-        <RetestDueLauncher client:idle locale="en" />
+        <div id="retest-checker">
+          <RetestDueLauncher client:idle locale="en" initialFlatAdvancePaise={settings.flat_advance_paise || 50000} />
+        </div>
       </div>
 
       <!-- ONE LINE CLICKABLE RANKED BADGE -->
       <div>
         <a href="#nearby-stations" class="hero-ranked-strip">
           <span>🏆</span>
-          <strong>Ranked: #1 Flagship Express Bay (Zero Middleman) + Shortest Distance</strong>
+          <strong>Ranked: #1 Flagship Express Testing Station (Zero Middleman) + Shortest Distance</strong>
           <span>• Claim ₹200 Voucher ↗</span>
         </a>
       </div>
@@ -689,7 +828,7 @@ const structuredData = {
                 <div>
                   {isFlagship ? (
                     <a href="#booking-form" style="display: block; text-align: center; background: #ea580c; color: #fff; padding: 0.75rem; border-radius: 10px; font-weight: 800; font-size: 0.9rem; text-decoration: none; box-shadow: 0 4px 10px rgba(234, 88, 12, 0.25);">
-                      Book Priority Bay (From {advanceFormatted} Advance) →
+                      Book Priority Slot (From {advanceFormatted} Advance) →
                     </a>
                   ) : (
                     <a href="#booking-form" style="display: block; text-align: center; background: #0a1128; color: #fff; padding: 0.75rem; border-radius: 10px; font-weight: 700; font-size: 0.85rem; text-decoration: none;">
@@ -707,14 +846,14 @@ const structuredData = {
     <!-- 4. EMBEDDED INLINE BOOKING WIZARD -->
     <section class="page-section" id="booking-section">
       <div id="booking-form" style="position: relative; top: -80px; height: 0; width: 0; overflow: hidden; pointer-events: none;"></div>
-      <span class="section-eyebrow">Zero Friction Bay Reservation</span>
+      <span class="section-eyebrow">Zero Friction Slot Reservation</span>
       <h2 class="section-heading">Book CNG Cylinder Test ({advanceFormatted} Advance)</h2>
       <p class="section-lead">
-        Select your vehicle type, choose a 20-minute arrival window, and lock your bay. Pay advance via instant UPI QR with zero payment gateway surcharge.
+        Select your vehicle type, choose a 20-minute arrival window, and lock your slot. Pay advance via instant UPI QR with zero payment gateway surcharge.
       </p>
 
       <div style="background: #fff; border: 1px solid var(--border-color); border-radius: 24px; padding: 1.5rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);">
-        <InlineBooking client:visible locale="en" stationPhone={contactPhone} stationCity={cityName} />
+        <InlineBooking client:visible locale="en" stationPhone={contactPhone} stationCity={cityName} initialFlatAdvancePaise={settings.flat_advance_paise || 50000} />
       </div>
     </section>
 
@@ -760,7 +899,7 @@ const structuredData = {
             <span class="step-num-badge">Step 04</span>
           </div>
           <h3 style="font-size: 1.05rem; font-weight: 800; color: #0a1128; margin-bottom: 0.4rem;">Pass & WhatsApp Link</h3>
-          <p style="font-size: 0.82rem; color: #475569; line-height: 1.45;">Bay locked. Immediate WhatsApp dispatch with directions and gate entry pass.</p>
+          <p style="font-size: 0.82rem; color: #475569; line-height: 1.45;">Slot locked. Immediate WhatsApp dispatch with directions and gate entry pass.</p>
         </div>
 
         <div class="guide-step-card">
@@ -922,7 +1061,7 @@ const structuredData = {
             What is the booking advance and cancellation policy?
           </h3>
           <p style="font-size: 0.88rem; color: #475569; line-height: 1.5;">
-            Online reservations require a flat {advanceFormatted} advance to lock your designated express testing bay and technician allocation. The booking advance is strictly non-refundable upon slot confirmation. The balance amount is payable on-site after testing and brass compliance plate stamping.
+            Online reservations require a flat {advanceFormatted} advance to lock your designated express appointment slot and technician allocation. The booking advance is strictly non-refundable upon slot confirmation. The balance amount is payable on-site after testing and brass compliance plate stamping.
           </p>
         </div>
 
@@ -931,7 +1070,7 @@ const structuredData = {
             Can I wait while my vehicle is tested at HSR Rewari?
           </h3>
           <p style="font-size: 0.88rem; color: #475569; line-height: 1.5;">
-            Yes! Our Rewari testing facility features an air-conditioned customer lounge with live CCTV bay monitoring and high-speed Wi-Fi while your vehicle is inspected. Standard turnaround is 90 to 120 minutes.
+            Yes! Our Rewari testing facility features an air-conditioned customer lounge with live CCTV testing station monitoring and high-speed Wi-Fi while your vehicle is inspected. Standard turnaround is 90 to 120 minutes.
           </p>
         </div>
       </div>
@@ -987,9 +1126,10 @@ const structuredData = {
       </p>
       <p style="font-size: 0.8rem; margin-top: 0.6rem;">
         <a href="/en/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Home</a> •
-        <a href="/cng/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">CNG Pillar Guide</a> •
-        <a href="/cng/cylinder-test/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Testing Plant</a> •
-        <a href="/website-guide/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">System Architecture</a> •
+        <a href="/en/services/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Services</a> •
+        <a href="/cng/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Guides</a> •
+        <a href="/cng/cylinder-test/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Find Nearby CNG</a> •
+        <a href="/en/blog/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Blog</a> •
         <a href="/user/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Customer Workspace</a> •
         <a href="/admin/login/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Staff / Admin Login</a>
       </p>
@@ -1002,6 +1142,50 @@ const structuredData = {
     businessName={businessName}
     showFloating={settings.show_floating_whatsapp ?? 1}
   />
+
+  <!-- Accessible CNG Mobile Menu Script -->
+  <script is:inline>
+    (function() {
+      const toggle = document.getElementById('cng-mobile-toggle');
+      const drawer = document.getElementById('cng-mobile-drawer');
+      const backdrop = document.getElementById('cng-drawer-backdrop');
+      const closeBtn = document.getElementById('cng-drawer-close');
+
+      if (!toggle || !drawer) return;
+
+      function openDrawer() {
+        drawer.removeAttribute('hidden');
+        toggle.setAttribute('aria-expanded', 'true');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function closeDrawer() {
+        drawer.setAttribute('hidden', '');
+        toggle.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+      }
+
+      toggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        const isHidden = drawer.hasAttribute('hidden');
+        if (isHidden) openDrawer();
+        else closeDrawer();
+      });
+
+      if (backdrop) backdrop.addEventListener('click', closeDrawer);
+      if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+
+      drawer.querySelectorAll('a').forEach(function(link) {
+        link.addEventListener('click', closeDrawer);
+      });
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !drawer.hasAttribute('hidden')) {
+          closeDrawer();
+        }
+      });
+    })();
+  </script>
 
   <!-- Interactive Scripts (Corridor Hubs & GPS) -->
   <script is:inline>

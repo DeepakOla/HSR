@@ -595,7 +595,7 @@ a:hover {
 
 .checker-input-compact {
   width: 100%;
-  padding: 0.65rem 1rem 0.65rem 2.5rem;
+  padding: 0.65rem 1rem;
   border: 1.5px solid var(--border-default);
   border-radius: var(--radius-md);
   font-size: 0.95rem;

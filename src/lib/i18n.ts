@@ -10,7 +10,10 @@ const copy = {
       book: 'Book',
       contact: 'Contact',
       about: 'About',
-      blog: 'Guides',
+      blog: 'Blog',
+      guides: 'Guides',
+      findCng: 'Find Nearby CNG',
+      customerPortal: 'Customer Workspace',
     },
     actions: {
       book: 'Book Appointment',
@@ -30,7 +33,10 @@ const copy = {
       book: 'बुक करें',
       contact: 'संपर्क',
       about: 'हमारे बारे में',
-      blog: 'गाइड',
+      blog: 'ब्लॉग',
+      guides: 'गाइड',
+      findCng: 'निकटतम सीएनजी केंद्र',
+      customerPortal: 'ग्राहक वर्कस्पेस',
     },
     actions: {
       book: 'अपॉइंटमेंट बुक करें',

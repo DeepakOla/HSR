@@ -136,4 +136,52 @@ describe('⚡ v0.0.3 Verification: Speed, SEO, Theme Unification, Fleet & Status
     expect(payload.contactPhone).toBe('9876543210');
     expect(payload.vehicleCount).toBe(2);
   });
+
+  it('verifies dynamic balance pricing, checker input clarity, mobile drawer navigation, and clean 301 redirects', async () => {
+    // 1. Dynamic pricing in HomePage.astro
+    const homeContent = await fs.readFile('src/components/HomePage.astro', 'utf-8');
+    expect(homeContent).toContain('carBalanceFormatted');
+    expect(homeContent).toContain('dualBalanceFormatted');
+    expect(homeContent).toContain('vanBalanceFormatted');
+    expect(homeContent).toContain('truckBalanceFormatted');
+    expect(homeContent).not.toContain('🏷️ <strong>₹2,450</strong>');
+    expect(homeContent).not.toContain('🏷️ <strong>₹5,400</strong>');
+    expect(homeContent).not.toContain('🏷️ <strong>₹11,300</strong>');
+    expect(homeContent).not.toContain('🏷️ <strong>₹17,200</strong>');
+    expect(homeContent).toContain('The ${advanceFormatted} advance locks your dedicated 20-minute appointment slot');
+
+    // 2. Checker input clarity without emoji obstruction
+    const checkerContent = await fs.readFile('src/components/home/DueDateChecker.tsx', 'utf-8');
+    expect(checkerContent).not.toContain('🚗/📱');
+    expect(checkerContent).toContain('Book Appointment Slot');
+
+    // 3. Mobile menu drawer on custom CNG pages
+    const cngIndex = await fs.readFile('src/pages/cng/index.astro', 'utf-8');
+    expect(cngIndex).toContain('id="cng-mobile-toggle"');
+    expect(cngIndex).toContain('id="cng-mobile-drawer"');
+    expect(cngIndex).toContain('Customer Workspace');
+
+    const cngTest = await fs.readFile('src/pages/cng/cylinder-test.astro', 'utf-8');
+    expect(cngTest).toContain('id="cng-mobile-toggle"');
+    expect(cngTest).toContain('id="cng-mobile-drawer"');
+    expect(cngTest).toContain('Customer Workspace');
+    expect(cngTest).not.toContain('/website-guide/');
+
+    // 4. 301 Permanent Redirects for /en/check-expiry/ and /hi/check-expiry/
+    const enExpiry = await fs.readFile('src/pages/en/check-expiry.astro', 'utf-8');
+    expect(enExpiry).toContain("Astro.redirect('/cng/cylinder-test/?action=check-due-date#retest-checker', 301)");
+
+    const hiExpiry = await fs.readFile('src/pages/hi/check-expiry.astro', 'utf-8');
+    expect(hiExpiry).toContain("Astro.redirect('/cng/cylinder-test/?action=check-due-date#retest-checker', 301)");
+
+    const sitemapContent = await fs.readFile('src/pages/sitemap.xml.ts', 'utf-8');
+    expect(sitemapContent).not.toContain("'/en/check-expiry/'");
+    expect(sitemapContent).not.toContain("'/hi/check-expiry/'");
+
+    // 5. Clean BaseLayout customer workspace routing and footer links
+    const layoutContent = await fs.readFile('src/layouts/BaseLayout.astro', 'utf-8');
+    expect(layoutContent).toContain('/user/');
+    expect(layoutContent).toContain('Customer Workspace');
+    expect(layoutContent).not.toContain("getAnchor('pricing')");
+  });
 });

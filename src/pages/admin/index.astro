@@ -85,10 +85,10 @@ if (env?.DB) {
     const recentRows = await env.DB.prepare(`
       SELECT 
         b.booking_code as bookingCode,
-        COALESCE(b.display_reg_no, v.registration_display, 'HR-26') as regNo,
-        b.slot_start_time as slotTime,
-        b.cylinder_count as cylinderCount,
-        b.total_price_paise as totalPricePaise,
+        COALESCE(v.display_reg_no, v.registration_display, 'HR-26') as regNo,
+        COALESCE(b.slot_start_time, b.slot_start_snapshot, '09:00') as slotTime,
+        COALESCE(b.cylinder_count_snapshot, b.booked_cylinder_count, 1) as cylinderCount,
+        COALESCE(b.total_price_paise_snapshot, b.line_total_paise, 0) as totalPricePaise,
         b.reservation_state as reservationState,
         COALESCE(b.testing_status, 'SCHEDULED') as testingStatus
       FROM bookings b

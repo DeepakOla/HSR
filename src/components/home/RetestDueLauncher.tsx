@@ -8,6 +8,7 @@ interface RetestDueLauncherProps {
   style?: React.CSSProperties;
   buttonText?: string;
   bookUrl?: string;
+  initialFlatAdvancePaise?: number;
 }
 
 export default function RetestDueLauncher({
@@ -16,6 +17,7 @@ export default function RetestDueLauncher({
   style,
   buttonText,
   bookUrl = '#booking-section',
+  initialFlatAdvancePaise,
 }: RetestDueLauncherProps) {
   const [isOpen, setIsOpen] = useState(false);
   const hindi = locale === 'hi';
@@ -63,6 +65,7 @@ export default function RetestDueLauncher({
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         bookUrl={bookUrl}
+        initialFlatAdvancePaise={initialFlatAdvancePaise}
       />
     </>
   );

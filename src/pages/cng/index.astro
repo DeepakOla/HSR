@@ -54,7 +54,7 @@ const faqSchema = {
       "name": "How long does the CNG cylinder hydrostatic test take at a certified plant?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "At a Class-A PESO approved facility like HSR, testing takes between 90 minutes to 2 hours when booked in an express bay. The vehicle cylinder is degassed, placed in a 300-bar water jacket, dried, stamped with a new brass compliance plate, and issued an instant digital PESO Form C certificate."
+        "text": "At a Class-A PESO approved facility like HSR, testing takes between 90 minutes to 2 hours when booked in an express appointment slot. The vehicle cylinder is degassed, placed in a 300-bar water jacket, dried, stamped with a new brass compliance plate, and issued an instant digital PESO Form C certificate."
       }
     },
     {
@@ -62,7 +62,7 @@ const faqSchema = {
       "name": "What is the cost of CNG cylinder testing in Haryana and NCR?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": `The statutory base rate is ₹2,500 per cylinder plus 18% GST (Total ₹2,950). Online reservations at HSR require only a flat ${advanceFormatted} advance to lock an express bay, with the balance payable upon certificate delivery.`
+        "text": `The statutory base rate is ₹2,500 per cylinder plus 18% GST (Total ₹2,950). Online reservations at HSR require only a flat ${advanceFormatted} advance to lock an express appointment slot, with the balance payable upon certificate delivery.`
       }
     },
     {
@@ -177,6 +177,105 @@ const articleSchema = {
       border-radius: 8px;
       font-weight: 700 !important;
       box-shadow: 0 2px 4px rgba(234, 88, 12, 0.3);
+    }
+    .cng-mobile-toggle {
+      display: none;
+      background: none;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 0.5rem;
+      cursor: pointer;
+      flex-direction: column;
+      gap: 4px;
+      justify-content: center;
+      align-items: center;
+      width: 40px;
+      height: 40px;
+    }
+    .cng-hamburger-bar {
+      display: block;
+      width: 20px;
+      height: 2px;
+      background: var(--navy);
+      border-radius: 2px;
+      transition: all 0.2s ease;
+    }
+    @media (max-width: 860px) {
+      .header-nav { display: none !important; }
+      .cng-mobile-toggle { display: flex !important; }
+    }
+    .cng-mobile-drawer[hidden] { display: none; }
+    .cng-mobile-drawer {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+    }
+    .cng-drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 17, 40, 0.6);
+      backdrop-filter: blur(4px);
+    }
+    .cng-drawer-panel {
+      position: relative;
+      margin-left: auto;
+      width: 85%;
+      max-width: 320px;
+      height: 100%;
+      background: #ffffff;
+      box-shadow: -4px 0 20px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      padding: 1.25rem;
+      z-index: 101;
+      overflow-y: auto;
+    }
+    .cng-drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 1rem;
+    }
+    .cng-drawer-close {
+      background: none;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      cursor: pointer;
+      color: #64748b;
+    }
+    .cng-drawer-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+    .cng-drawer-link {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #334155;
+      text-decoration: none;
+      padding: 0.4rem 0;
+    }
+    .cng-drawer-link:hover { color: var(--primary); }
+    .cng-drawer-cta {
+      background: var(--primary);
+      color: #ffffff !important;
+      font-weight: 800;
+      font-size: 0.92rem;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      text-align: center;
+      text-decoration: none;
+      box-shadow: 0 2px 6px rgba(234, 88, 12, 0.3);
+      margin-bottom: 0.5rem;
     }
 
     /* Hero Section */
@@ -450,10 +549,48 @@ const articleSchema = {
         <a href="#procedure">Testing Procedure</a>
         <a href="#pump-refusal">Pump Rules</a>
         <a href="#faqs">FAQs</a>
-        <a href="/cng/cylinder-test/" class="btn-header-cta">Book Testing Bay ({advanceFormatted} Advance) →</a>
+        <a href="/user/" style="color: #0284c7; font-weight: 700;">Customer Workspace</a>
+        <a href="/cng/cylinder-test/" class="btn-header-cta">Book Slot ({advanceFormatted} Advance) →</a>
       </nav>
+      <!-- Mobile Menu Toggle Button -->
+      <button
+        type="button"
+        class="cng-mobile-toggle"
+        id="cng-mobile-toggle"
+        aria-expanded="false"
+        aria-controls="cng-mobile-drawer"
+        aria-label="Toggle Navigation Menu"
+      >
+        <span class="cng-hamburger-bar"></span>
+        <span class="cng-hamburger-bar"></span>
+        <span class="cng-hamburger-bar"></span>
+      </button>
     </div>
   </header>
+
+  <!-- Mobile Navigation Drawer -->
+  <div class="cng-mobile-drawer" id="cng-mobile-drawer" hidden>
+    <div class="cng-drawer-backdrop" id="cng-drawer-backdrop"></div>
+    <div class="cng-drawer-panel">
+      <div class="cng-drawer-header">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <img src={brandLogo} alt={`${businessName} Logo`} style="width: 28px; height: 28px; border-radius: 6px; object-fit: cover;" />
+          <strong>⚡ {businessName}</strong>
+        </div>
+        <button type="button" class="cng-drawer-close" id="cng-drawer-close" aria-label="Close Menu">✕</button>
+      </div>
+      <nav class="cng-drawer-nav">
+        <a href="/cng/cylinder-test/" class="cng-drawer-cta">⚡ Book Slot ({advanceFormatted} Advance) →</a>
+        <a href="#rules" class="cng-drawer-link">📜 Regulations (IS 8451)</a>
+        <a href="#procedure" class="cng-drawer-link">🔬 5-Step Testing Procedure</a>
+        <a href="#pump-refusal" class="cng-drawer-link">⛽ Fuel Station Refusal Rules</a>
+        <a href="#faqs" class="cng-drawer-link">❓ Frequently Asked Questions</a>
+        <a href="/cng/cylinder-test/?action=check-due-date" class="cng-drawer-link" style="color: var(--primary); font-weight: 700;">📅 Check Retest Due Date (₹200 Off)</a>
+        <a href="/user/" class="cng-drawer-link" style="border-top: 1px solid var(--border-color); margin-top: 0.5rem; padding-top: 0.75rem; color: #0284c7; font-weight: 700;">👤 Customer Workspace</a>
+        <a href="/admin/login/" class="cng-drawer-link" style="color: #64748b; font-size: 0.85rem;">🔒 Staff / Admin Login</a>
+      </nav>
+    </div>
+  </div>
 
   <!-- Hero Section -->
   <section class="pillar-hero">
@@ -470,7 +607,7 @@ const articleSchema = {
 
       <div class="hero-cta-group">
         <a href="/cng/cylinder-test/" class="btn-primary-cta">
-          <span>⚡</span> Book Cylinder Test Bay ({advanceFormatted} Advance) →
+          <span>⚡</span> Book Cylinder Test Slot ({advanceFormatted} Advance) →
         </a>
         <a href="/cng/cylinder-test/?action=check-due-date" class="btn-secondary-cta">
           <span>📅</span> Check Retest Due Date & Claim ₹200 Voucher
@@ -568,7 +705,7 @@ const articleSchema = {
         <li><strong>Single Cylinder (Private Car / Taxi):</strong> ₹2,500 base + 18% GST = ₹2,950 total.</li>
         <li><strong>Dual Cylinders (Commercial Vans / Tempo):</strong> ₹5,000 base + 18% GST = ₹5,900 total.</li>
         <li><strong>Four Cylinders (Heavy Commercial Trucks):</strong> ₹10,000 base + 18% GST = ₹11,800 total.</li>
-        <li><strong>Online Advance:</strong> Flat {advanceFormatted} advance locks your designated bay, with remainder payable on delivery.</li>
+        <li><strong>Online Advance:</strong> Flat {advanceFormatted} advance locks your designated slot, with remainder payable on delivery.</li>
       </ul>
 
       <div style="text-align: center; margin: 2.5rem 0; padding: 2rem; background: #f0f9ff; border: 1.5px solid #bae6fd; border-radius: 16px;">
@@ -577,7 +714,7 @@ const articleSchema = {
           Lock your preferred 20-minute arrival slot at our Rewari Class-A testing plant with express 2-hour turnaround.
         </p>
         <a href="/cng/cylinder-test/" class="btn-primary-cta" style="margin-right: 0.5rem;">
-          Book Testing Bay ({advanceFormatted} Flat Advance) →
+          Book Testing Slot ({advanceFormatted} Flat Advance) →
         </a>
       </div>
 
@@ -609,7 +746,7 @@ const articleSchema = {
             <span>▾</span>
           </summary>
           <div class="faq-content">
-            Online reservations require a flat {advanceFormatted} advance to lock your designated express testing bay and technician allocation. Because the bay is held exclusively for your vehicle and unavailable to other motorists, the booking advance is strictly non-refundable upon slot confirmation. The remaining fee is settled upon test completion.
+            Online reservations require a flat {advanceFormatted} advance to lock your designated express testing slot and technician allocation. Because the slot is held exclusively for your vehicle and unavailable to other motorists, the booking advance is strictly non-refundable upon slot confirmation. The remaining fee is settled upon test completion.
           </div>
         </details>
 
@@ -705,9 +842,10 @@ const articleSchema = {
       </p>
       <p style="font-size: 0.8rem; margin-top: 0.6rem;">
         <a href="/en/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Home</a> •
-        <a href="/cng/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">CNG Pillar Guide</a> •
-        <a href="/cng/cylinder-test/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Testing Plant</a> •
-        <a href="/website-guide/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">System Architecture</a> •
+        <a href="/en/services/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Services</a> •
+        <a href="/cng/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Guides</a> •
+        <a href="/cng/cylinder-test/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Find Nearby CNG</a> •
+        <a href="/en/blog/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Blog</a> •
         <a href="/user/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Customer Workspace</a> •
         <a href="/admin/login/" style="color: var(--primary); text-decoration: none; margin: 0 0.4rem; font-weight: 600;">Staff / Admin Login</a>
       </p>
@@ -720,5 +858,49 @@ const articleSchema = {
     businessName={businessName}
     showFloating={settings.show_floating_whatsapp ?? 1}
   />
+
+  <!-- Accessible CNG Mobile Menu Script -->
+  <script is:inline>
+    (function() {
+      const toggle = document.getElementById('cng-mobile-toggle');
+      const drawer = document.getElementById('cng-mobile-drawer');
+      const backdrop = document.getElementById('cng-drawer-backdrop');
+      const closeBtn = document.getElementById('cng-drawer-close');
+
+      if (!toggle || !drawer) return;
+
+      function openDrawer() {
+        drawer.removeAttribute('hidden');
+        toggle.setAttribute('aria-expanded', 'true');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function closeDrawer() {
+        drawer.setAttribute('hidden', '');
+        toggle.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+      }
+
+      toggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        const isHidden = drawer.hasAttribute('hidden');
+        if (isHidden) openDrawer();
+        else closeDrawer();
+      });
+
+      if (backdrop) backdrop.addEventListener('click', closeDrawer);
+      if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+
+      drawer.querySelectorAll('a').forEach(function(link) {
+        link.addEventListener('click', closeDrawer);
+      });
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !drawer.hasAttribute('hidden')) {
+          closeDrawer();
+        }
+      });
+    })();
+  </script>
 </body>
 </html>

@@ -25,7 +25,6 @@ const alternateHref = new URL(localizePath(path, alternate), Astro.url.origin);
 
 const currentPath = Astro.url.pathname;
 const isHome = currentPath === `/${locale}/` || currentPath === `/${locale}`;
-const getAnchor = (id: string) => isHome ? `#${id}` : `/${locale}/#${id}`;
 
 const effectiveSettings = settings ?? ({
   business_name_en: businessName || 'HSR Green Energy',
@@ -117,11 +116,6 @@ const customPromoBanner = (effectiveSettings.promo_banner_active !== 0 && effect
           </span>
         </div>
       </div>
-      <div class="ticker-feedback-dock">
-        <button type="button" class="ticker-feedback-btn" id="open-feedback-btn">
-          💬 {locale === 'en' ? 'Feedback' : 'प्रतिक्रिया'}
-        </button>
-      </div>
     </aside>
 
     <header class="app-header">
@@ -134,16 +128,17 @@ const customPromoBanner = (effectiveSettings.promo_banner_active !== 0 && effect
           </div>
         </a>
 
-        <!-- Desktop Navigation: Services, Book, Blog, Contact, Login -->
+        <!-- Desktop Navigation: Services, Book, Find Nearby CNG, Blog, Contact, Customer Workspace -->
         <nav aria-label={locale === 'en' ? 'Primary navigation' : 'मुख्य नेविगेशन'} class="primary-nav">
           <ul class="nav-list">
             <li><a href={`/${locale}/services/`}>{locale === 'en' ? 'Services' : 'सेवाएँ'}</a></li>
             <li><a href={`/${locale}/book/`}>{locale === 'en' ? 'Book' : 'बुक करें'}</a></li>
+            <li><a href="/cng/cylinder-test/">{locale === 'en' ? 'Find Nearby CNG' : 'निकटतम सीएनजी'}</a></li>
             <li><a href={`/${locale}/blog/`}>{locale === 'en' ? 'Blog' : 'ब्लॉग'}</a></li>
             <li><a href={`/${locale}/contact/`}>{locale === 'en' ? 'Contact' : 'संपर्क'}</a></li>
             <li>
-              <a href="/admin/login/" class="nav-login-btn" style="color: var(--color-steel-600); font-weight: 700;">
-                🔐 {locale === 'en' ? 'Login' : 'लॉगिन'}
+              <a href="/user/" class="nav-login-btn" style="color: var(--color-steel-600); font-weight: 700;">
+                👤 {locale === 'en' ? 'Customer Workspace' : 'ग्राहक लॉगिन'}
               </a>
             </li>
           </ul>
@@ -187,19 +182,25 @@ const customPromoBanner = (effectiveSettings.promo_banner_active !== 0 && effect
 
           <nav aria-label={locale === 'en' ? 'Mobile navigation' : 'मोबाइल नेविगेशन'} class="mobile-nav-links">
             <a href={`/${locale}/book/`} class="mobile-nav-item mobile-book-cta">
-              ⚡ {locale === 'en' ? 'Book Testing Bay' : 'स्लॉट बुक करें'}
+              ⚡ {locale === 'en' ? 'Book Appointment' : 'स्लॉट बुक करें'}
+            </a>
+            <a href="/cng/cylinder-test/" class="mobile-nav-item">
+              📍 {locale === 'en' ? 'Find Nearby CNG' : 'निकटतम सीएनजी केंद्र'}
             </a>
             <a href={`/${locale}/services/`} class="mobile-nav-item">
               🔬 {locale === 'en' ? 'Our Services' : 'हमारी सेवाएँ'}
+            </a>
+            <a href="/cng/" class="mobile-nav-item">
+              📚 {locale === 'en' ? 'CNG Testing Guides' : 'सीएनजी टेस्टिंग गाइड'}
             </a>
             <a href={`/${locale}/blog/`} class="mobile-nav-item">
               📖 {locale === 'en' ? 'Blog & Advice' : 'ब्लॉग व सलाह'}
             </a>
             <a href={`/${locale}/contact/`} class="mobile-nav-item">
-              📍 {locale === 'en' ? 'Contact & Facility' : 'संपर्क व केंद्र'}
+              📞 {locale === 'en' ? 'Contact & Facility' : 'संपर्क व केंद्र'}
             </a>
-            <a href="/admin/login/" class="mobile-nav-item" style="border-top: 1px solid var(--border-subtle); margin-top: 0.5rem; padding-top: 1rem; color: var(--color-steel-600); font-weight: 700;">
-              🔐 {locale === 'en' ? 'Login Portal (Staff / Admin / Customer)' : 'लॉगिन पोर्टल (कर्मचारी / एडमिन / ग्राहक)'}
+            <a href="/user/" class="mobile-nav-item" style="border-top: 1px solid var(--border-subtle); margin-top: 0.5rem; padding-top: 1rem; color: var(--color-steel-600); font-weight: 700;">
+              👤 {locale === 'en' ? 'Customer Workspace' : 'ग्राहक वर्कस्पेस'}
             </a>
           </nav>
 
@@ -228,23 +229,25 @@ const customPromoBanner = (effectiveSettings.promo_banner_active !== 0 && effect
           </div>
 
           <div class="footer-links-col">
-            <strong class="footer-heading">{locale === 'en' ? 'Customer Services' : 'ग्राहक सेवाएँ'}</strong>
+            <strong class="footer-heading">{locale === 'en' ? 'Pages & Services' : 'पेज व सेवाएँ'}</strong>
             <ul class="footer-nav-list">
-              <li><a href={getAnchor('booking')}>{copy.actions.book}</a></li>
-              <li><a href={getAnchor('refused-cng')}>{locale === 'en' ? 'Refused at CNG Pump?' : 'पंप पर मना किया?'}</a></li>
-              <li><a href={getAnchor('pricing')}>{locale === 'en' ? 'Transparent Pricing' : 'पारदर्शी शुल्क'}</a></li>
-              <li><a href={getAnchor('process')}>{locale === 'en' ? '5-Step Testing Methodology' : '5-चरणीय परीक्षण विधि'}</a></li>
-              <li><a href={getAnchor('standards')}>{locale === 'en' ? 'Statutory Standards' : 'वैधानिक सुरक्षा मानक'}</a></li>
+              <li><a href={`/${locale}/`}>{locale === 'en' ? 'Home' : 'मुख्य पृष्ठ'}</a></li>
+              <li><a href={`/${locale}/services/`}>{locale === 'en' ? 'Services' : 'हमारी सेवाएँ'}</a></li>
+              <li><a href={`/${locale}/how-it-works/`}>{locale === 'en' ? 'How It Works' : 'प्रक्रिया'}</a></li>
+              <li><a href={`/${locale}/about/`}>{locale === 'en' ? 'About Facility' : 'केंद्र के बारे में'}</a></li>
+              <li><a href={`/${locale}/contact/`}>{locale === 'en' ? 'Contact & Directions' : 'संपर्क व पता'}</a></li>
+              <li><a href={`/${locale}/book/`}>{locale === 'en' ? 'Book Appointment' : 'अपॉइंटमेंट बुक करें'}</a></li>
             </ul>
           </div>
 
           <div class="footer-links-col">
-            <strong class="footer-heading">{locale === 'en' ? 'Quick Tools' : 'त्वरित साधन'}</strong>
+            <strong class="footer-heading">{locale === 'en' ? 'Resources & Portals' : 'संसाधन व पोर्टल'}</strong>
             <ul class="footer-nav-list">
-              <li><a href={`/${locale}/check-expiry/`}>{copy.nav.expiry}</a></li>
+              <li><a href="/cng/cylinder-test/">{locale === 'en' ? 'Find Nearby CNG' : 'निकटतम सीएनजी केंद्र'}</a></li>
+              <li><a href="/cng/">{locale === 'en' ? 'CNG Testing Guides' : 'सीएनजी टेस्टिंग गाइड'}</a></li>
               <li><a href={`/${locale}/blog/`}>{copy.nav.blog}</a></li>
-              <li><a href={getAnchor('location')}>{locale === 'en' ? 'Station Location & Map' : 'स्टेशन का पता व नक्शा'}</a></li>
-              <li><a href={getAnchor('faqs')}>{locale === 'en' ? 'Frequently Asked Questions' : 'अक्सर पूछे जाने वाले प्रश्न'}</a></li>
+              <li><a href="/user/">{locale === 'en' ? 'Customer Workspace' : 'ग्राहक वर्कस्पेस'}</a></li>
+              <li><a href={`/${locale}/#due-date-checker`}>{locale === 'en' ? 'Retest Due Checker' : 'वैधता जाँच'}</a></li>
             </ul>
           </div>
 

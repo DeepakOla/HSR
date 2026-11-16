@@ -13,7 +13,7 @@
 
 - **Stack**: Astro 7, React 19 interactive islands, TypeScript, Cloudflare Workers runtime, Cloudflare D1 SQL database, Cloudflare R2 object storage (private & optional), Wrangler, Vitest, Playwright.
 - **Data Flow**:
-  - Public Client -> Astro Server Routes / Pages -> React Islands (`BookingWizard.tsx`, `ContentPage.astro`)
+  - Public Client -> Astro Server Routes / Pages -> React Islands (`InlineBooking.tsx` is the active single customer booking component; `BookingWizard.tsx` is legacy/unreferenced)
   - Booking API (`/api/booking/*`, `/api/public/*`) -> Zod Schemas (`schemas.ts`, `vehicle-registration.ts`) -> Booking Engine (`booking-engine.ts`) -> Atomic D1 Batch Writes (`db.batch`)
   - Admin Client -> Astro Admin Pages -> Cloudflare Access JWT Header (`cf-access-jwt-assertion`) -> Web Crypto RS256 Verification (`auth.ts`) -> D1 `staff_users` Role Verification (`requireRole`) -> Admin APIs (`/api/admin/*`)
 - **Key Invariants**:

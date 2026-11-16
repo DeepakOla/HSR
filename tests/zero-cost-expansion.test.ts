@@ -5,7 +5,7 @@ vi.mock('cloudflare:workers', () => ({
 }));
 
 import { generateUpiSvgQr, buildUpiUri, parseBankAlertEmail, recordAndAutoReconcileUpiCredit } from '../src/lib/zero-cost-upi';
-import { formatZohoBooksCsv, generateDailyB2cConsolidation, type ZohoInvoiceExportRow } from '../src/lib/zoho-books-free';
+import { formatZohoBooksCsv, type ZohoInvoiceExportRow } from '../src/lib/zoho-books-free';
 import { buildWhatsAppDeepLinks } from '../src/lib/zero-cost-messaging';
 import { createMockD1 } from './helpers/d1-mock';
 import { extendFutureSnapshots } from '../src/lib/booking-engine';

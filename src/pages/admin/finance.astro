@@ -41,7 +41,7 @@ if (env?.DB) {
              p.payment_mode as mode, p.utr_or_reference as utr, p.payment_state as state,
              p.paid_at as paidAt, p.verified_at as verifiedAt,
              b.booking_code as bookingCode,
-             COALESCE(b.display_reg_no, v.registration_display, 'HR-26') as regNo
+             COALESCE(v.display_reg_no, v.registration_display, 'HR-26') as regNo
       FROM payments p
       LEFT JOIN bookings b ON b.id = p.booking_id
       LEFT JOIN vehicles v ON v.id = b.vehicle_id
