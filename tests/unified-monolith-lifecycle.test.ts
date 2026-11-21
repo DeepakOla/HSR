@@ -26,7 +26,11 @@ describe('Unified Monolith End-to-End Operational Lifecycle', () => {
 
   it('executes full synchronized lifecycle from booking to test certification and release', async () => {
     // 1. Check availability
-    const slots = await fetchAvailability(db as any, 'en', '2026-11-15', 7, 1);
+    const nextSlot = await db.prepare(
+      "SELECT service_date FROM daily_slot_snapshots WHERE is_closed = 0 AND service_date >= date('now', '+330 minutes') ORDER BY service_date ASC LIMIT 1"
+    ).first<{ service_date: string }>();
+    const targetDate = nextSlot?.service_date || new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    const slots = await fetchAvailability(db as any, 'en', targetDate, 7, 1);
     expect(slots.length).toBeGreaterThan(0);
     const chosenSlot = slots[0];
 

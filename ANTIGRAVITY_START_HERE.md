@@ -41,7 +41,7 @@
    - **₹500 flat per booking** (temporary, Owner-editable default in `business_settings.flat_advance_paise = 50000`).
    - Single source of truth for online bookings: flat advance per booking, regardless of cylinder count.
    - Preserves any deliberately configured Owner amount.
-   - Balance payable = Total amount - ₹500.
+   - Balance payable = Total amount - ₹500 (dynamically computed, never hardcoded).
 2. **Pricing Structure**:
    - Base service charge: ₹2,500 per CNG cylinder.
    - Configurable GST: 18% calculation (`FIXED_GST_RATE_BPS = 1800`).
@@ -63,34 +63,117 @@
 
 ---
 
-## 4. UI/UX & Design Direction
+## 4. Architecture, Navigation & Page Map
 
-- **Selected Design Direction**: **Direction A — Professional Industrial Trust**.
-- Aesthetic: **Industrial engineering identity**, NOT green-energy/eco/environmental branding.
-- Visuals: Clean, high-contrast, robust typography (Poppins/Open Sans), disciplined navy/industrial palette with amber/orange action highlights, zero frivolous gradients or AI template tells.
-- Brand name, logo, and color identity remain adjustable; visual concepts must be reviewed before final lock.
-- **Images**: Stock facility imagery is marked clearly as placeholder until genuine HSR facility photos are supplied. Real facility images remain pending.
-- **Bilingual Content**: Full English and Hindi support across public pages and the Owner Content CMS.
+The frontend follows an Ernest-inspired simplicity philosophy: direct actions, clean typography, zero visual clutter, and backgrounded operational complexity.
 
----
-
-## 5. Verification Commands
-
-```powershell
-npm run test        # Runs Vitest unit & integration suites (19 suites, 466 tests passing)
-npm run typecheck   # Runs Astro TypeScript diagnostics (106 files, 0 errors, 0 warnings)
-npm run build       # Validates production build with prerendered blog and SSR Worker
+```
+/ (Root) -> 302 redirect based on Accept-Language cookie (hsr_lang) to /en/ or /hi/
+├── /en/ & /hi/ (Public Customer Experience)
+│   ├── index.astro (Hero, Retest Due Checker, Inline 3-Step Booking Wizard, Pricing, Trust Pillars)
+│   ├── book.astro (Dedicated standalone booking wizard)
+│   ├── about.astro, contact.astro, services.astro, how-it-works.astro (CMS-managed)
+│   ├── blog/ (Static prerendered educational articles on PESO Rule 35 and compliance)
+│   └── status/ (Public booking reference tracking via bookingCode + statusToken)
+├── /cng/ (Industrial Pillars & Retest Due Portal)
+│   ├── index.astro (CNG hydro testing guides with mobile sliding drawer)
+│   └── cylinder-test.astro (Consolidated industrial testing landing with 2-path Retest Due launcher)
+├── /login/ (Unified Sign-In Portal)
+│   ├── Vehicle Owner Workspace (SMS OTP challenge)
+│   ├── Plant Operations (Staff Email & PIN)
+│   └── Station Owner Executive (Cloudflare Access zero-trust console)
+├── /user/ (Customer Workspace)
+│   ├── index.astro (Vehicle dossiers, due date timeline, upcoming appointments, payment receipts)
+│   └── book.astro, documents.astro, history.astro, payments.astro, profile.astro, vehicles.astro
+├── /admin/ (⚡ HSR Management Portal — Zen Dock Layout)
+│   ├── index.astro & owner.astro (Executive KPI dashboard, commercial controls, WhatsApp mode)
+│   ├── reception.astro (Daily check-in desk, slot queue, 1–12 cylinder manual bookings)
+│   ├── cylinder-register.astro (Statutory PESO Form GCT compliance register)
+│   ├── vouchers.astro (Discount coupon management with vehicle registration search)
+│   ├── records.astro, finance.astro (Zoho Books GST export), cms.astro, settings.astro, seo.astro
+└── Deprecated / 301 Consolidated Routes
+    ├── /app/* -> 301 to /user/*
+    ├── /directory/* -> 301 to /cng/cylinder-test/#nearby-stations
+    ├── /tools/cng-expiry-checker/ -> 301 to /cng/cylinder-test/?action=check-due-date#retest-checker
+    └── /en/check-expiry/ & /hi/check-expiry/ -> 301 to /cng/cylinder-test/?action=check-due-date#retest-checker
 ```
 
 ---
 
-## 6. Milestone Progress Status
+## 5. D1 Database Schema & Migration Sequence
+
+The database schema is strictly version-controlled in `migrations/`:
+
+| Migration | Purpose | Key Tables / Columns |
+|---|---|---|
+| `0001_init.sql` | Core schema baseline | `business_settings`, `weekly_schedule`, `slot_templates`, `vehicle_categories`, `customers`, `vehicles`, `bookings` |
+| `0002_capacity_guard.sql` | High-concurrency guard | Trigger `bookings_capacity_guard` preventing double-allocations |
+| `0003_amount_paid.sql` | Payment ledger tracking | `amount_paid_paise`, payment state audit columns |
+| `0004_schedule_versions.sql` | Schedule versioning | `schedule_versions`, `date_overrides` for holiday capacity |
+| `0005_cylinder_work_units.sql` | Work-unit capacity engine | `booking_slot_allocations`, consecutive time slot locking |
+| `0006_flat_advance.sql` | Flat ₹500 advance engine | `flat_advance_paise` setting, single source of truth |
+| `0007_retest_reminders.sql` | Retest reminder queue | `retest_reminders` for 3-year automated customer follow-ups |
+| `0008_unified_hsr_schema.sql` | Enterprise unified monolith | `parties`, `contact_phones`, `booking_groups`, `payments`, `party_vehicle_access` |
+| `0009_whatsapp_and_promotions.sql` | WhatsApp & Promo codes | `whatsapp_mode` (DIRECT vs API), `discount_vouchers`, `promo_banner` |
+| `0010_zero_cost_expansion_cms_zoho_upi.sql` | Zero-cost business suite | Zoho Books CSV export mapping, zero-dependency NPCI UPI QR |
+| `0011_pricing_visibility_and_owner_legal_name.sql` | Commercial transparency | Per-category public visibility flags, statutory owner legal name |
+| `0012_eliminate_setup_required_defaults.sql` | Fail-closed defaults | Eliminates unsafe mock strings from production schema |
+| `0013_seo_tracker_and_social_media.sql` | Social & SEO tracking | Social media links (FB, IG, YT, X, WA), Google Tag Manager / Analytics IDs |
+| `0014_brand_logo_setting.sql` | Configurable branding | `brand_logo_url` in `business_settings` |
+
+---
+
+## 6. Cloudflare Infrastructure & Deployment Pipeline
+
+### Resource Manifest
+
+| Environment | Purpose | Worker / Database | ID / Binding |
+|---|---|---|---|
+| **Production** | Live Worker | `hsr` | Subdomain: `kumardeepakola.workers.dev` |
+| **Production** | Live D1 Database | `hsr_green_energy_prod` | `2167157a-4c00-4063-b183-c0a5bd12ed5d` |
+| **Production** | R2 Evidence Storage | `hsr-prod` | Binding: `EVIDENCE_BUCKET` |
+| **Preview** | Isolated Preview D1 | `hsr_green_energy_preview` | `3220c6e5-64ff-4874-9d5d-0e237f5af9ad` |
+| **Access** | Zero-Trust Team | Cloudflare Access | `kumardeepakola.cloudflareaccess.com` |
+
+### Why Live Site Differs from Development Branch
+
+- **Cloudflare Workers Builds** is connected directly to GitHub `https://github.com/DeepakOla/HSR` on the **`main`** branch.
+- Development work is strictly performed on **`copilot/build-cng-cylinder-hydro-testing-website`**.
+- Per safety rules in `AGENTS.md`, commits on the development branch are **never merged into `main` automatically**.
+- When the owner approves a release:
+  ```powershell
+  git checkout main
+  git merge copilot/build-cng-cylinder-hydro-testing-website --ff-only
+  git push origin main
+  ```
+  Pushing to `main` triggers Cloudflare Workers Builds to deploy the updated release to `https://hsr.kumardeepakola.workers.dev`.
+
+---
+
+## 7. Verification Commands & Suite Baseline
+
+```powershell
+npm run typecheck   # Astro check across all 211 files (0 errors, 0 warnings)
+npm run lint        # ESLint code quality (0 errors, 0 warnings)
+npm run test        # Vitest unit & integration suites (29 suites, 536 tests passing 100%)
+npm run build       # Astro SSR Cloudflare Worker bundle + static prerendered routes (0 errors)
+npm run test:e2e    # Playwright browser tests across viewports (360px, 390px, 1440px)
+```
+
+---
+
+## 8. Milestone Progress Status
 
 - [x] **M1: Vehicle Registration Module**: State and Bharat (BH) series normalization & validation with localized bilingual errors.
 - [x] **M2: Pricing Engine & ₹500 Flat Advance**: Single source of truth calculation with ₹500 flat advance per booking and fail-closed pre-write UPI payment gate.
 - [x] **M3: Customer Booking Wizard**: Single-tap date advance, 8 vehicle types, Truck 4-cylinder auto-select, public 1–6 cylinder limit, linked time slot calculations.
 - [x] **M4: Administrative Navigation & Validation Parity**: Footer staff login link, reception & register vehicle registration validation parity.
-- [x] **M5: Bilingual Owner Content CMS**: Owner Console Section 04 for managing editable page content (About, Services, How It Works, Contact) in English and Hindi with audit log.
-- [x] **M6: Professional Industrial UI/UX Redesign + Blog + Local SEO**: Direction A tokens (`design-tokens.css`), Astro Content Collections blog, static route prerendering, Schema.org AutoRepair JSON-LD, bilingual RSS feeds, dynamic sitemap.
+- [x] **M5: Bilingual Owner Content CMS**: Owner Console for managing editable page content in English and Hindi with audit log.
+- [x] **M6: Professional Industrial UI/UX Redesign + Blog + Local SEO**: Direction A tokens (`design-tokens.css`), Astro Content Collections blog, static route prerendering, Schema.org AutoRepair JSON-LD.
 - [x] **M7: Defensive Security Audit**: Cloudflare Access RS256 token verification, RBAC role separation, public API PII exposure prevention, CSRF origin verification, D1 concurrency and hold expiry invariants verified.
-- [x] **M8: Preview Deployment Readiness & Public Demo Experience v0.0.1**: Cloudflare Preview build fixes (.nvmrc/.node-version Node 22, wrangler.jsonc env.preview schema), isolated preview D1 database (hsr_green_energy_preview), strictly unbound R2 bucket in preview, defensive security headers (nosniff, DENY, strict-origin, COOP, X-Robots-Tag), bilingual demo preview banner, interactive tester feedback widget (/api/feedback), preview test data reset helper (/api/admin/reset-test-data), 21 Vitest suites (479 tests passing 100%), and 11 Playwright E2E tests passing. Zero production deployment.
+- [x] **M8: Preview Deployment Readiness v0.0.1**: Cloudflare Preview build fixes, isolated preview D1 database, strictly unbound R2 bucket in preview, defensive security headers.
+- [x] **M9: Unified Portal & Monolith Schema v0.0.2**: Unified 3-tab sign-in (`/login/`), Customer Workspace (`/user/`), and enterprise relational schema (`0008_unified_hsr_schema.sql`).
+- [x] **M10: Zero-Cost Business Expansion**: Dual-mode WhatsApp (`DIRECT` vs `API`), NPCI UPI QR generator, Zoho Books GST export, promotional voucher management (`0009` & `0010` migrations).
+- [x] **M11: Industrial Zen Dock Portal**: `AdminLayout.astro` with collapsible left dock, real-time station telemetry, statutory PESO Form GCT register (`/admin/cylinder-register/`), and voucher vehicle lookup.
+- [x] **M12: Performance, Usability & Defect Audit v0.0.3**: Dynamic advance pricing balances (`Total - ₹500`), complete elimination of "bay" jargon, decluttered registration input, custom accessible mobile navigation drawers, 301 route deprecations, Vite MIME crash resolution, and 100% green test baseline.
+

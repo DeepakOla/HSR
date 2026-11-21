@@ -1,56 +1,57 @@
 # Agent Invariants
 
-## Booking and capacity
+## 1. Booking and Capacity Invariants
 
 - Active capacity states are `HELD`, `PENDING_VERIFICATION`, `CONFIRMED`, `CHECKED_IN`, `IN_PROGRESS`.
-- Hold expiry only auto-expires `HELD` + `ADVANCE_PENDING` bookings.
-- Do not auto-release bookings after evidence submission.
-- Use atomic DB-guarded writes for hold creation.
-- Preserve snapshot pricing, slot labels, capacity and config version on each booking.
+- Hold expiry only auto-expires `HELD` + `ADVANCE_PENDING` bookings; never auto-release bookings after evidence submission.
+- Use atomic DB-guarded writes for hold creation. Overlapping cylinder work-unit collisions must fail atomically.
+- Preserve snapshot pricing, slot labels, capacity, and config version on every booking record.
+- Public self-service booking strictly limits cylinder count to 1–6 (`source === 'WEB'`). Reception desk retains 1–12 cylinder capability.
+- Selecting **Truck** automatically preselects 4 cylinders (editable by user).
 
-## Payment and evidence
+## 2. Payment and Evidence Invariants
 
-- UPI link/QR does not verify payment.
-- Evidence and UTR set booking to `PENDING_VERIFICATION`/`EVIDENCE_SUBMITTED`.
-- R2 is private and optional; when unavailable, website screenshot upload must be disabled.
+- UPI link/QR generation does NOT settle or verify payment.
+- Customer evidence submission (12-digit UTR or screenshot) sets booking to `PENDING_VERIFICATION` / `EVIDENCE_SUBMITTED`.
+- Settlement is verified only via bank alert UTR auto-reconciler or staff manual verification in reception desk.
+- R2 evidence storage is private and optional. When unavailable or unbound (e.g., Previews), screenshot upload must be disabled without blocking UTR reference entry.
 
-## Security
+## 3. Security and Auth Invariants
 
-- Protect admin pages and APIs server-side.
-- Never trust role or pricing from browser.
-- Public APIs must not leak customer PII.
+- Protect all `/admin/*`, `/staff/*`, and management APIs server-side.
+- Cloudflare Access RS256 JWT verification guards Owner and Receptionist identities in production.
+- Customer Workspace (`/user/*`) is guarded by 6-digit SMS OTP session tokens in cookies.
+- Never trust role, identity, or pricing submitted from the browser client.
+- Public APIs must never leak customer PII (phone, full name, address, payment details).
 
-## Testing commands
+## 4. Cloudflare Infrastructure & Deployment Safety Gates
 
-- `npm run test`
-- `npm run typecheck`
-- `npm run build`
+- **Cloudflare Account Subdomain**: `kumardeepakola.workers.dev`
+- **Cloudflare Access Team Domain**: `kumardeepakola.cloudflareaccess.com`
+- **Worker Name**: `hsr`
+- **Live Production URL**: `https://hsr.kumardeepakola.workers.dev`
+- **Preview Worker URL**: `https://copilot-build-cng-cylinder-hydro-testing-website-hsr.kumardeepakola.workers.dev`
+- **Production D1 Database**: `hsr_green_energy_prod` (`2167157a-4c00-4063-b183-c0a5bd12ed5d`)
+- **Preview D1 Database**: `hsr_green_energy_preview` (`3220c6e5-64ff-4874-9d5d-0e237f5af9ad`)
+- **Production R2 Storage**: `hsr-prod` (`EVIDENCE_BUCKET`) — unbound in Previews.
+- **Workers Builds Pipeline**: Cloudflare Workers Builds deploys automatically from GitHub `main`.
+- **Gating Invariant**: Keep development work on `copilot/build-cng-cylinder-hydro-testing-website`. Do not push to `main`, merge PR #1, run remote migrations, or deploy Production without the user's explicit prior approval.
 
-## Repository and agent workflow
+## 5. Frontend, Design & Simplicity (Ernest Philosophy)
 
-- Read `ANTIGRAVITY_START_HERE.md` before making project changes. It records the current branch, local/Preview/Production separation, and deployment safety gates.
-- Work in the user's existing repository checkout and existing development branch. Never reinitialize Git, clone a second nested copy, or recreate the project.
-- Before changing files, inspect `git status --short --branch`, `git branch --show-current`, `git remote -v`, and `git log -1 --oneline`.
-- Preserve all pre-existing local modifications. Never use `git reset --hard`, `git clean -fd`, force-push, or overwrite a modified file without inspecting its diff and obtaining the user's approval.
-- Keep work on `copilot/build-cng-cylinder-hydro-testing-website`. Do not change `main`, merge PR #1, or deploy Production unless the user explicitly approves that exact action.
-- Never commit `.env`, `.dev.vars*`, credentials, Access tokens/AUD values, customer data, `.wrangler/`, or `node_modules/`.
-- Run lint, type-check, unit tests and build after code changes. Run browser tests for customer and staff workflows before requesting merge.
-- Distinguish local D1 migrations (`--local`) from Cloudflare Preview remote migrations and Production remote migrations. Follow the exact commands and stop conditions in `ANTIGRAVITY_START_HERE.md`.
+- **Simplicity Reference**: Follow the clarity, zero-clutter layout, and effortless usability of Ernest. Keep customer frontend strictly focused on what users need to understand, decide, and act.
+- **Precision Hydro Test Tokens**: Certified industrial palette (Deep Navy `#0A1128`, Safety Orange `#EA580C` for conversion, Steel Blue `#0284C7` for telemetry, Plus Jakarta Sans for headings, Inter for body/numbers).
+- **No Technical Jargon**: Use "Seats / Appointment Slots / Testing Station" — NEVER use "Bay" or "Bays" on customer-facing pages.
+- **Transparent Pricing**: Flat ₹500 online booking advance with dynamically calculated remaining balance (`Total - ₹500`).
+- **No Mockup Leakage**: Never reintroduce sample Karnataka/Bengaluru references (`KA-` plates, `BLR`, `PESO #941`), fake Vahan sync badges, or unverified regulatory claims.
+- **Configurable Anchors**: Business name defaults to "HSR", location defaults to "Rewari" (editable via Owner Console / `business_settings`).
 
-## Cloudflare and Antigravity access
+## 6. Verification Commands
 
-- The workspace MCP config at `.agents/mcp_config.json` connects to the official Cloudflare API MCP server. The user must complete Cloudflare OAuth authentication in Antigravity; Wrangler CLI login and MCP OAuth are separate credentials.
-- Use the MCP server and Wrangler CLI for account/resource inspection. Start with read-only inspection of the Worker, Builds integration, Preview settings, D1 migration state, D1 bindings, R2 bindings and Access applications.
-- Do not execute Cloudflare writes, remote D1 migrations, resource deletion/creation, Production deploys, or Access policy changes without the user's explicit approval for that operation.
-- Treat `npx wrangler deploy`, `npm run db:migrate:remote`, and Cloudflare Workers Builds production branch deploys as Production operations.
-- For the first stable main-branch baseline, keep the Workers Builds production command at `npx wrangler versions upload` (save a version without activating it). Only change to `npx wrangler deploy` after explicit Production release approval.
-- Keep the Preview D1 binding separate from Production D1. Never bind the Production R2 bucket to Preview.
-- Keep the Cloudflare API MCP connection in Ask/approval mode. Never paste API tokens, Access AUD values, JWTs, or secrets into chat or Git.
+- `npm run test` (Vitest unit & integration test suites, 29 suites, 536 tests passing 100%)
+- `npm run typecheck` (Astro type diagnostics, 211 files, 0 errors)
+- `npm run lint` (ESLint, 0 errors)
+- `npm run build` (Production SSR bundle & prerendered routes, 0 errors)
+- `npm run test:e2e` (Playwright E2E browser tests across desktop and mobile viewports)
 
-## Frontend, Design & Content Invariants
-
-- **No Prototype Mockup Leakage**: Never import sample Karnataka/Bengaluru references (`KA-` plates, `BLR`, `PESO #941`), fake Vahan/Sarathi live-sync badges, fictional customer dossiers, or unverified operational stats from prototype HTML.
-- **Configurable Business Anchor**: Business name defaults to "HSR", location defaults to "Rewari" (editable via Owner Console / `business_settings`). Never hardcode permanent brand names or locations.
-- **Lean Customer Journey**: The public customer experience is anchored on the homepage with direct inline booking (`One Vehicle | Multiple Vehicles`), transparent ₹500 flat advance pricing, and anchor navigation. Do not force mandatory account registration or redirect to disconnected stubs.
-- **Precision Hydro Test Tokens**: Follow the certified industrial palette (Deep Navy `#0A1128`, Safety Orange `#EA580C` for conversion, Steel Blue `#0284C7` for telemetry, Plus Jakarta Sans for headings, Inter for body/tabular data).
 
