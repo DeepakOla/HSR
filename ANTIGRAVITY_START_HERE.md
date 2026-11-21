@@ -37,17 +37,21 @@
 
 ## 3. Commercial & Booking Rules
 
-1. **Advance Amount**:
-   - **₹500 flat per booking** (temporary, Owner-editable default in `business_settings.flat_advance_paise = 50000`).
-   - Single source of truth for online bookings: flat advance per booking, regardless of cylinder count.
-   - Preserves any deliberately configured Owner amount.
-   - Balance payable = Total amount - ₹500 (dynamically computed, never hardcoded).
+1. **Advance Amount & Single Source of Truth**:
+   - The advance amount is **authoritative per vehicle category** in `vehicle_categories.advance_paise`.
+   - Global flat advance fallbacks are retired.
+   - **Strict 3-State Advance Resolution**:
+     - `advance_paise > 0`: Require exact advance via UPI (e.g., ₹500 for 1 cylinder, ₹1,000 for 4 cylinders). Balance = Total - Advance.
+     - `advance_paise === 0`: Free online reservation ("Book Free — Pay at Station"). Status = `CONFIRMED` + `PAID_AT_COUNTER`.
+     - `advance_paise === null`: Self-service online hold disabled; customer routed to Phone/WhatsApp consultation (+91 9910055355).
+   - Zero hardcoded fallbacks: never use `|| 50000` or `?? 50000`.
+   - All historical bookings preserve their immutable price snapshots.
 2. **Pricing Structure**:
    - Base service charge: ₹2,500 per CNG cylinder.
    - Configurable GST: 18% calculation (`FIXED_GST_RATE_BPS = 1800`).
-   - 1 cylinder = ₹2,500 + ₹450 GST = ₹2,950 total (₹500 advance, ₹2,450 balance).
-   - 2 cylinders = ₹5,000 + ₹900 GST = ₹5,900 total (₹500 advance, ₹5,400 balance).
-   - 4 cylinders = ₹10,000 + ₹1,800 GST = ₹11,800 total (₹500 advance, ₹11,300 balance).
+   - 1 cylinder = ₹2,500 + ₹450 GST = ₹2,950 total.
+   - 2 cylinders = ₹5,000 + ₹900 GST = ₹5,900 total.
+   - 4 cylinders = ₹10,000 + ₹1,800 GST = ₹11,800 total.
 3. **Cylinder Selection & Limits**:
    - **Public online booking dropdown**: 1, 2, 3, 4, 5, 6 cylinders, plus "More than 6".
    - "More than 6" halts self-service booking and provides Phone/WhatsApp contact card (+91 9910055355).
@@ -73,6 +77,10 @@ The frontend follows an Ernest-inspired simplicity philosophy: direct actions, c
 │   ├── index.astro (Hero, Retest Due Checker, Inline 3-Step Booking Wizard, Pricing, Trust Pillars)
 │   ├── book.astro (Dedicated standalone booking wizard)
 │   ├── about.astro, contact.astro, services.astro, how-it-works.astro (CMS-managed)
+│   ├── terms.astro (Terms & Conditions — PESO Rule 35 & cylinder condemnation)
+│   ├── privacy.astro (Privacy Policy — DPDP Act 2023 & statutory retention)
+│   ├── refund.astro (Cancellation & Refund Policy — 12hr free cancellation SLA)
+│   ├── disclaimer.astro (Statutory & Technical Safety Disclaimer)
 │   ├── blog/ (Static prerendered educational articles on PESO Rule 35 and compliance)
 │   └── status/ (Public booking reference tracking via bookingCode + statusToken)
 ├── /cng/ (Industrial Pillars & Retest Due Portal)
@@ -120,6 +128,7 @@ The database schema is strictly version-controlled in `migrations/`:
 | `0012_eliminate_setup_required_defaults.sql` | Fail-closed defaults | Eliminates unsafe mock strings from production schema |
 | `0013_seo_tracker_and_social_media.sql` | Social & SEO tracking | Social media links (FB, IG, YT, X, WA), Google Tag Manager / Analytics IDs |
 | `0014_brand_logo_setting.sql` | Configurable branding | `brand_logo_url` in `business_settings` |
+| `0015_per_category_advance_and_gbp.sql` | Advance authority & GBP | Per-category advance authority, Google Place ID, Maps URL, Review link, Geo coordinates |
 
 ---
 

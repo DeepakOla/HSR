@@ -46,7 +46,33 @@
 - **No Mockup Leakage**: Never reintroduce sample Karnataka/Bengaluru references (`KA-` plates, `BLR`, `PESO #941`), fake Vahan sync badges, or unverified regulatory claims.
 - **Configurable Anchors**: Business name defaults to "HSR", location defaults to "Rewari" (editable via Owner Console / `business_settings`).
 
-## 6. Verification Commands
+## 6. Advance & Pricing Authority Invariants
+
+- **Single Source of Truth**: The advance amount is authoritative per vehicle category (`vehicle_categories.advance_paise`). Global flat advance overrides are retired.
+- **Strict 3-State Advance Resolution**:
+  - `advance_paise > 0`: Require exact advance via UPI; status is `HELD` + `ADVANCE_PENDING`; balance is dynamically computed as `total - advance`.
+  - `advance_paise === 0`: Free online reservation ("Book Free — Pay at Station"); status is `CONFIRMED` + `PAID_AT_COUNTER`; full total is collected at station.
+  - `advance_paise === null`: Online self-service booking is disabled for this category; route customer to Phone/WhatsApp consultation.
+- **Zero Hardcoded Fallbacks**: Never use `|| 50000` or `?? 50000` fallbacks that resurrect ₹500 when advance is intentionally set to 0.
+- **Snapshot Immutability**: Never alter historical bookings. Historical bookings retain their original snapshot pricing and balance figures.
+
+## 7. Google Business Profile & Local Discovery Invariants
+
+- **Two-Phase Architecture**:
+  - **Pre-Activation (Current)**: Gracefully display city-level location (Rewari, Haryana 123401) with clean generic search links. Never show broken map frames, empty review stars, or unverified regulatory badges.
+  - **Post-Activation**: Single-form configuration in `/admin/owner/` (Place ID, Maps URL, Review URL, Geo coordinates, Street Address). Automatically activates rich `schema.org/AutomotiveBusiness` JSON-LD, "Get Directions" CTAs, "Review us on Google" prompts, and UTM tracking parameters (`utm_source=google_business_profile`).
+- **Zero API Dependency**: Does not require Google My Business OAuth API for core operations. Configuration is stored and served directly from D1 `business_settings`.
+
+## 8. Mandatory Legal & Statutory Compliance Invariants
+
+- Maintain four bilingual legal policies under `/en/` and `/hi/`:
+  - `/terms/`: Terms & Conditions (PESO Rule 35 testing protocol, cylinder rejection/condemnation rules, gas venting requirements).
+  - `/privacy/`: Privacy Policy (DPDP Act 2023 compliance, phone & vehicle registration protection, statutory 5-year PESO Form GCT retention disclosure).
+  - `/refund/`: Cancellation & Refund Policy (12-hour free cancellation window, UPI reversal terms, 5-7 business day credit SLA).
+  - `/disclaimer/`: Statutory & Technical Safety Disclaimer (300-bar hydrostatic testing limitations, pre-existing cylinder fatigue disclaimer).
+- All customer booking flows and footer areas must link directly to these policies.
+
+## 9. Verification Commands
 
 - `npm run test` (Vitest unit & integration test suites, 29 suites, 536 tests passing 100%)
 - `npm run typecheck` (Astro type diagnostics, 211 files, 0 errors)
